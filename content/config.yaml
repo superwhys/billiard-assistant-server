@@ -1,0 +1,12 @@
+conf:
+  wxAppId: wx018d25746881635b
+  wxAppSecret: 3a3027d6cb756d73fbb448770f4d3c5e
+  avatarDir: "./content/avatar"
+redisAuth:
+  server: localhost:6379
+  db: 10
+mysqlAuth:
+  instance: localhost:3306
+  database: snooker
+  username: root
+  password: yang4869

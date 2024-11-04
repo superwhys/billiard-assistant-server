@@ -1,0 +1,62 @@
+package model
+
+import (
+	"time"
+
+	"github.com/superwhys/snooker-assistant-server/domain/room"
+	"gorm.io/gorm"
+)
+
+type RoomPo struct {
+	ID     int `gorm:"primarykey"`
+	GameID int
+	Game   *GamePo
+
+	OwnerID int
+	Owner   *UserPo `gorm:"foreignKey:OwnerID"`
+
+	Users []*UserPo `gorm:"many2many:user_rooms;"`
+
+	GameStatus    room.Status
+	WinLoseStatus room.WinLoseStatus
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (r *RoomPo) TableName() string {
+	return "rooms"
+}
+
+func (r *RoomPo) FromEntity(gr *room.Room) *RoomPo {
+	r.ID = gr.RoomId
+	r.GameID = gr.GameId
+	r.OwnerID = gr.OwnerId
+
+	r.GameStatus = gr.GameStatus
+	r.WinLoseStatus = gr.WinLoseStatus
+	return r
+}
+
+func (r *RoomPo) ToEntity() *room.Room {
+	players := make([]room.Player, 0, len(r.Users))
+	for _, u := range r.Users {
+		players = append(players, u.ToEntity())
+	}
+
+	var gameConfig room.Game
+	if r.Game != nil {
+		gameConfig = r.Game.ToEntity().GameConfig
+	}
+
+	return &room.Room{
+		RoomId:        r.ID,
+		GameId:        r.GameID,
+		OwnerId:       r.OwnerID,
+		Players:       players,
+		Game:          gameConfig,
+		GameStatus:    r.GameStatus,
+		WinLoseStatus: r.WinLoseStatus,
+	}
+}
