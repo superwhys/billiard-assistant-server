@@ -25,7 +25,7 @@ type UserHandlerApp interface {
 	Login(ctx context.Context, username, password string) (*dto.User, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error)
 	UpdateUser(ctx context.Context, userId int, update *dto.UpdateUserRequest) error
-	UploadAvatar(ctx context.Context, fh *multipart.FileHeader) (string, error)
+	UploadAvatar(ctx context.Context, userId int, fh *multipart.FileHeader) (string, error)
 }
 
 type UserHandler struct {
@@ -105,12 +105,17 @@ func (u *UserHandler) updateUserHandler(ctx *gin.Context, req *dto.UpdateUserReq
 }
 
 func (u *UserHandler) uploadAvatarHandler(ctx *gin.Context) (*dto.UploadAvatarResponse, error) {
+	userId, err := u.middleware.CurrentUserId(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	fh, err := ctx.FormFile("avatar")
 	if err != nil {
 		return nil, exception.ErrUploadAvatar
 	}
 
-	avatarUrl, err := u.userApp.UploadAvatar(ctx, fh)
+	avatarUrl, err := u.userApp.UploadAvatar(ctx, userId, fh)
 	if exception.CheckSaException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {

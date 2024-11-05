@@ -22,6 +22,7 @@ import (
 	"github.com/superwhys/snooker-assistant-server/domain/user"
 	"github.com/superwhys/snooker-assistant-server/models"
 	"github.com/superwhys/snooker-assistant-server/pkg/exception"
+	"github.com/superwhys/snooker-assistant-server/pkg/oss/minio"
 	"github.com/superwhys/snooker-assistant-server/server/dto"
 	"gorm.io/gorm"
 
@@ -43,7 +44,7 @@ type SaServer struct {
 	NoticeSrv notice.INoticeService
 }
 
-func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient) *SaServer {
+func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient, minioClient *minio.MinioOss) *SaServer {
 	if !putils.FileExists(conf.AvatarDir) {
 		err := os.MkdirAll(conf.AvatarDir, 0755)
 		plog.PanicError(err, "createAvatarDir")
@@ -56,7 +57,7 @@ func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient) 
 
 	return &SaServer{
 		avatarDir: conf.AvatarDir,
-		UserSrv:   userSrv.NewUserService(userRepo),
+		UserSrv:   userSrv.NewUserService(userRepo, minioClient),
 		GameSrv:   gameSrv.NewGameService(gameRepo, userRepo),
 		RoomSrv:   roomSrv.NewRoomService(roomRepo, redis),
 		NoticeSrv: noticeSrv.NewNoticeService(noticeRepo),
@@ -114,8 +115,8 @@ func (s *SaServer) UpdateUser(ctx context.Context, userId int, update *dto.Updat
 	return nil
 }
 
-func (s *SaServer) UploadAvatar(ctx context.Context, file *multipart.FileHeader) (string, error) {
-	avatarUrl, err := s.UserSrv.UploadAvatar(ctx, s.avatarDir, file)
+func (s *SaServer) UploadAvatar(ctx context.Context, userId int, file *multipart.FileHeader) (string, error) {
+	avatarUrl, err := s.UserSrv.UploadAvatar(ctx, userId, s.avatarDir, file)
 	if err != nil {
 		plog.Errorc(ctx, "upload avatar error: %v", err)
 		return "", exception.ErrUploadAvatar

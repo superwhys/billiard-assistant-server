@@ -10,15 +10,14 @@ package userSrv
 
 import (
 	"context"
-	"io"
+	"fmt"
 	"mime/multipart"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/superwhys/snooker-assistant-server/domain/user"
 	"github.com/superwhys/snooker-assistant-server/pkg/exception"
+	"github.com/superwhys/snooker-assistant-server/pkg/oss"
 	"github.com/superwhys/snooker-assistant-server/pkg/password"
 )
 
@@ -26,10 +25,11 @@ var _ user.IUserService = (*UserService)(nil)
 
 type UserService struct {
 	userRepo user.IUserRepo
+	oss      oss.IOSS
 }
 
-func NewUserService(userRepo user.IUserRepo) *UserService {
-	return &UserService{userRepo: userRepo}
+func NewUserService(userRepo user.IUserRepo, oss oss.IOSS) *UserService {
+	return &UserService{userRepo: userRepo, oss: oss}
 }
 
 func (us *UserService) Login(ctx context.Context, username, pwd string) (*user.User, error) {
@@ -103,23 +103,28 @@ func (us *UserService) UpdateUser(ctx context.Context, user *user.User) error {
 	return us.userRepo.UpdateUser(ctx, oldUser)
 }
 
-func (us *UserService) UploadAvatar(ctx context.Context, dest string, file *multipart.FileHeader) (string, error) {
+func (us *UserService) UploadAvatar(ctx context.Context, userId int, dest string, file *multipart.FileHeader) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
 	}
 	defer src.Close()
 
-	destFile := filepath.Join(dest, file.Filename)
-	out, err := os.Create(destFile)
+	objName := fmt.Sprintf("%s/%s", dest, file.Filename)
+	avatarUrl, err := us.oss.UploadFile(ctx, file.Size, objName, src)
 	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	if _, err = io.Copy(out, src); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "uploadAvatar")
 	}
 
-	return "", nil
+	err = us.UpdateUser(ctx, &user.User{
+		UserId: userId,
+		UserInfo: &user.BaseInfo{
+			Avatar: avatarUrl,
+		},
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "updateUserAvatarUrl")
+	}
+
+	return avatarUrl, nil
 }

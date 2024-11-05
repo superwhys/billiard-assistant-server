@@ -12,6 +12,7 @@ import (
 	"github.com/go-puzzles/pgorm"
 	"github.com/go-puzzles/predis"
 	"github.com/go-puzzles/puzzles/plog"
+	"github.com/superwhys/snooker-assistant-server/pkg/oss/minio"
 )
 
 type SaConfig struct {
@@ -22,7 +23,7 @@ type SaConfig struct {
 
 type parser func(out any) error
 
-func ParseConfig(saConfParser, redisConfParser, mysqlConfParser parser) (*SaConfig, *predis.RedisConf, *pgorm.MysqlConfig) {
+func ParseConfig(saConfParser, redisConfParser, mysqlConfParser, minioConfParaser parser) (*SaConfig, *predis.RedisConf, *pgorm.MysqlConfig, *minio.Config) {
 	saConfig := new(SaConfig)
 	plog.PanicError(saConfParser(saConfig))
 
@@ -32,5 +33,8 @@ func ParseConfig(saConfParser, redisConfParser, mysqlConfParser parser) (*SaConf
 	mysqlConf := new(pgorm.MysqlConfig)
 	plog.PanicError(mysqlConfParser(mysqlConf))
 
-	return saConfig, redisConf, mysqlConf
+	minioConf := new(minio.Config)
+	plog.PanicError(minioConfParaser(minioConf))
+
+	return saConfig, redisConf, mysqlConf, minioConf
 }

@@ -1,7 +1,7 @@
 conf:
   wxAppId: wx018d25746881635b
   wxAppSecret: 3a3027d6cb756d73fbb448770f4d3c5e
-  avatarDir: "./content/avatar"
+  avatarDir: "avatar"
 redisAuth:
   server: localhost:6379
   db: 10
@@ -10,3 +10,8 @@ mysqlAuth:
   database: snooker
   username: root
   password: yang4869
+minioAuth:
+  endpoint: 10.11.43.115:9000
+  accessKey: PTQVFlbqzHUMXW7psaWl 
+  secretKey: pU7GiSIoiBFPhkRom7oqwCW4cPfrIBvRNJdz0YNr
+  bucket: snooker-assistant

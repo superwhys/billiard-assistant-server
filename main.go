@@ -9,6 +9,7 @@ import (
 	"github.com/superwhys/snooker-assistant-server/api"
 	"github.com/superwhys/snooker-assistant-server/models"
 	"github.com/superwhys/snooker-assistant-server/pkg/dal"
+	"github.com/superwhys/snooker-assistant-server/pkg/oss/minio"
 	"github.com/superwhys/snooker-assistant-server/server"
 
 	httppuzzle "github.com/go-puzzles/puzzles/cores/puzzles/http-puzzle"
@@ -19,24 +20,27 @@ var (
 	saConfigFlag  = pflags.Struct("conf", (*models.SaConfig)(nil), "server config")
 	redisConfFlag = pflags.Struct("redisAuth", (*predis.RedisConf)(nil), "redis auth config")
 	mysqlConfFlag = pflags.Struct("mysqlAuth", (*pgorm.MysqlConfig)(nil), "mysql auth config")
+	minioConfFlag = pflags.Struct("minioAuth", (*minio.Config)(nil), "minio auth config")
 )
 
 func main() {
 	pflags.Parse()
 
-	saConfig, redisConf, mysqlConf := models.ParseConfig(
+	saConfig, redisConf, mysqlConf, minioConf := models.ParseConfig(
 		saConfigFlag,
 		redisConfFlag,
 		mysqlConfFlag,
+		minioConfFlag,
 	)
 
+	minioClient := minio.NewMinioOss(minioConf)
 	redisClient := predis.NewRedisClient(redisConf.DialRedisPool())
 	plog.PanicError(pgorm.RegisterSqlModelWithConf(mysqlConf, dal.AllTables()...))
 	plog.PanicError(pgorm.AutoMigrate(mysqlConf))
 
 	db := pgorm.GetDbByConf(mysqlConf)
 
-	saServer := server.NewSaServer(saConfig, db, redisClient)
+	saServer := server.NewSaServer(saConfig, db, redisClient, minioClient)
 	engine := api.SetupRouter(redisClient, saServer)
 	srv := cores.NewPuzzleCore(
 		cores.WithService(pflags.GetServiceName()),

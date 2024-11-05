@@ -20,9 +20,7 @@ import (
 )
 
 type SaApi struct {
-	handler    http.Handler
-	server     *server.SaServer
-	middleware *middlewares.SaMiddleware
+	handler http.Handler
 }
 
 func SetupRouter(redisClient *predis.RedisClient, saServer *server.SaServer) *SaApi {
@@ -40,9 +38,7 @@ func SetupRouter(redisClient *predis.RedisClient, saServer *server.SaServer) *Sa
 	)
 	
 	return &SaApi{
-		handler:    router,
-		server:     saServer,
-		middleware: saMiddleware,
+		handler: router,
 	}
 }
 
