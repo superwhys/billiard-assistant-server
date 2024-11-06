@@ -20,11 +20,11 @@ var (
 	saConfigFlag  = pflags.Struct("conf", (*models.SaConfig)(nil), "server config")
 	redisConfFlag = pflags.Struct("redisAuth", (*predis.RedisConf)(nil), "redis auth config")
 	mysqlConfFlag = pflags.Struct("mysqlAuth", (*pgorm.MysqlConfig)(nil), "mysql auth config")
-	minioConfFlag = pflags.Struct("minioAuth", (*minio.Config)(nil), "minio auth config")
+	minioConfFlag = pflags.Struct("minioAuth", (*models.MinioConfig)(nil), "minio auth config")
 )
 
 func main() {
-	pflags.Parse()
+	pflags.Parse(pflags.WithConsulEnable())
 
 	saConfig, redisConf, mysqlConf, minioConf := models.ParseConfig(
 		saConfigFlag,

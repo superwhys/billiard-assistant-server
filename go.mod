@@ -6,10 +6,11 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-puzzles/pgin v1.0.12
 	github.com/go-puzzles/pgorm v1.0.4
-	github.com/go-puzzles/predis v1.0.2
-	github.com/go-puzzles/puzzles v1.0.20
+	github.com/go-puzzles/predis v1.0.3
+	github.com/go-puzzles/puzzles v1.0.21
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/minio/minio-go/v7 v7.0.80
 	github.com/pkg/errors v0.9.1
 	golang.org/x/crypto v0.28.0
 	gorm.io/gen v0.3.25
@@ -64,7 +65,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/minio/minio-go/v7 v7.0.80 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

@@ -17,39 +17,42 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-puzzles/puzzles/cores/discover"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
+	"github.com/superwhys/snooker-assistant-server/models"
 	"github.com/superwhys/snooker-assistant-server/pkg/oss"
 )
 
 var _ oss.IOSS = (*MinioOss)(nil)
 
-type Config struct {
-	Endpoint  string
-	AccessKey string
-	SecretKey string
-
-	Bucket string
-}
-
 type MinioOss struct {
-	*Config
+	*models.MinioConfig
 	client *minio.Client
 }
 
-func NewMinioOss(conf *Config) *MinioOss {
-	client, err := minio.New(conf.Endpoint, &minio.Options{
+func NewMinioOss(conf *models.MinioConfig) *MinioOss {
+	discoverAddr := discover.GetAddress(conf.Endpoint)
+
+	client, err := minio.New(discoverAddr, &minio.Options{
 		Creds:  credentials.NewStaticV4(conf.AccessKey, conf.SecretKey, ""),
 		Secure: false,
 	})
 	plog.PanicError(err)
 
+	exists, err := client.BucketExists(context.TODO(), conf.Bucket)
+	plog.PanicError(err)
+
+	if !exists {
+		plog.Fatalf("bucket %s not exists", conf.Bucket)
+	}
+
 	return &MinioOss{
-		Config: conf,
-		client: client,
+		MinioConfig: conf,
+		client:      client,
 	}
 }
 

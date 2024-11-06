@@ -9,10 +9,11 @@
 package models
 
 import (
+	"errors"
+
 	"github.com/go-puzzles/pgorm"
 	"github.com/go-puzzles/predis"
 	"github.com/go-puzzles/puzzles/plog"
-	"github.com/superwhys/snooker-assistant-server/pkg/oss/minio"
 )
 
 type SaConfig struct {
@@ -21,9 +22,25 @@ type SaConfig struct {
 	AvatarDir   string
 }
 
+type MinioConfig struct {
+	Endpoint  string
+	AccessKey string
+	SecretKey string
+
+	Bucket string
+}
+
+func (c *MinioConfig) Validate() error {
+	if c.Endpoint == "" || c.AccessKey == "" || c.SecretKey == "" || c.Bucket == "" {
+		return errors.New("invalid minio config")
+	}
+
+	return nil
+}
+
 type parser func(out any) error
 
-func ParseConfig(saConfParser, redisConfParser, mysqlConfParser, minioConfParaser parser) (*SaConfig, *predis.RedisConf, *pgorm.MysqlConfig, *minio.Config) {
+func ParseConfig(saConfParser, redisConfParser, mysqlConfParser, minioConfParaser parser) (*SaConfig, *predis.RedisConf, *pgorm.MysqlConfig, *MinioConfig) {
 	saConfig := new(SaConfig)
 	plog.PanicError(saConfParser(saConfig))
 
@@ -33,7 +50,7 @@ func ParseConfig(saConfParser, redisConfParser, mysqlConfParser, minioConfParase
 	mysqlConf := new(pgorm.MysqlConfig)
 	plog.PanicError(mysqlConfParser(mysqlConf))
 
-	minioConf := new(minio.Config)
+	minioConf := new(MinioConfig)
 	plog.PanicError(minioConfParaser(minioConf))
 
 	return saConfig, redisConf, mysqlConf, minioConf
