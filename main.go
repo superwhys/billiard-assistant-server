@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/go-puzzles/pgorm"
-	"github.com/go-puzzles/predis"
 	"github.com/go-puzzles/puzzles/cores"
 	"github.com/go-puzzles/puzzles/pflags"
+	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
+	"github.com/go-puzzles/puzzles/predis"
 	"github.com/superwhys/snooker-assistant-server/api"
 	"github.com/superwhys/snooker-assistant-server/models"
 	"github.com/superwhys/snooker-assistant-server/pkg/dal"
@@ -42,7 +42,6 @@ func main() {
 
 	saServer := server.NewSaServer(saConfig, db, redisClient, minioClient)
 	engine := api.SetupRouter(redisClient, saServer)
-	cores.NewPuzzleCore()
 	srv := cores.NewPuzzleCore(
 		cores.WithService(pflags.GetServiceName()),
 		httppuzzle.WithCoreHttpCORS(),

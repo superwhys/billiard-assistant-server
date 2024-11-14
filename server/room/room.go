@@ -3,7 +3,7 @@ package roomSrv
 import (
 	"context"
 
-	"github.com/go-puzzles/predis"
+	"github.com/go-puzzles/puzzles/predis"
 	"github.com/pkg/errors"
 	"github.com/superwhys/snooker-assistant-server/domain/room"
 	"github.com/superwhys/snooker-assistant-server/pkg/exception"

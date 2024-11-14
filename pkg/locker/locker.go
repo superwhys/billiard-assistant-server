@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-puzzles/predis"
+	"github.com/go-puzzles/puzzles/predis"
 )
 
 const (

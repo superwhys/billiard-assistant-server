@@ -11,8 +11,8 @@ package api
 import (
 	"net/http"
 	
-	"github.com/go-puzzles/pgin"
-	"github.com/go-puzzles/predis"
+	"github.com/go-puzzles/puzzles/pgin"
+	"github.com/go-puzzles/puzzles/predis"
 	"github.com/superwhys/snooker-assistant-server/api/handler"
 	"github.com/superwhys/snooker-assistant-server/api/middlewares"
 	"github.com/superwhys/snooker-assistant-server/pkg/token"

@@ -11,8 +11,8 @@ package models
 import (
 	"errors"
 
-	"github.com/go-puzzles/pgorm"
-	"github.com/go-puzzles/predis"
+	"github.com/go-puzzles/puzzles/pgorm"
+	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/plog"
 )
 

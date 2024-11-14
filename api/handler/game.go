@@ -12,7 +12,7 @@ import (
 	"context"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-puzzles/pgin"
+	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/pkg/errors"
 	"github.com/superwhys/snooker-assistant-server/api/middlewares"
 	"github.com/superwhys/snooker-assistant-server/pkg/exception"

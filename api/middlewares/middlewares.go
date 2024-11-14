@@ -7,7 +7,7 @@ import (
 	"reflect"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-puzzles/pgin"
+	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"

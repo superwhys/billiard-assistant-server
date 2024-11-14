@@ -13,7 +13,7 @@ import (
 	"mime/multipart"
 	"os"
 
-	"github.com/go-puzzles/predis"
+	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/gorilla/websocket"
@@ -307,7 +307,7 @@ func (s *SaServer) StartGame(ctx context.Context, userId, roomId int) error {
 		return err
 	}
 
-	// TODO: game init
+	// game init
 	gs, err := game.NewGameStrategy(currentGame.GetGameType())
 	payload := gs.SetupGame(currentGame.GetGameConfig())
 

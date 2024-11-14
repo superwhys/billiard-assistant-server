@@ -5,7 +5,7 @@ import (
 	"strconv"
 	
 	"github.com/gin-gonic/gin"
-	"github.com/go-puzzles/pgin"
+	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
