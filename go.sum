@@ -74,8 +74,8 @@ github.com/go-puzzles/pgorm v1.0.4 h1:xc0YTbxP0beBcE4iuv7Tm32QFINlhvCEN218tsDibL
 github.com/go-puzzles/pgorm v1.0.4/go.mod h1:cKMOiMQKSgv5TyT387PmeOJ53mDBEmHFr+JxORGR+K4=
 github.com/go-puzzles/predis v1.0.3 h1:hl/tpHLuREnc7+9BI7BNH3Mj+UkDmX5Mv0teBkTxKBY=
 github.com/go-puzzles/predis v1.0.3/go.mod h1:XIPf71PNW88s12mOHZrj0taJit58E6szmjVYNUxVYXk=
-github.com/go-puzzles/puzzles v1.0.21 h1:WZee2R5p9aK46g8/z6l/hHHu09bRPjZByTQa/hmf1zI=
-github.com/go-puzzles/puzzles v1.0.21/go.mod h1:SgZRDA8js5FYvN9ByqhUacudF1suZmzU684eTTqci+w=
+github.com/go-puzzles/puzzles v1.0.24 h1:t4dszZe5yK5mco/3KxPLJaM58KJTxPO+JiQCtKQj2b4=
+github.com/go-puzzles/puzzles v1.0.24/go.mod h1:SgZRDA8js5FYvN9ByqhUacudF1suZmzU684eTTqci+w=
 github.com/go-sql-driver/mysql v1.6.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
 github.com/go-sql-driver/mysql v1.7.0/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9S1MCJN5yJMI=
 github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
@@ -118,6 +118,8 @@ github.com/gorilla/securecookie v1.1.2/go.mod h1:NfCASbcHqRSY+3a8tlWJwsQap2VX5pw
 github.com/gorilla/sessions v1.1.1/go.mod h1:8KCfur6+4Mqcc6S0FEfKuN15Vl5MgXW92AE8ovaJD0w=
 github.com/gorilla/sessions v1.4.0 h1:kpIYOp/oi6MG/p5PgxApU8srsSw9tuFbt46Lt7auzqQ=
 github.com/gorilla/sessions v1.4.0/go.mod h1:FLWm50oby91+hl7p/wRxDth9bWSuk0qVL2emc7lT5ik=
+github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
+github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/hashicorp/consul/api v1.30.0 h1:ArHVMMILb1nQv8vZSGIwwQd2gtc+oSQZ6CalyiyH2XQ=
 github.com/hashicorp/consul/api v1.30.0/go.mod h1:B2uGchvaXVW2JhFoS8nqTxMD5PBykr4ebY4JWHTTeLM=
 github.com/hashicorp/consul/sdk v0.16.1 h1:V8TxTnImoPD5cj0U9Spl0TUxcytjcbbJeADFF07KdHg=

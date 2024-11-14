@@ -1,9 +1,31 @@
 package game
 
+import (
+	"fmt"
+
+	"github.com/superwhys/snooker-assistant-server/domain/shared"
+)
+
 type Game struct {
 	GameId     int
-	GameType   SaGameType
+	GameType   shared.SaGameType
 	GameConfig *Config
+}
+
+func (c *Game) GetGameId() int {
+	return c.GameId
+}
+
+func (c *Game) GetGameConfig() shared.BaseGameConfig {
+	return c.GameConfig
+}
+
+func (c *Game) GetMaxPlayers() int {
+	return c.GameConfig.MaxPlayers
+}
+
+func (c *Game) GetGameType() shared.SaGameType {
+	return c.GameType
 }
 
 type Config struct {
@@ -15,23 +37,21 @@ func (c *Config) GetMaxPlayers() int {
 	return c.MaxPlayers
 }
 
-type SaGameType int
+type IGameStrategy interface {
+	SetupGame(g shared.BaseGameConfig) []any
+	HandleAction()
+}
 
-const (
-	ChineseEightBall SaGameType = iota
-	Snooker
-	YunDing
-)
+var strategyFactory = make(map[shared.SaGameType]IGameStrategy)
 
-func (gt SaGameType) String() string {
-	switch gt {
-	case ChineseEightBall:
-		return "中式八球"
-	case Snooker:
-		return "斯诺克"
-	case YunDing:
-		return "云顶之弈"
-	default:
-		return "未知"
+func RegisterStrategy(gt shared.SaGameType, strategy IGameStrategy) {
+	strategyFactory[gt] = strategy
+}
+
+func NewGameStrategy(gameType shared.SaGameType) (IGameStrategy, error) {
+	strategy, ok := strategyFactory[gameType]
+	if !ok {
+		return nil, fmt.Errorf("No strategy registered for the given game type: %v", gameType)
 	}
+	return strategy, nil
 }

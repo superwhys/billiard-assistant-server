@@ -16,11 +16,14 @@ import (
 	"github.com/go-puzzles/predis"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/putils"
+	"github.com/gorilla/websocket"
 	"github.com/superwhys/snooker-assistant-server/domain/game"
 	"github.com/superwhys/snooker-assistant-server/domain/notice"
 	"github.com/superwhys/snooker-assistant-server/domain/room"
+	"github.com/superwhys/snooker-assistant-server/domain/session"
 	"github.com/superwhys/snooker-assistant-server/domain/user"
 	"github.com/superwhys/snooker-assistant-server/models"
+	"github.com/superwhys/snooker-assistant-server/pkg/events"
 	"github.com/superwhys/snooker-assistant-server/pkg/exception"
 	"github.com/superwhys/snooker-assistant-server/pkg/oss/minio"
 	"github.com/superwhys/snooker-assistant-server/server/dto"
@@ -37,11 +40,13 @@ import (
 )
 
 type SaServer struct {
-	avatarDir string
-	UserSrv   user.IUserService
-	GameSrv   game.IGameService
-	RoomSrv   room.IRoomService
-	NoticeSrv notice.INoticeService
+	avatarDir  string
+	UserSrv    user.IUserService
+	GameSrv    game.IGameService
+	RoomSrv    room.IRoomService
+	NoticeSrv  notice.INoticeService
+	SessionSrv session.ISessionService
+	EventBus   *events.EventBus
 }
 
 func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient, minioClient *minio.MinioOss) *SaServer {
@@ -55,13 +60,18 @@ func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient, 
 	roomRepo := roomDal.NewRoomRepo(db)
 	noticeRepo := noticeDal.NewNoticeRepo(db)
 
-	return &SaServer{
+	s := &SaServer{
 		avatarDir: conf.AvatarDir,
+		EventBus:  events.NewEventBus(),
 		UserSrv:   userSrv.NewUserService(userRepo, minioClient),
 		GameSrv:   gameSrv.NewGameService(gameRepo, userRepo),
 		RoomSrv:   roomSrv.NewRoomService(roomRepo, redis),
 		NoticeSrv: noticeSrv.NewNoticeService(noticeRepo),
 	}
+
+	s.setupEventsSubscription()
+
+	return s
 }
 
 func (s *SaServer) Login(ctx context.Context, username string, pwd string) (*dto.User, error) {
@@ -235,20 +245,24 @@ func (s *SaServer) DeleteRoom(ctx context.Context, userId int, roomId int) error
 }
 
 func (s *SaServer) EnterGameRoom(ctx context.Context, userId int, roomId int) error {
-	err := s.RoomSrv.EnterGameRoom(ctx, userId, roomId)
+	enterUser, err := s.RoomSrv.EnterGameRoom(ctx, userId, roomId)
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return err
 	}
 
+	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, enterUser))
+
 	return nil
 }
 
 func (s *SaServer) LeaveGameRoom(ctx context.Context, userId int, roomId int) error {
-	if err := s.RoomSrv.QuitGameRoom(ctx, userId, roomId); err != nil {
+	if _, err := s.RoomSrv.QuitGameRoom(ctx, userId, roomId); err != nil {
 		plog.Errorc(ctx, "leave game room error: %v", err)
 		return err
 	}
+
+	s.EventBus.Publish(room.NewLeaveRoomEvent(userId, roomId))
 
 	return nil
 }
@@ -261,4 +275,42 @@ func (s *SaServer) GetGameRoom(ctx context.Context, roomId int) (*dto.GameRoom, 
 	}
 
 	return dto.GameRoomEntityToDto(r), nil
+}
+
+func (s *SaServer) CreateRoomSession(ctx context.Context, userId, roomId int, conn *websocket.Conn) (*session.Session, error) {
+	sess, err := s.SessionSrv.CreateSession(ctx, userId, roomId, conn)
+	if err != nil {
+		plog.Errorc(ctx, "register room session error: %v", err)
+		return nil, err
+	}
+
+	s.SessionSrv.StartSession(sess)
+
+	return sess, nil
+}
+
+func (s *SaServer) PrepareGame(ctx context.Context, userId, roomId int) error {
+	err := s.RoomSrv.PrepareGame(ctx, userId, roomId)
+	if err != nil {
+		plog.Errorc(ctx, "prepare game error: %v", err)
+		return err
+	}
+
+	s.EventBus.Publish(room.NewPrepareEvent(userId, roomId))
+	return nil
+}
+
+func (s *SaServer) StartGame(ctx context.Context, userId, roomId int) error {
+	currentGame, err := s.RoomSrv.StartGame(ctx, userId, roomId)
+	if err != nil {
+		plog.Errorc(ctx, "start game error: %v", err)
+		return err
+	}
+
+	// TODO: game init
+	gs, err := game.NewGameStrategy(currentGame.GetGameType())
+	payload := gs.SetupGame(currentGame.GetGameConfig())
+
+	s.EventBus.Publish(room.NewGameStartEvent(roomId, payload))
+	return nil
 }

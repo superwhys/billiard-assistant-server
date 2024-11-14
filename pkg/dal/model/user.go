@@ -21,7 +21,7 @@ type UserPo struct {
 	Avatar string `gorm:"type:varchar(255)"`
 	Status user.Status
 	Role   user.Role
-	Rooms  []*RoomPo `gorm:"many2many:user_rooms;"`
+	Rooms  []*RoomPo `gorm:"many2many:room_users;"`
 
 	CreatedAt   time.Time
 	UpdatedAt   time.Time

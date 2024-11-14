@@ -17,32 +17,35 @@ import (
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
-		db:       db,
-		GamePo:   newGamePo(db, opts...),
-		NoticePo: newNoticePo(db, opts...),
-		RoomPo:   newRoomPo(db, opts...),
-		UserPo:   newUserPo(db, opts...),
+		db:         db,
+		GamePo:     newGamePo(db, opts...),
+		NoticePo:   newNoticePo(db, opts...),
+		RoomPo:     newRoomPo(db, opts...),
+		RoomUserPo: newRoomUserPo(db, opts...),
+		UserPo:     newUserPo(db, opts...),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	GamePo   gamePo
-	NoticePo noticePo
-	RoomPo   roomPo
-	UserPo   userPo
+	GamePo     gamePo
+	NoticePo   noticePo
+	RoomPo     roomPo
+	RoomUserPo roomUserPo
+	UserPo     userPo
 }
 
 func (q *Query) Available() bool { return q.db != nil }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:       db,
-		GamePo:   q.GamePo.clone(db),
-		NoticePo: q.NoticePo.clone(db),
-		RoomPo:   q.RoomPo.clone(db),
-		UserPo:   q.UserPo.clone(db),
+		db:         db,
+		GamePo:     q.GamePo.clone(db),
+		NoticePo:   q.NoticePo.clone(db),
+		RoomPo:     q.RoomPo.clone(db),
+		RoomUserPo: q.RoomUserPo.clone(db),
+		UserPo:     q.UserPo.clone(db),
 	}
 }
 
@@ -56,27 +59,30 @@ func (q *Query) WriteDB() *Query {
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
-		db:       db,
-		GamePo:   q.GamePo.replaceDB(db),
-		NoticePo: q.NoticePo.replaceDB(db),
-		RoomPo:   q.RoomPo.replaceDB(db),
-		UserPo:   q.UserPo.replaceDB(db),
+		db:         db,
+		GamePo:     q.GamePo.replaceDB(db),
+		NoticePo:   q.NoticePo.replaceDB(db),
+		RoomPo:     q.RoomPo.replaceDB(db),
+		RoomUserPo: q.RoomUserPo.replaceDB(db),
+		UserPo:     q.UserPo.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	GamePo   IGamePoDo
-	NoticePo INoticePoDo
-	RoomPo   IRoomPoDo
-	UserPo   IUserPoDo
+	GamePo     IGamePoDo
+	NoticePo   INoticePoDo
+	RoomPo     IRoomPoDo
+	RoomUserPo IRoomUserPoDo
+	UserPo     IUserPoDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		GamePo:   q.GamePo.WithContext(ctx),
-		NoticePo: q.NoticePo.WithContext(ctx),
-		RoomPo:   q.RoomPo.WithContext(ctx),
-		UserPo:   q.UserPo.WithContext(ctx),
+		GamePo:     q.GamePo.WithContext(ctx),
+		NoticePo:   q.NoticePo.WithContext(ctx),
+		RoomPo:     q.RoomPo.WithContext(ctx),
+		RoomUserPo: q.RoomUserPo.WithContext(ctx),
+		UserPo:     q.UserPo.WithContext(ctx),
 	}
 }
 

@@ -1,15 +1,16 @@
 module github.com/superwhys/snooker-assistant-server
 
-go 1.23.2
+go 1.23.3
 
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-puzzles/pgin v1.0.12
 	github.com/go-puzzles/pgorm v1.0.4
 	github.com/go-puzzles/predis v1.0.3
-	github.com/go-puzzles/puzzles v1.0.21
+	github.com/go-puzzles/puzzles v1.0.24
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/minio/minio-go/v7 v7.0.80
 	github.com/pkg/errors v0.9.1
 	golang.org/x/crypto v0.28.0

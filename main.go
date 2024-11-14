@@ -42,6 +42,7 @@ func main() {
 
 	saServer := server.NewSaServer(saConfig, db, redisClient, minioClient)
 	engine := api.SetupRouter(redisClient, saServer)
+	cores.NewPuzzleCore()
 	srv := cores.NewPuzzleCore(
 		cores.WithService(pflags.GetServiceName()),
 		httppuzzle.WithCoreHttpCORS(),

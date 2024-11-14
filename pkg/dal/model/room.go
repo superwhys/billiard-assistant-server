@@ -7,6 +7,18 @@ import (
 	"gorm.io/gorm"
 )
 
+type RoomUserPo struct {
+	UserID    int  `gorm:"primaryKey"`
+	RoomID    int  `gorm:"primaryKey"`
+	Prepared  bool `gorm:"default:false"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (ur *RoomUserPo) TableName() string {
+	return "room_users"
+}
+
 type RoomPo struct {
 	ID     int `gorm:"primarykey"`
 	GameID int
@@ -15,7 +27,7 @@ type RoomPo struct {
 	OwnerID int
 	Owner   *UserPo `gorm:"foreignKey:OwnerID"`
 
-	Users []*UserPo `gorm:"many2many:user_rooms;"`
+	Users []*UserPo `gorm:"many2many:room_users;"`
 
 	GameStatus    room.Status
 	WinLoseStatus room.WinLoseStatus
@@ -41,13 +53,12 @@ func (r *RoomPo) FromEntity(gr *room.Room) *RoomPo {
 
 func (r *RoomPo) ToEntity() *room.Room {
 	players := make([]room.Player, 0, len(r.Users))
-	for _, u := range r.Users {
-		players = append(players, u.ToEntity())
-	}
 
-	var gameConfig room.Game
-	if r.Game != nil {
-		gameConfig = r.Game.ToEntity().GameConfig
+	for _, u := range r.Users {
+		players = append(players, room.Player{
+			User:     u.ToEntity(),
+			Prepared: false,
+		})
 	}
 
 	return &room.Room{
@@ -55,7 +66,7 @@ func (r *RoomPo) ToEntity() *room.Room {
 		GameId:        r.GameID,
 		OwnerId:       r.OwnerID,
 		Players:       players,
-		Game:          gameConfig,
+		Game:          r.Game.ToEntity(),
 		GameStatus:    r.GameStatus,
 		WinLoseStatus: r.WinLoseStatus,
 	}

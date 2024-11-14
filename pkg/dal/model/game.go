@@ -2,18 +2,19 @@ package model
 
 import (
 	"time"
-	
+
 	"github.com/superwhys/snooker-assistant-server/domain/game"
+	"github.com/superwhys/snooker-assistant-server/domain/shared"
 	"gorm.io/gorm"
 )
 
 type GamePo struct {
 	ID int `gorm:"primarykey"`
-	
+
 	MaxPlayers  int
-	GameType    game.SaGameType
+	GameType    shared.SaGameType
 	Description string `gorm:"type:text"`
-	
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

@@ -59,3 +59,11 @@ type LeaveGameRoomRequest struct {
 type GetUserGameRoomsResp struct {
 	Rooms []*GameRoom `json:"rooms"`
 }
+
+type PrepareGameRequest struct {
+	RoomId int `json:"room_id"`
+}
+
+type StartGameRequest struct {
+	RoomId int `json:"room_id"`
+}

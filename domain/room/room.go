@@ -8,12 +8,23 @@
 
 package room
 
-type Game interface {
-	GetMaxPlayers() int
+import (
+	"github.com/superwhys/snooker-assistant-server/domain/shared"
+)
+
+type User interface {
+	shared.BaseUser
 }
 
-type Player interface {
-	GetUserId() int
+type Game interface {
+	shared.BaseGame
+	GetMaxPlayers() int
+	GetGameType() shared.SaGameType
+}
+
+type Player struct {
+	User
+	Prepared bool
 }
 
 type Room struct {
@@ -36,6 +47,38 @@ func (r *Room) PlayerIds() []int {
 		ids[i] = p.GetUserId()
 	}
 	return ids
+}
+
+func (r *Room) CanStart() bool {
+	for _, p := range r.Players {
+		if !p.Prepared {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (r *Room) CanEnter() bool {
+	return len(r.Players) < r.Game.GetMaxPlayers()
+}
+
+func (r *Room) IsOwner(userId int) bool {
+	return r.OwnerId == userId
+}
+
+func (r *Room) IsInRoom(userId int) bool {
+	for _, p := range r.Players {
+		if p.GetUserId() == userId {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *Room) StartGame() {
+	r.GameStatus = Playing
 }
 
 type WinLoseStatus int
@@ -63,12 +106,15 @@ func (gt WinLoseStatus) String() string {
 type Status int
 
 const (
-	Playing Status = iota
+	Preparing Status = iota
+	Playing
 	Finish
 )
 
 func (s Status) String() string {
 	switch s {
+	case Preparing:
+		return "准备中"
 	case Playing:
 		return "进行中"
 	case Finish:

@@ -27,6 +27,7 @@ func main() {
 		model.GamePo{},
 		model.RoomPo{},
 		model.NoticePo{},
+		model.RoomUserPo{},
 	)
 	
 	g.Execute()

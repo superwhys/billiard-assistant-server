@@ -3,7 +3,7 @@ package userDal
 import (
 	"context"
 	"errors"
-	
+
 	"github.com/superwhys/snooker-assistant-server/domain/user"
 	"github.com/superwhys/snooker-assistant-server/pkg/dal/base"
 	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
@@ -14,69 +14,76 @@ import (
 var _ user.IUserRepo = (*UserRepoImpl)(nil)
 
 type UserRepoImpl struct {
-	db *base.UserDB
+	db *base.Query
 }
 
 func NewUserRepo(db *gorm.DB) *UserRepoImpl {
-	return &UserRepoImpl{base.NewUserDB(db)}
+	return &UserRepoImpl{base.Use(db)}
 }
 
 func (u *UserRepoImpl) CreateUser(ctx context.Context, user *user.User) error {
 	up := new(model.UserPo)
 	up.FromEntity(user)
-	return u.db.WithContext(ctx).Create(up)
+
+	userDb := u.db.UserPo
+	return userDb.WithContext(ctx).Create(up)
 }
 
 func (u *UserRepoImpl) DeleteUser(ctx context.Context, userId int) error {
-	_, err := u.db.WithContext(ctx).Where(u.db.ID.Eq(userId)).Delete()
+	userDb := u.db.UserPo
+	_, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).Delete()
 	return err
 }
 
 func (u *UserRepoImpl) UpdateUser(ctx context.Context, user *user.User) error {
 	up := new(model.UserPo)
 	up.FromEntity(user)
-	
-	_, err := u.db.WithContext(ctx).Where(u.db.ID.Eq(up.ID)).Updates(up)
+
+	userDb := u.db.UserPo
+	_, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(up.ID)).Updates(up)
 	return err
 }
 
 func (u *UserRepoImpl) GetUserById(ctx context.Context, userId int) (*user.User, error) {
-	usr, err := u.db.WithContext(ctx).
-		Where(u.db.ID.Eq(userId)).
+	userDb := u.db.UserPo
+	usr, err := userDb.WithContext(ctx).
+		Where(userDb.ID.Eq(userId)).
 		First()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, exception.ErrUserNotFound
 	} else if err != nil {
 		return nil, err
 	}
-	
+
 	return usr.ToEntity(), nil
 }
 
 func (u *UserRepoImpl) GetUserByName(ctx context.Context, username string) (*user.User, error) {
-	usr, err := u.db.WithContext(ctx).
-		Where(u.db.Name.Eq(username)).
+	userDb := u.db.UserPo
+	usr, err := userDb.WithContext(ctx).
+		Where(userDb.Name.Eq(username)).
 		First()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, exception.ErrUserNotFound
 	} else if err != nil {
 		return nil, err
 	}
-	
+
 	return usr.ToEntity(), nil
 }
 
 func (u *UserRepoImpl) GetUserWithRoomById(ctx context.Context, userId int) (*user.User, error) {
-	usr, err := u.db.WithContext(ctx).
-		Preload(u.db.Rooms).
-		Preload(u.db.Rooms.Game).
-		Where(u.db.ID.Eq(userId)).
+	userDb := u.db.UserPo
+	usr, err := userDb.WithContext(ctx).
+		Preload(userDb.Rooms).
+		Preload(userDb.Rooms.Game).
+		Where(userDb.ID.Eq(userId)).
 		First()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, exception.ErrUserNotFound
 	} else if err != nil {
 		return nil, err
 	}
-	
+
 	return usr.ToEntity(), nil
 }

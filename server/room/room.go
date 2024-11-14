@@ -39,7 +39,7 @@ func (r *RoomService) DeleteGameRoom(ctx context.Context, roomId, userId int) er
 		return errors.Wrapf(err, "getGameRoom: %d", roomId)
 	}
 
-	if ro.OwnerId != userId {
+	if !ro.IsOwner(userId) {
 		return exception.ErrRoomOwnerNotMatch
 	}
 
@@ -54,25 +54,25 @@ func (r *RoomService) UpdateGameRoomStatus(ctx context.Context, gameRoom *room.R
 	return nil
 }
 
-func (r *RoomService) EnterGameRoom(ctx context.Context, userId, roomId int) error {
+func (r *RoomService) EnterGameRoom(ctx context.Context, userId, roomId int) (room.User, error) {
 	if err := r.locker.Lock(roomId); err != nil {
-		return errors.Wrap(err, "lock room")
+		return nil, errors.Wrap(err, "lock room")
 	}
 	defer r.locker.Unlock(roomId)
 
 	room, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {
-		return errors.Wrapf(err, "getRoom: %d", roomId)
+		return nil, errors.Wrapf(err, "getRoom: %d", roomId)
 	}
 
-	if room.Game.GetMaxPlayers() >= len(room.Players) {
-		return exception.ErrGameRoomFull
+	if !room.CanEnter() {
+		return nil, exception.ErrGameRoomFull
 	}
 
 	return r.roomRepo.AddUserToRoom(ctx, userId, roomId)
 }
 
-func (r *RoomService) QuitGameRoom(ctx context.Context, userId, roomId int) error {
+func (r *RoomService) QuitGameRoom(ctx context.Context, userId, roomId int) (room.User, error) {
 	return r.roomRepo.RemoveUserFromRoom(ctx, userId, roomId)
 }
 
@@ -82,4 +82,44 @@ func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int) ([]*room
 
 func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {
 	return r.roomRepo.GetRoomById(ctx, roomId)
+}
+
+func (r *RoomService) PrepareGame(ctx context.Context, userId, roomId int) error {
+	ro, err := r.roomRepo.GetRoomById(ctx, roomId)
+	if err != nil {
+		return errors.Wrapf(err, "getRoom: %d", roomId)
+	}
+
+	if !ro.IsInRoom(userId) {
+		return exception.ErrUserNotInRoom
+	}
+
+	return r.roomRepo.UpdatePlayerPrepared(ctx, userId, roomId, true)
+}
+
+func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (room.Game, error) {
+	if err := r.locker.Lock(roomId); err != nil {
+		return nil, errors.Wrap(err, "lock room")
+	}
+	defer r.locker.Unlock(roomId)
+
+	ro, err := r.roomRepo.GetRoomById(ctx, roomId)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getRoom: %d", roomId)
+	}
+
+	if ro.IsOwner(userId) {
+		return nil, exception.ErrNotRoomOwner
+	}
+
+	if !ro.CanStart() {
+		return nil, exception.ErrPlayerNotReady
+	}
+
+	ro.StartGame()
+	if err := r.roomRepo.UpdateRoom(ctx, ro); err != nil {
+		return nil, errors.Wrap(err, "update room status")
+	}
+
+	return ro.Game, nil
 }

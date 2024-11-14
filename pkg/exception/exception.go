@@ -40,6 +40,12 @@ var (
 	ErrGetGameRoom     = NewSaException(400, "获取游戏房间失败")
 
 	ErrGetNoticeList = NewSaException(400, "获取通知列表失败")
+
+	ErrUserNotInRoom  = NewSaException(400, "用户不在房间内")
+	ErrNotRoomOwner   = NewSaException(400, "不是房主")
+	ErrPlayerNotReady = NewSaException(400, "有玩家未准备")
+	ErrPrepareGame    = NewSaException(400, "准备游戏失败")
+	ErrStartGame      = NewSaException(400, "开始游戏失败")
 )
 
 type SaException struct {

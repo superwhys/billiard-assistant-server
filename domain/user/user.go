@@ -6,6 +6,12 @@ type Room interface {
 	GetRoomId() int
 }
 
+type BaseInfo struct {
+	Email  string
+	Phone  string
+	Avatar string
+}
+
 type User struct {
 	UserId      int
 	Name        string
@@ -18,14 +24,20 @@ type User struct {
 	LastLoginAt time.Time
 }
 
-type BaseInfo struct {
-	Email  string
-	Phone  string
-	Avatar string
-}
-
 func (u *User) GetUserId() int {
 	return u.UserId
+}
+
+func (u *User) GetName() string {
+	return u.Name
+}
+
+func (u *User) GetAvatar() string {
+	if u.UserInfo == nil {
+		return ""
+	}
+
+	return u.UserInfo.Avatar
 }
 
 func (u *User) IsAdmin() bool {
