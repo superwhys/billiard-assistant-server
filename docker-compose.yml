@@ -7,10 +7,20 @@ services:
     image: billiard-server:latest
     restart: always
     container_name: billiard-server 
-    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - 29920:29920
+    networks:
+      - yong-network
     command:
       - ./server
       - --useRemoteConfig
     logging:
       options:
         max-size: 100m
+
+networks:
+  yong-network:
+    external: true
+    name: yong-network
