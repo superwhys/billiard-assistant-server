@@ -7,6 +7,7 @@ package base
 import (
 	"context"
 
+	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -15,8 +16,6 @@ import (
 	"gorm.io/gen/field"
 
 	"gorm.io/plugin/dbresolver"
-
-	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
 )
 
 func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
@@ -29,8 +28,6 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 	_userPo.ALL = field.NewAsterisk(tableName)
 	_userPo.ID = field.NewInt(tableName, "id")
 	_userPo.Name = field.NewString(tableName, "name")
-	_userPo.Password = field.NewString(tableName, "password")
-	_userPo.WechatId = field.NewString(tableName, "wechat_id")
 	_userPo.Email = field.NewString(tableName, "email")
 	_userPo.Phone = field.NewString(tableName, "phone")
 	_userPo.Avatar = field.NewString(tableName, "avatar")
@@ -38,8 +35,13 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 	_userPo.Role = field.NewInt(tableName, "role")
 	_userPo.CreatedAt = field.NewTime(tableName, "created_at")
 	_userPo.UpdatedAt = field.NewTime(tableName, "updated_at")
-	_userPo.LastLoginAt = field.NewTime(tableName, "last_login_at")
 	_userPo.DeletedAt = field.NewField(tableName, "deleted_at")
+	_userPo.UserAuthPos = userPoHasManyUserAuthPos{
+		db: db.Session(&gorm.Session{}),
+
+		RelationField: field.NewRelation("UserAuthPos", "model.UserAuthPo"),
+	}
+
 	_userPo.Rooms = userPoManyToManyRooms{
 		db: db.Session(&gorm.Session{}),
 
@@ -51,11 +53,19 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 		},
 		Owner: struct {
 			field.RelationField
+			UserAuthPos struct {
+				field.RelationField
+			}
 			Rooms struct {
 				field.RelationField
 			}
 		}{
 			RelationField: field.NewRelation("Rooms.Owner", "model.UserPo"),
+			UserAuthPos: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("Rooms.Owner.UserAuthPos", "model.UserAuthPo"),
+			},
 			Rooms: struct {
 				field.RelationField
 			}{
@@ -80,8 +90,6 @@ type userPo struct {
 	ALL         field.Asterisk
 	ID          field.Int
 	Name        field.String
-	Password    field.String
-	WechatId    field.String
 	Email       field.String
 	Phone       field.String
 	Avatar      field.String
@@ -89,9 +97,10 @@ type userPo struct {
 	Role        field.Int
 	CreatedAt   field.Time
 	UpdatedAt   field.Time
-	LastLoginAt field.Time
 	DeletedAt   field.Field
-	Rooms       userPoManyToManyRooms
+	UserAuthPos userPoHasManyUserAuthPos
+
+	Rooms userPoManyToManyRooms
 
 	fieldMap map[string]field.Expr
 }
@@ -110,8 +119,6 @@ func (u *userPo) updateTableName(table string) *userPo {
 	u.ALL = field.NewAsterisk(table)
 	u.ID = field.NewInt(table, "id")
 	u.Name = field.NewString(table, "name")
-	u.Password = field.NewString(table, "password")
-	u.WechatId = field.NewString(table, "wechat_id")
 	u.Email = field.NewString(table, "email")
 	u.Phone = field.NewString(table, "phone")
 	u.Avatar = field.NewString(table, "avatar")
@@ -119,7 +126,6 @@ func (u *userPo) updateTableName(table string) *userPo {
 	u.Role = field.NewInt(table, "role")
 	u.CreatedAt = field.NewTime(table, "created_at")
 	u.UpdatedAt = field.NewTime(table, "updated_at")
-	u.LastLoginAt = field.NewTime(table, "last_login_at")
 	u.DeletedAt = field.NewField(table, "deleted_at")
 
 	u.fillFieldMap()
@@ -145,11 +151,9 @@ func (u *userPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *userPo) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 14)
+	u.fieldMap = make(map[string]field.Expr, 12)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["name"] = u.Name
-	u.fieldMap["password"] = u.Password
-	u.fieldMap["wechat_id"] = u.WechatId
 	u.fieldMap["email"] = u.Email
 	u.fieldMap["phone"] = u.Phone
 	u.fieldMap["avatar"] = u.Avatar
@@ -157,7 +161,6 @@ func (u *userPo) fillFieldMap() {
 	u.fieldMap["role"] = u.Role
 	u.fieldMap["created_at"] = u.CreatedAt
 	u.fieldMap["updated_at"] = u.UpdatedAt
-	u.fieldMap["last_login_at"] = u.LastLoginAt
 	u.fieldMap["deleted_at"] = u.DeletedAt
 
 }
@@ -172,6 +175,77 @@ func (u userPo) replaceDB(db *gorm.DB) userPo {
 	return u
 }
 
+type userPoHasManyUserAuthPos struct {
+	db *gorm.DB
+
+	field.RelationField
+}
+
+func (a userPoHasManyUserAuthPos) Where(conds ...field.Expr) *userPoHasManyUserAuthPos {
+	if len(conds) == 0 {
+		return &a
+	}
+
+	exprs := make([]clause.Expression, 0, len(conds))
+	for _, cond := range conds {
+		exprs = append(exprs, cond.BeCond().(clause.Expression))
+	}
+	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
+	return &a
+}
+
+func (a userPoHasManyUserAuthPos) WithContext(ctx context.Context) *userPoHasManyUserAuthPos {
+	a.db = a.db.WithContext(ctx)
+	return &a
+}
+
+func (a userPoHasManyUserAuthPos) Session(session *gorm.Session) *userPoHasManyUserAuthPos {
+	a.db = a.db.Session(session)
+	return &a
+}
+
+func (a userPoHasManyUserAuthPos) Model(m *model.UserPo) *userPoHasManyUserAuthPosTx {
+	return &userPoHasManyUserAuthPosTx{a.db.Model(m).Association(a.Name())}
+}
+
+type userPoHasManyUserAuthPosTx struct{ tx *gorm.Association }
+
+func (a userPoHasManyUserAuthPosTx) Find() (result []*model.UserAuthPo, err error) {
+	return result, a.tx.Find(&result)
+}
+
+func (a userPoHasManyUserAuthPosTx) Append(values ...*model.UserAuthPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Append(targetValues...)
+}
+
+func (a userPoHasManyUserAuthPosTx) Replace(values ...*model.UserAuthPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Replace(targetValues...)
+}
+
+func (a userPoHasManyUserAuthPosTx) Delete(values ...*model.UserAuthPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Delete(targetValues...)
+}
+
+func (a userPoHasManyUserAuthPosTx) Clear() error {
+	return a.tx.Clear()
+}
+
+func (a userPoHasManyUserAuthPosTx) Count() int64 {
+	return a.tx.Count()
+}
+
 type userPoManyToManyRooms struct {
 	db *gorm.DB
 
@@ -182,6 +256,9 @@ type userPoManyToManyRooms struct {
 	}
 	Owner struct {
 		field.RelationField
+		UserAuthPos struct {
+			field.RelationField
+		}
 		Rooms struct {
 			field.RelationField
 		}

@@ -7,6 +7,7 @@ package base
 import (
 	"context"
 
+	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -15,8 +16,6 @@ import (
 	"gorm.io/gen/field"
 
 	"gorm.io/plugin/dbresolver"
-
-	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
 )
 
 func newGamePo(db *gorm.DB, opts ...gen.DOOption) gamePo {

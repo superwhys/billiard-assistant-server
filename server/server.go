@@ -10,9 +10,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"math/rand"
 	"mime/multipart"
 	"os"
+	"time"
 
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/predis"
@@ -42,13 +45,14 @@ import (
 )
 
 type SaServer struct {
-	avatarDir  string
-	UserSrv    user.IUserService
-	GameSrv    game.IGameService
-	RoomSrv    room.IRoomService
-	NoticeSrv  notice.INoticeService
-	SessionSrv session.ISessionService
-	EventBus   *events.EventBus
+	avatarDir   string
+	redisClient *predis.RedisClient
+	UserSrv     user.IUserService
+	GameSrv     game.IGameService
+	RoomSrv     room.IRoomService
+	NoticeSrv   notice.INoticeService
+	SessionSrv  session.ISessionService
+	EventBus    *events.EventBus
 }
 
 func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient, minioClient *minio.MinioOss) *SaServer {
@@ -63,12 +67,13 @@ func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient, 
 	noticeRepo := noticeDal.NewNoticeRepo(db)
 
 	s := &SaServer{
-		avatarDir: conf.AvatarDir,
-		EventBus:  events.NewEventBus(),
-		UserSrv:   userSrv.NewUserService(userRepo, minioClient),
-		GameSrv:   gameSrv.NewGameService(gameRepo, userRepo),
-		RoomSrv:   roomSrv.NewRoomService(roomRepo, redis),
-		NoticeSrv: noticeSrv.NewNoticeService(noticeRepo),
+		avatarDir:   conf.AvatarDir,
+		redisClient: redis,
+		EventBus:    events.NewEventBus(),
+		UserSrv:     userSrv.NewUserService(userRepo, minioClient),
+		GameSrv:     gameSrv.NewGameService(gameRepo, userRepo),
+		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis),
+		NoticeSrv:   noticeSrv.NewNoticeService(noticeRepo),
 	}
 
 	s.setupEventsSubscription()
@@ -79,7 +84,7 @@ func NewSaServer(conf *models.SaConfig, db *gorm.DB, redis *predis.RedisClient, 
 func (s *SaServer) Login(ctx context.Context, username string, pwd string) (*dto.User, error) {
 	u, err := s.UserSrv.Login(ctx, username, pwd)
 	if err != nil {
-		plog.Errorf("login error: %v", err)
+		plog.Errorc(ctx, "login error: %v", err)
 		return nil, err
 	}
 
@@ -89,13 +94,13 @@ func (s *SaServer) Login(ctx context.Context, username string, pwd string) (*dto
 func (s *SaServer) WechatLogin(ctx context.Context, code string) (*dto.User, *wechat.WechatSessionKeyResponse, error) {
 	wxSessionKey, err := wechat.GetSessionKey(ctx, code)
 	if err != nil {
-		plog.Errorf("get session key error: %v", err)
+		plog.Errorc(ctx, "get session key error: %v", err)
 		return nil, nil, exception.ErrLoginFailed
 	}
 
 	u, err := s.UserSrv.WechatLogin(ctx, wxSessionKey)
 	if err != nil {
-		plog.Errorf("wechat login error: %v", err)
+		plog.Errorc(ctx, "wechat login error: %v", err)
 		return nil, nil, err
 	}
 
@@ -103,17 +108,7 @@ func (s *SaServer) WechatLogin(ctx context.Context, code string) (*dto.User, *we
 }
 
 func (s *SaServer) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error) {
-	u := &user.User{
-		Name:     req.Username,
-		Password: req.Password,
-		WechatId: req.WechatId,
-		UserInfo: &user.BaseInfo{
-			Phone: req.Phone,
-			Email: req.Email,
-		},
-		Role: user.RoleUser,
-	}
-	err := s.UserSrv.Register(ctx, u)
+	u, err := s.UserSrv.Register(ctx, req.Username, req.Password)
 	if err != nil {
 		plog.Errorc(ctx, "create user error: %v", err)
 		return nil, err
@@ -122,25 +117,22 @@ func (s *SaServer) Register(ctx context.Context, req *dto.RegisterRequest) (*dto
 	return dto.UserEntityToDto(u), nil
 }
 
-func (s *SaServer) UpdateUser(ctx context.Context, userId int, update *dto.UpdateUserRequest) error {
+func (s *SaServer) UpdateUser(ctx context.Context, userId int, update *dto.UpdateUserRequest) (*dto.User, error) {
 	u := &user.User{
-		UserId:   userId,
-		Name:     update.Username,
-		Password: update.Password,
+		UserId: userId,
+		Name:   update.Username,
 		UserInfo: &user.BaseInfo{
 			Avatar: update.AvatarUrl,
-			Phone:  update.Phone,
-			Email:  update.Email,
 		},
 	}
 
-	err := s.UserSrv.UpdateUser(ctx, u)
+	user, err := s.UserSrv.UpdateUser(ctx, u)
 	if err != nil {
 		plog.Errorc(ctx, "update user info error: %v", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return dto.UserEntityToDto(user), nil
 }
 
 func (s *SaServer) UploadAvatar(ctx context.Context, userId int, file *multipart.FileHeader) (string, error) {
@@ -341,4 +333,102 @@ func (s *SaServer) StartGame(ctx context.Context, userId, roomId int) error {
 
 	s.EventBus.Publish(room.NewGameStartEvent(roomId, payload))
 	return nil
+}
+
+func (s *SaServer) BindPhone(ctx context.Context, userId int, phone, code string) error {
+	if err := s.verifyPhoneCode(ctx, phone, code); err != nil {
+		return err
+	}
+
+	u := &user.User{
+		UserId: userId,
+		UserInfo: &user.BaseInfo{
+			Phone: phone,
+		},
+	}
+	if _, err := s.UserSrv.UpdateUser(ctx, u); err != nil {
+		return err
+	}
+
+	auth := &user.UserAuth{
+		UserId:     userId,
+		AuthType:   user.AuthTypePhone,
+		Identifier: phone,
+	}
+	if err := s.UserSrv.CreateUserAuth(ctx, userId, auth); err != nil {
+		plog.Errorc(ctx, "create phone auth error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *SaServer) BindEmail(ctx context.Context, userId int, email, code string) error {
+	if err := s.verifyEmailCode(ctx, email, code); err != nil {
+		return err
+	}
+
+	u := &user.User{
+		UserId: userId,
+		UserInfo: &user.BaseInfo{
+			Email: email,
+		},
+	}
+	if _, err := s.UserSrv.UpdateUser(ctx, u); err != nil {
+		return err
+	}
+
+	auth := &user.UserAuth{
+		UserId:     userId,
+		AuthType:   user.AuthTypeEmail,
+		Identifier: email,
+	}
+	if err := s.UserSrv.CreateUserAuth(ctx, userId, auth); err != nil {
+		plog.Errorc(ctx, "create email auth error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *SaServer) SendPhoneCode(ctx context.Context, phone string) error {
+	code := s.generateVerificationCode()
+	expireAt := time.Now().Add(5 * time.Minute)
+
+	key := fmt.Sprintf("phone_code:%s", phone)
+	if err := s.redisClient.SetWithTTL(key, code, 5*time.Minute); err != nil {
+		plog.Errorc(ctx, "save phone code error: %v", err)
+		return exception.ErrSendPhoneCode
+	}
+
+	s.EventBus.Publish(user.NewSendPhoneCodeEvent(phone, code, expireAt))
+	return nil
+}
+
+func (s *SaServer) SendEmailCode(ctx context.Context, email string) error {
+	code := s.generateVerificationCode()
+	expireAt := time.Now().Add(5 * time.Minute)
+
+	key := fmt.Sprintf("email_code:%s", email)
+	if err := s.redisClient.SetWithTTL(key, code, 5*time.Minute); err != nil {
+		plog.Errorc(ctx, "save email code error: %v", err)
+		return exception.ErrSendEmailCode
+	}
+
+	s.EventBus.Publish(user.NewSendEmailCodeEvent(email, code, expireAt))
+	return nil
+}
+
+func (s *SaServer) verifyPhoneCode(ctx context.Context, phone, code string) error {
+	// TODO: verify phone code
+	panic("verify phone code")
+}
+
+func (s *SaServer) verifyEmailCode(ctx context.Context, email, code string) error {
+	// TODO: verify email code
+	panic("verify email code")
+}
+
+func (s *SaServer) generateVerificationCode() string {
+	return fmt.Sprintf("%06d", rand.Intn(1000000))
 }

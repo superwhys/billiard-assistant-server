@@ -22,6 +22,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		NoticePo:   newNoticePo(db, opts...),
 		RoomPo:     newRoomPo(db, opts...),
 		RoomUserPo: newRoomUserPo(db, opts...),
+		UserAuthPo: newUserAuthPo(db, opts...),
 		UserPo:     newUserPo(db, opts...),
 	}
 }
@@ -33,6 +34,7 @@ type Query struct {
 	NoticePo   noticePo
 	RoomPo     roomPo
 	RoomUserPo roomUserPo
+	UserAuthPo userAuthPo
 	UserPo     userPo
 }
 
@@ -45,6 +47,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		NoticePo:   q.NoticePo.clone(db),
 		RoomPo:     q.RoomPo.clone(db),
 		RoomUserPo: q.RoomUserPo.clone(db),
+		UserAuthPo: q.UserAuthPo.clone(db),
 		UserPo:     q.UserPo.clone(db),
 	}
 }
@@ -64,6 +67,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		NoticePo:   q.NoticePo.replaceDB(db),
 		RoomPo:     q.RoomPo.replaceDB(db),
 		RoomUserPo: q.RoomUserPo.replaceDB(db),
+		UserAuthPo: q.UserAuthPo.replaceDB(db),
 		UserPo:     q.UserPo.replaceDB(db),
 	}
 }
@@ -73,6 +77,7 @@ type queryCtx struct {
 	NoticePo   INoticePoDo
 	RoomPo     IRoomPoDo
 	RoomUserPo IRoomUserPoDo
+	UserAuthPo IUserAuthPoDo
 	UserPo     IUserPoDo
 }
 
@@ -82,6 +87,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		NoticePo:   q.NoticePo.WithContext(ctx),
 		RoomPo:     q.RoomPo.WithContext(ctx),
 		RoomUserPo: q.RoomUserPo.WithContext(ctx),
+		UserAuthPo: q.UserAuthPo.WithContext(ctx),
 		UserPo:     q.UserPo.WithContext(ctx),
 	}
 }

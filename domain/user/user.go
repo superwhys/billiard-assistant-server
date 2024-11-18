@@ -1,27 +1,36 @@
 package user
 
-import "time"
-
 type Room interface {
 	GetRoomId() int
 }
 
 type BaseInfo struct {
-	Email  string
-	Phone  string
-	Avatar string
+	Email    string
+	Phone    string
+	Avatar   string
+	Password string
+}
+
+type UserAuth struct {
+	Id       int
+	UserId   int
+	AuthType AuthType
+	// username or phone or wechatId or email
+	Identifier string
+	// password or something else (can be empty)
+	Credential string
 }
 
 type User struct {
-	UserId      int
-	Name        string
-	Password    string
-	WechatId    string
-	Status      Status
-	UserInfo    *BaseInfo
-	Role        Role
-	Rooms       []Room
-	LastLoginAt time.Time
+	UserId    int
+	Name      string
+	UserAuths []*UserAuth
+	UserInfo  *BaseInfo
+
+	Status Status
+	Role   Role
+
+	Rooms []Room
 }
 
 func (u *User) GetUserId() int {
@@ -58,4 +67,14 @@ const (
 	RoleUnknown Role = iota
 	RoleUser
 	RoleAdmin
+)
+
+type AuthType int
+
+const (
+	AuthTypeUnknown AuthType = iota
+	AuthTypeWechat
+	AuthTypeEmail
+	AuthTypePhone
+	AuthTypePassword
 )

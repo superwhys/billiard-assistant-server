@@ -8,6 +8,7 @@ import (
 func AllTables() []pgorm.SqlModel {
 	return []pgorm.SqlModel{
 		&model.UserPo{},
+		&model.UserAuthPo{},
 		&model.RoomPo{},
 		&model.GamePo{},
 		&model.NoticePo{},

@@ -86,7 +86,6 @@ func (m *SaMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl token.T
 
 	return func(c *gin.Context) {
 		tokenStr := c.GetHeader(headerKey)
-		plog.Debugc(c, "request header token: %s", tokenStr)
 
 		var nt token.Token
 		if tokenStr != "" {

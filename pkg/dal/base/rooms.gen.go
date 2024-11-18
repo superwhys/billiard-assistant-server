@@ -7,6 +7,7 @@ package base
 import (
 	"context"
 
+	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -15,8 +16,6 @@ import (
 	"gorm.io/gen/field"
 
 	"gorm.io/plugin/dbresolver"
-
-	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
 )
 
 func newRoomPo(db *gorm.DB, opts ...gen.DOOption) roomPo {
@@ -45,6 +44,11 @@ func newRoomPo(db *gorm.DB, opts ...gen.DOOption) roomPo {
 		db: db.Session(&gorm.Session{}),
 
 		RelationField: field.NewRelation("Owner", "model.UserPo"),
+		UserAuthPos: struct {
+			field.RelationField
+		}{
+			RelationField: field.NewRelation("Owner.UserAuthPos", "model.UserAuthPo"),
+		},
 		Rooms: struct {
 			field.RelationField
 			Game struct {
@@ -250,6 +254,9 @@ type roomPoBelongsToOwner struct {
 
 	field.RelationField
 
+	UserAuthPos struct {
+		field.RelationField
+	}
 	Rooms struct {
 		field.RelationField
 		Game struct {

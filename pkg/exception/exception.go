@@ -23,6 +23,7 @@ var (
 	ErrUploadAvatar       = NewSaException(400, "上传头像失败")
 	ErrGetAvatar          = NewSaException(400, "获取头像失败")
 	ErrLoginFailed        = NewSaException(400, "登录失败")
+	ErrUserAuthNotFound   = NewSaException(404, "用户认证信息不存在")
 
 	ErrCreateGame   = NewSaException(400, "创建游戏失败")
 	ErrDeleteGame   = NewSaException(400, "删除游戏失败")
@@ -47,6 +48,13 @@ var (
 	ErrPlayerNotReady = NewSaException(400, "有玩家未准备")
 	ErrPrepareGame    = NewSaException(400, "准备游戏失败")
 	ErrStartGame      = NewSaException(400, "开始游戏失败")
+
+	ErrBindPhone = NewSaException(400, "绑定手机号失败")
+	ErrBindEmail = NewSaException(400, "绑定邮箱失败")
+
+	ErrSendPhoneCode = NewSaException(400, "发送手机验证码失败")
+	ErrSendEmailCode = NewSaException(400, "发送邮箱验证码失败")
+	ErrVerifyCode    = NewSaException(400, "验证码错误或已过期")
 )
 
 type SaException struct {

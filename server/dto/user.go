@@ -10,28 +10,42 @@ package dto
 
 import (
 	"errors"
-	"time"
 
 	"github.com/superwhys/snooker-assistant-server/domain/user"
 )
 
 type User struct {
-	UserId      int       `json:"user_id"`
-	Name        string    `json:"name"`
-	WechatId    string    `json:"wechat_id,omitempty"`
-	Email       string    `json:"email"`
-	Phone       string    `json:"phone"`
-	Avatar      string    `json:"avatar"`
-	Status      int       `json:"status,omitempty"`
-	LastLoginAt time.Time `json:"last_login_at,omitempty"`
+	UserId    int    `json:"user_id"`
+	Name      string `json:"name"`
+	WechatId  string `json:"wechat_id,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Phone     string `json:"phone,omitempty"`
+	Avatar    string `json:"avatar,omitempty"`
+	Status    int    `json:"status,omitempty"`
+	Role      int    `json:"role,omitempty"`
+	AuthTypes []int  `json:"auth_types,omitempty"`
+	IsAdmin   bool   `json:"is_admin,omitempty"`
 }
 
 func UserEntityToDto(u *user.User) *User {
+	var wechatId string
+	var authTypes []int
+
+	for _, auth := range u.UserAuths {
+		authTypes = append(authTypes, int(auth.AuthType))
+		if auth.AuthType == user.AuthTypeWechat {
+			wechatId = auth.Identifier
+		}
+	}
+
 	user := &User{
-		UserId:   u.UserId,
-		Name:     u.Name,
-		WechatId: u.WechatId,
-		Status:   int(u.Status),
+		UserId:    u.UserId,
+		Name:      u.Name,
+		WechatId:  wechatId,
+		Status:    int(u.Status),
+		Role:      int(u.Role),
+		AuthTypes: authTypes,
+		IsAdmin:   u.IsAdmin(),
 	}
 
 	if u.UserInfo != nil {
@@ -44,17 +58,27 @@ func UserEntityToDto(u *user.User) *User {
 }
 
 func UserDtoToEntity(u *User) *user.User {
-	return &user.User{
-		UserId:   u.UserId,
-		Name:     u.Name,
-		WechatId: u.WechatId,
+	userEntity := &user.User{
+		UserId: u.UserId,
+		Name:   u.Name,
 		UserInfo: &user.BaseInfo{
 			Email:  u.Email,
 			Phone:  u.Phone,
 			Avatar: u.Avatar,
 		},
 		Status: user.Status(u.Status),
+		Role:   user.Role(u.Role),
 	}
+
+	if u.WechatId != "" {
+		userEntity.UserAuths = append(userEntity.UserAuths, &user.UserAuth{
+			UserId:     u.UserId,
+			AuthType:   user.AuthTypeWechat,
+			Identifier: u.WechatId,
+		})
+	}
+
+	return userEntity
 }
 
 type WechatLoginRequest struct {
@@ -110,10 +134,7 @@ type GetUserInfoResponse struct {
 
 type UpdateUserRequest struct {
 	Username  string `json:"username"`
-	Password  string `json:"password"`
 	AvatarUrl string `json:"avatar_url"`
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
 }
 
 type UploadAvatarResponse struct {
@@ -122,4 +143,22 @@ type UploadAvatarResponse struct {
 
 type GetUserAvatarRequest struct {
 	AvatarName string `uri:"avatar_name"`
+}
+
+type BindPhoneRequest struct {
+	Phone string `json:"phone" binding:"required"`
+	Code  string `json:"code" binding:"required"`
+}
+
+type BindEmailRequest struct {
+	Email string `json:"email" binding:"required"`
+	Code  string `json:"code" binding:"required"`
+}
+
+type SendPhoneCodeRequest struct {
+	Phone string `json:"phone" binding:"required"`
+}
+
+type SendEmailCodeRequest struct {
+	Email string `json:"email" binding:"required"`
 }
