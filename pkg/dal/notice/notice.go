@@ -3,8 +3,8 @@ package noticeDal
 import (
 	"context"
 	
-	"github.com/superwhys/billiard-assistant-server/domain/notice"
-	"github.com/superwhys/billiard-assistant-server/pkg/dal/base"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
 	"gorm.io/gorm"
 )
 

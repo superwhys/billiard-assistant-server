@@ -15,11 +15,11 @@ import (
 	"mime/multipart"
 	
 	"github.com/pkg/errors"
-	"github.com/superwhys/billiard-assistant-server/domain/user"
-	"github.com/superwhys/billiard-assistant-server/pkg/exception"
-	"github.com/superwhys/billiard-assistant-server/pkg/oss"
-	"github.com/superwhys/billiard-assistant-server/pkg/password"
-	"github.com/superwhys/billiard-assistant-server/pkg/wechat"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/password"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 )
 
 var _ user.IUserService = (*UserService)(nil)

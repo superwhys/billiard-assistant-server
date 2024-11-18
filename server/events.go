@@ -9,11 +9,11 @@
 package server
 
 import (
-	"github.com/superwhys/billiard-assistant-server/domain/room"
-	"github.com/superwhys/billiard-assistant-server/domain/session"
-	"github.com/superwhys/billiard-assistant-server/domain/user"
-	"github.com/superwhys/billiard-assistant-server/pkg/events"
-	"github.com/superwhys/billiard-assistant-server/server/dto"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
 )
 
 func (s *BilliardServer) setupEventsSubscription() {

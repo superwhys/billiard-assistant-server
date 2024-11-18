@@ -8,7 +8,7 @@
 
 package dto
 
-import "github.com/superwhys/billiard-assistant-server/domain/room"
+import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 
 type GameRoom struct {
 	RoomId        int

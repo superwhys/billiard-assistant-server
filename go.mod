@@ -1,4 +1,4 @@
-module github.com/superwhys/billiard-assistant-server
+module gitlab.hoven.com/billiard/billiard-assistant-server
 
 go 1.23.3
 

@@ -12,7 +12,7 @@ import (
 	"context"
 	
 	"github.com/pkg/errors"
-	"github.com/superwhys/billiard-assistant-server/domain/notice"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
 )
 
 var _ notice.INoticeService = (*NoticeService)(nil)

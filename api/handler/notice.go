@@ -14,10 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/pkg/errors"
-	"github.com/superwhys/billiard-assistant-server/api/middlewares"
-	"github.com/superwhys/billiard-assistant-server/pkg/exception"
-	"github.com/superwhys/billiard-assistant-server/server"
-	"github.com/superwhys/billiard-assistant-server/server/dto"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
 )
 
 type NoticeHandlerApp interface {

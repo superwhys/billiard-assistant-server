@@ -4,10 +4,10 @@ import (
 	"context"
 	
 	"github.com/pkg/errors"
-	"github.com/superwhys/billiard-assistant-server/domain/game"
-	"github.com/superwhys/billiard-assistant-server/pkg/dal/base"
-	"github.com/superwhys/billiard-assistant-server/pkg/dal/model"
-	"github.com/superwhys/billiard-assistant-server/pkg/exception"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gorm.io/gorm"
 )
 

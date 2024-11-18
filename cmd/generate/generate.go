@@ -9,7 +9,7 @@
 package main
 
 import (
-	"github.com/superwhys/billiard-assistant-server/pkg/dal/model"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
 	"gorm.io/gen"
 )
 

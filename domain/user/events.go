@@ -3,7 +3,7 @@ package user
 import (
 	"time"
 	
-	"github.com/superwhys/billiard-assistant-server/pkg/events"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
 )
 
 type SendCodeEvent struct {

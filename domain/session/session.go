@@ -14,7 +14,7 @@ import (
 	
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/superwhys/billiard-assistant-server/pkg/events"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
 )
 
 /*

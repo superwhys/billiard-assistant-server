@@ -5,9 +5,9 @@ import (
 	
 	"github.com/go-puzzles/puzzles/predis"
 	"github.com/pkg/errors"
-	"github.com/superwhys/billiard-assistant-server/domain/room"
-	"github.com/superwhys/billiard-assistant-server/pkg/exception"
-	"github.com/superwhys/billiard-assistant-server/pkg/locker"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/locker"
 )
 
 var _ room.IRoomService = (*RoomService)(nil)

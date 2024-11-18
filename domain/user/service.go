@@ -5,7 +5,7 @@ import (
 	"io"
 	"mime/multipart"
 	
-	"github.com/superwhys/billiard-assistant-server/pkg/wechat"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 )
 
 type IUserService interface {

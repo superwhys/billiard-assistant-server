@@ -11,8 +11,8 @@ package gameSrv
 import (
 	"context"
 	
-	"github.com/superwhys/billiard-assistant-server/domain/game"
-	"github.com/superwhys/billiard-assistant-server/domain/user"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
 var _ game.IGameService = (*GameService)(nil)

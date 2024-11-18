@@ -13,10 +13,10 @@ import (
 	
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/predis"
-	"github.com/superwhys/billiard-assistant-server/api/handler"
-	"github.com/superwhys/billiard-assistant-server/api/middlewares"
-	"github.com/superwhys/billiard-assistant-server/pkg/token"
-	"github.com/superwhys/billiard-assistant-server/server"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/api/handler"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/token"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
 )
 
 type BilliardApi struct {

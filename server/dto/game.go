@@ -9,8 +9,8 @@
 package dto
 
 import (
-	"github.com/superwhys/billiard-assistant-server/domain/game"
-	"github.com/superwhys/billiard-assistant-server/domain/shared"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type Game struct {

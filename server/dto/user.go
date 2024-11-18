@@ -11,7 +11,7 @@ package dto
 import (
 	"errors"
 	
-	"github.com/superwhys/billiard-assistant-server/domain/user"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
 type User struct {

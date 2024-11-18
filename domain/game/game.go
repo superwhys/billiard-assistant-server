@@ -3,7 +3,7 @@ package game
 import (
 	"fmt"
 	
-	"github.com/superwhys/billiard-assistant-server/domain/shared"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type Game struct {
