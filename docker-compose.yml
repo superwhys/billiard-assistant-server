@@ -3,7 +3,7 @@ services:
   auth:
     build:
       args:
-        GO_PUZZLE_SERVICE: ${GO_PUZZLE_SERVICE}
+        GO_PUZZLE_SERVICE: billiard:v1.0.0 
     image: billiard-server:latest
     restart: always
     container_name: billiard-server 
@@ -11,7 +11,6 @@ services:
     command:
       - ./server
       - --useRemoteConfig
-      - --watchRemoteConfig
     logging:
       options:
         max-size: 100m
