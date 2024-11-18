@@ -13,13 +13,13 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-
+	
 	"github.com/pkg/errors"
-	"github.com/superwhys/snooker-assistant-server/domain/user"
-	"github.com/superwhys/snooker-assistant-server/pkg/exception"
-	"github.com/superwhys/snooker-assistant-server/pkg/oss"
-	"github.com/superwhys/snooker-assistant-server/pkg/password"
-	"github.com/superwhys/snooker-assistant-server/pkg/wechat"
+	"github.com/superwhys/billiard-assistant-server/domain/user"
+	"github.com/superwhys/billiard-assistant-server/pkg/exception"
+	"github.com/superwhys/billiard-assistant-server/pkg/oss"
+	"github.com/superwhys/billiard-assistant-server/pkg/password"
+	"github.com/superwhys/billiard-assistant-server/pkg/wechat"
 )
 
 var _ user.IUserService = (*UserService)(nil)
@@ -38,20 +38,20 @@ func (us *UserService) Login(ctx context.Context, username, pwd string) (*user.U
 	if err != nil {
 		return nil, errors.Wrap(err, "getUserByName")
 	}
-
+	
 	userAuth, err := us.userRepo.GetUserAuthByType(ctx, u.UserId, user.AuthTypePassword)
 	if err != nil {
 		return nil, errors.Wrap(err, "getUserAuth")
 	}
-
+	
 	if !password.CheckPasswordHash(pwd, userAuth.Credential) {
 		return nil, exception.ErrPasswordNotCorrect
 	}
-
+	
 	if u, err = us.UpdateUser(ctx, u); err != nil {
 		return nil, exception.ErrUpdateUserInfo
 	}
-
+	
 	return u, nil
 }
 
@@ -60,13 +60,13 @@ func (us *UserService) WechatLogin(ctx context.Context, wxSess *wechat.WechatSes
 	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
 		return nil, errors.Wrap(err, "GetUserByAuth")
 	}
-
+	
 	if u == nil {
 		u = &user.User{
 			Name:   wxSess.OpenID,
 			Status: user.StatusActive,
 		}
-
+		
 		ua := &user.UserAuth{
 			AuthType:   user.AuthTypeWechat,
 			Identifier: wxSess.OpenID,
@@ -76,7 +76,7 @@ func (us *UserService) WechatLogin(ctx context.Context, wxSess *wechat.WechatSes
 			return nil, errors.Wrap(err, "CreateUser")
 		}
 	}
-
+	
 	return u, nil
 }
 
@@ -88,28 +88,28 @@ func (us *UserService) Register(ctx context.Context, username, pwd string) (*use
 	if existingUser != nil {
 		return nil, exception.ErrUserAlreadyExists
 	}
-
+	
 	newUser := &user.User{
 		Name:   username,
 		Status: user.StatusActive,
 	}
-
+	
 	userAuth := &user.UserAuth{
 		AuthType:   user.AuthTypePassword,
 		Identifier: username,
 		Credential: pwd,
 	}
-
+	
 	hashPwd, err := password.HashPassword(pwd)
 	if err != nil {
 		return nil, errors.Wrap(err, "hashPassword")
 	}
 	userAuth.Credential = hashPwd
-
+	
 	if err := us.userRepo.CreateUser(ctx, newUser, userAuth); err != nil {
 		return nil, errors.Wrap(err, "createUser")
 	}
-
+	
 	return newUser, nil
 }
 
@@ -118,7 +118,7 @@ func (us *UserService) DeleteUser(ctx context.Context, userId int) error {
 	if err != nil {
 		return errors.Wrap(err, "getUserById")
 	}
-
+	
 	return us.userRepo.DeleteUser(ctx, userId)
 }
 
@@ -131,15 +131,15 @@ func (us *UserService) UpdateUser(ctx context.Context, update *user.User) (*user
 	if err != nil {
 		return nil, errors.Wrap(err, "getUserById")
 	}
-
+	
 	oldUser.Name = update.Name
 	oldUser.UserInfo = update.UserInfo
 	oldUser.Status = update.Status
-
+	
 	if err := us.userRepo.UpdateUser(ctx, oldUser); err != nil {
 		return nil, errors.Wrap(err, "updateUser")
 	}
-
+	
 	return oldUser, nil
 }
 
@@ -149,13 +149,13 @@ func (us *UserService) UploadAvatar(ctx context.Context, userId int, dest string
 		return "", err
 	}
 	defer src.Close()
-
+	
 	objName := fmt.Sprintf("%s/%s", dest, file.Filename)
 	avatarUrl, err := us.oss.UploadFile(ctx, file.Size, objName, src)
 	if err != nil {
 		return "", errors.Wrap(err, "uploadAvatar")
 	}
-
+	
 	_, err = us.UpdateUser(ctx, &user.User{
 		UserId: userId,
 		UserInfo: &user.BaseInfo{
@@ -165,7 +165,7 @@ func (us *UserService) UploadAvatar(ctx context.Context, userId int, dest string
 	if err != nil {
 		return "", errors.Wrap(err, "updateUserAvatarUrl")
 	}
-
+	
 	return avatarUrl, nil
 }
 

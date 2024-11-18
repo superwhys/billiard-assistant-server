@@ -13,35 +13,35 @@ import (
 	
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/predis"
-	"github.com/superwhys/snooker-assistant-server/api/handler"
-	"github.com/superwhys/snooker-assistant-server/api/middlewares"
-	"github.com/superwhys/snooker-assistant-server/pkg/token"
-	"github.com/superwhys/snooker-assistant-server/server"
+	"github.com/superwhys/billiard-assistant-server/api/handler"
+	"github.com/superwhys/billiard-assistant-server/api/middlewares"
+	"github.com/superwhys/billiard-assistant-server/pkg/token"
+	"github.com/superwhys/billiard-assistant-server/server"
 )
 
-type SaApi struct {
+type BilliardApi struct {
 	handler http.Handler
 }
 
-func SetupRouter(redisClient *predis.RedisClient, saServer *server.SaServer) *SaApi {
-	tokenManager := token.NewManager(redisClient, token.WithCachePrefix("Sa"))
-	saMiddleware := middlewares.NewSaMiddleware(tokenManager, saServer)
+func SetupRouter(redisClient *predis.RedisClient, server *server.BilliardServer) *BilliardApi {
+	tokenManager := token.NewManager(redisClient, token.WithCachePrefix("billiard"))
+	middleware := middlewares.NewBilliardMiddleware(tokenManager, server)
 	
 	router := pgin.NewServerHandlerWithOptions(
-		pgin.WithMiddlewares(saMiddleware.UserLoginStatMiddleware()),
+		pgin.WithMiddlewares(middleware.UserLoginStatMiddleware()),
 		pgin.WithRouters("/v1",
-			handler.NewUserHandler(saServer, saMiddleware),
-			handler.NewGameHandler(saServer, saMiddleware),
-			handler.NewRoomHandler(saServer, saMiddleware),
-			handler.NewNoticeHandler(saServer, saMiddleware),
+			handler.NewUserHandler(server, middleware),
+			handler.NewGameHandler(server, middleware),
+			handler.NewRoomHandler(server, middleware),
+			handler.NewNoticeHandler(server, middleware),
 		),
 	)
 	
-	return &SaApi{
+	return &BilliardApi{
 		handler: router,
 	}
 }
 
-func (a *SaApi) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *BilliardApi) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.handler.ServeHTTP(w, r)
 }

@@ -1,14 +1,14 @@
 package shared
 
-type SaGameType int
+type BilliardGameType int
 
 const (
-	ChineseEightBall SaGameType = iota
+	ChineseEightBall BilliardGameType = iota
 	Snooker
 	Genting
 )
 
-func (gt SaGameType) String() string {
+func (gt BilliardGameType) String() string {
 	switch gt {
 	case ChineseEightBall:
 		return "中式八球"

@@ -10,14 +10,14 @@ package handler
 
 import (
 	"context"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/pkg/errors"
-	"github.com/superwhys/snooker-assistant-server/api/middlewares"
-	"github.com/superwhys/snooker-assistant-server/pkg/exception"
-	"github.com/superwhys/snooker-assistant-server/server"
-	"github.com/superwhys/snooker-assistant-server/server/dto"
+	"github.com/superwhys/billiard-assistant-server/api/middlewares"
+	"github.com/superwhys/billiard-assistant-server/pkg/exception"
+	"github.com/superwhys/billiard-assistant-server/server"
+	"github.com/superwhys/billiard-assistant-server/server/dto"
 )
 
 type NoticeHandlerApp interface {
@@ -26,10 +26,10 @@ type NoticeHandlerApp interface {
 
 type NoticeHandler struct {
 	noticeApp  NoticeHandlerApp
-	middleware *middlewares.SaMiddleware
+	middleware *middlewares.BilliardMiddleware
 }
 
-func NewNoticeHandler(server *server.SaServer, middleware *middlewares.SaMiddleware) *NoticeHandler {
+func NewNoticeHandler(server *server.BilliardServer, middleware *middlewares.BilliardMiddleware) *NoticeHandler {
 	return &NoticeHandler{
 		noticeApp:  server,
 		middleware: middleware,
@@ -43,12 +43,12 @@ func (g *NoticeHandler) Init(router gin.IRouter) {
 
 func (g *NoticeHandler) getNoticeList(ctx *gin.Context) (*dto.GetNoticeListResp, error) {
 	notices, err := g.noticeApp.GetNoticeList(ctx)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrGetNoticeList
 	}
-
+	
 	return &dto.GetNoticeListResp{
 		Notices: notices,
 	}, nil

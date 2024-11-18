@@ -7,7 +7,7 @@ package base
 import (
 	"context"
 
-	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
+	"github.com/superwhys/billiard-assistant-server/pkg/dal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"

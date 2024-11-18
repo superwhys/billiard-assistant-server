@@ -2,8 +2,8 @@ package model
 
 import (
 	"time"
-
-	"github.com/superwhys/snooker-assistant-server/domain/user"
+	
+	"github.com/superwhys/billiard-assistant-server/domain/user"
 	"gorm.io/gorm"
 )
 
@@ -15,10 +15,10 @@ type UserPo struct {
 	Avatar string `gorm:"type:varchar(255)"`
 	Status user.Status
 	Role   user.Role
-
+	
 	Rooms       []*RoomPo     `gorm:"many2many:room_users;"`
 	UserAuthPos []*UserAuthPo `gorm:"constraint:OnDelete:CASCADE;"`
-
+	
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -30,12 +30,12 @@ func (u *UserPo) TableName() string {
 
 type UserAuthPo struct {
 	ID int `gorm:"primaryKey"`
-
+	
 	UserPoID   int `gorm:"index"`
 	AuthType   user.AuthType
 	Identifier string `gorm:"size:255;uniqueIndex:idx_auth_type_identifier"`
 	Credential string `gorm:"size:255"`
-
+	
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -50,10 +50,10 @@ func (u *UserPo) FromEntity(ue *user.User) *UserPo {
 	for _, ua := range ue.UserAuths {
 		uap := new(UserAuthPo)
 		uap.FromEntity(ua)
-
+		
 		uas = append(uas, uap)
 	}
-
+	
 	u.ID = ue.UserId
 	u.Name = ue.Name
 	u.UserAuthPos = uas
@@ -64,7 +64,7 @@ func (u *UserPo) FromEntity(ue *user.User) *UserPo {
 		u.Phone = ue.UserInfo.Phone
 		u.Avatar = ue.UserInfo.Avatar
 	}
-
+	
 	return u
 }
 
@@ -73,12 +73,12 @@ func (u *UserPo) ToEntity() *user.User {
 	for _, room := range u.Rooms {
 		rooms = append(rooms, room.ToEntity())
 	}
-
+	
 	var uas []*user.UserAuth
 	for _, ua := range u.UserAuthPos {
 		uas = append(uas, ua.ToEntity())
 	}
-
+	
 	return &user.User{
 		UserId:    u.ID,
 		Name:      u.Name,

@@ -2,9 +2,9 @@ package noticeDal
 
 import (
 	"context"
-
-	"github.com/superwhys/snooker-assistant-server/domain/notice"
-	"github.com/superwhys/snooker-assistant-server/pkg/dal/base"
+	
+	"github.com/superwhys/billiard-assistant-server/domain/notice"
+	"github.com/superwhys/billiard-assistant-server/pkg/dal/base"
 	"gorm.io/gorm"
 )
 
@@ -23,11 +23,11 @@ func (n NoticeRepoImpl) GetNotices(ctx context.Context) ([]*notice.Notice, error
 	if err != nil {
 		return nil, err
 	}
-
+	
 	var ret []*notice.Notice
 	for _, notice := range noticeList {
 		ret = append(ret, notice.ToEntity())
 	}
-
+	
 	return ret, nil
 }

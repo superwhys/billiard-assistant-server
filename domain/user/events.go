@@ -2,8 +2,8 @@ package user
 
 import (
 	"time"
-
-	"github.com/superwhys/snooker-assistant-server/pkg/events"
+	
+	"github.com/superwhys/billiard-assistant-server/pkg/events"
 )
 
 type SendCodeEvent struct {

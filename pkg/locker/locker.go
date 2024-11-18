@@ -11,12 +11,12 @@ package locker
 import (
 	"fmt"
 	"time"
-
+	
 	"github.com/go-puzzles/puzzles/predis"
 )
 
 const (
-	defaultPrefix = "sa:locker"
+	defaultPrefix = "billiard:locker"
 	defaultRetry  = 3
 	defaultTTL    = time.Second * 5
 )
@@ -55,22 +55,22 @@ func NewLocker(client *predis.RedisClient, opts ...LockerOption) *Locker {
 		ttl:    defaultTTL,
 		retry:  defaultRetry,
 	}
-
+	
 	for _, opt := range opts {
 		opt(l)
 	}
-
+	
 	return l
 }
 
 func (l *Locker) Lock(key any) (err error) {
 	lockKey := fmt.Sprintf("%s:%v", l.prefix, key)
-
+	
 	return l.client.LockWithBlock(lockKey, l.retry, l.ttl)
 }
 
 func (l *Locker) Unlock(key any) (err error) {
 	lockKey := fmt.Sprintf("%s:%v", l.prefix, key)
-
+	
 	return l.client.UnLock(lockKey)
 }

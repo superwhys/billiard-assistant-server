@@ -13,16 +13,16 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/pkg/errors"
-	"github.com/superwhys/snooker-assistant-server/api/middlewares"
-	"github.com/superwhys/snooker-assistant-server/pkg/exception"
-	"github.com/superwhys/snooker-assistant-server/pkg/wechat"
-	"github.com/superwhys/snooker-assistant-server/server"
-	"github.com/superwhys/snooker-assistant-server/server/dto"
+	"github.com/superwhys/billiard-assistant-server/api/middlewares"
+	"github.com/superwhys/billiard-assistant-server/pkg/exception"
+	"github.com/superwhys/billiard-assistant-server/pkg/wechat"
+	"github.com/superwhys/billiard-assistant-server/server"
+	"github.com/superwhys/billiard-assistant-server/server/dto"
 )
 
 type UserHandlerApp interface {
@@ -40,10 +40,10 @@ type UserHandlerApp interface {
 
 type UserHandler struct {
 	userApp    UserHandlerApp
-	middleware *middlewares.SaMiddleware
+	middleware *middlewares.BilliardMiddleware
 }
 
-func NewUserHandler(server *server.SaServer, middleware *middlewares.SaMiddleware) *UserHandler {
+func NewUserHandler(server *server.BilliardServer, middleware *middlewares.BilliardMiddleware) *UserHandler {
 	return &UserHandler{
 		userApp:    server,
 		middleware: middleware,
@@ -56,7 +56,7 @@ func (u *UserHandler) Init(router gin.IRouter) {
 	user.POST("login/wx", pgin.RequestResponseHandler(u.wechatLoginHandler))
 	user.POST("register", pgin.RequestResponseHandler(u.registerHandler))
 	user.GET("avatar/:avatar_name", pgin.RequestHandler(u.getUserAvatarHandler))
-
+	
 	userAuth := router.Group("user", u.middleware.UserLoginRequired())
 	userAuth.GET("info", pgin.ResponseHandler(u.getUserInfoHandler))
 	userAuth.PUT("info/update", pgin.RequestWithErrorHandler(u.updateUserHandler))
@@ -77,14 +77,14 @@ func (u *UserHandler) getUserAvatarHandler(ctx *gin.Context, req *dto.GetUserAva
 
 func (u *UserHandler) wechatLoginHandler(ctx *gin.Context, req *dto.WechatLoginRequest) (*dto.WechatLoginResponse, error) {
 	plog.Debugc(ctx, "wechat login code: %s", req.Code)
-
+	
 	user, wxSessionKey, err := u.userApp.WechatLogin(ctx, req.Code)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrLoginFailed
 	}
-
+	
 	token := &middlewares.UserToken{
 		Uid:              user.UserId,
 		WechatId:         wxSessionKey.OpenID,
@@ -97,12 +97,12 @@ func (u *UserHandler) wechatLoginHandler(ctx *gin.Context, req *dto.WechatLoginR
 
 func (u *UserHandler) loginHandler(ctx *gin.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
 	user, err := u.userApp.Login(ctx, req.Username, req.Password)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrLoginFailed
 	}
-
+	
 	token := middlewares.NewUserToken(user.UserId, user.WechatId, user.Name)
 	u.middleware.SaveToken(token, ctx)
 	return &dto.LoginResponse{Token: token.GetKey(), User: user}, nil
@@ -110,42 +110,42 @@ func (u *UserHandler) loginHandler(ctx *gin.Context, req *dto.LoginRequest) (*dt
 
 func (u *UserHandler) registerHandler(ctx *gin.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
 	user, err := u.userApp.Register(ctx, req)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrRegisterUser
 	}
-
+	
 	return &dto.RegisterResponse{UserId: user.UserId, Username: user.Name}, nil
 }
 
 // TODO: need get info in db
 func (u *UserHandler) getUserInfoHandler(ctx *gin.Context) (*dto.User, error) {
 	user, err := u.middleware.CurrentUser(ctx)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrGetUserInfo
 	}
-
+	
 	return dto.UserEntityToDto(user), nil
 }
 
 func (u *UserHandler) updateUserHandler(ctx *gin.Context, req *dto.UpdateUserRequest) error {
 	userDomain, err := u.middleware.CurrentUser(ctx)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrGetUserInfo
 	}
-
+	
 	_, err = u.userApp.UpdateUser(ctx, userDomain.UserId, req)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrUpdateUserInfo
 	}
-
+	
 	return nil
 }
 
@@ -154,19 +154,19 @@ func (u *UserHandler) uploadAvatarHandler(ctx *gin.Context) (*dto.UploadAvatarRe
 	if err != nil {
 		return nil, err
 	}
-
+	
 	fh, err := ctx.FormFile("avatar")
 	if err != nil {
 		return nil, exception.ErrUploadAvatar
 	}
-
+	
 	avatarUrl, err := u.userApp.UploadAvatar(ctx, userId, fh)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrUploadAvatar
 	}
-
+	
 	return &dto.UploadAvatarResponse{AvatarUrl: avatarUrl}, nil
 }
 
@@ -175,14 +175,14 @@ func (u *UserHandler) bindPhoneHandler(ctx *gin.Context, req *dto.BindPhoneReque
 	if err != nil {
 		return err
 	}
-
+	
 	err = u.userApp.BindPhone(ctx, userId, req.Phone, req.Code)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrBindPhone
 	}
-
+	
 	return nil
 }
 
@@ -191,20 +191,20 @@ func (u *UserHandler) bindEmailHandler(ctx *gin.Context, req *dto.BindEmailReque
 	if err != nil {
 		return err
 	}
-
+	
 	err = u.userApp.BindEmail(ctx, userId, req.Email, req.Code)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrBindEmail
 	}
-
+	
 	return nil
 }
 
 func (u *UserHandler) sendPhoneCodeHandler(ctx *gin.Context, req *dto.SendPhoneCodeRequest) error {
 	err := u.userApp.SendPhoneCode(ctx, req.Phone)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrSendPhoneCode
@@ -214,7 +214,7 @@ func (u *UserHandler) sendPhoneCodeHandler(ctx *gin.Context, req *dto.SendPhoneC
 
 func (u *UserHandler) sendEmailCodeHandler(ctx *gin.Context, req *dto.SendEmailCodeRequest) error {
 	err := u.userApp.SendEmailCode(ctx, req.Email)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrSendEmailCode

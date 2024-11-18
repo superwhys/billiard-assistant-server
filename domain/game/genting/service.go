@@ -8,7 +8,7 @@
 
 package genting
 
-import "github.com/superwhys/snooker-assistant-server/domain/game"
+import "github.com/superwhys/billiard-assistant-server/domain/game"
 
 type IGentingService interface {
 	game.IGameStrategy

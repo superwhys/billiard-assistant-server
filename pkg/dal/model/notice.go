@@ -2,16 +2,16 @@ package model
 
 import (
 	"time"
-
-	"github.com/superwhys/snooker-assistant-server/domain/notice"
+	
+	"github.com/superwhys/billiard-assistant-server/domain/notice"
 	"gorm.io/gorm"
 )
 
 type NoticePo struct {
 	ID int `gorm:"primarykey"`
-
+	
 	Message string
-
+	
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

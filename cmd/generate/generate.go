@@ -9,7 +9,7 @@
 package main
 
 import (
-	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
+	"github.com/superwhys/billiard-assistant-server/pkg/dal/model"
 	"gorm.io/gen"
 )
 
@@ -21,7 +21,7 @@ func main() {
 		FieldNullable: true,
 		Mode:          gen.WithQueryInterface,
 	})
-
+	
 	// 直接使用模型
 	g.ApplyBasic(
 		&model.UserPo{},
@@ -31,6 +31,6 @@ func main() {
 		&model.NoticePo{},
 		&model.RoomUserPo{},
 	)
-
+	
 	g.Execute()
 }

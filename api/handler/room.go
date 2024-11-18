@@ -9,11 +9,11 @@ import (
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
-	"github.com/superwhys/snooker-assistant-server/api/middlewares"
-	"github.com/superwhys/snooker-assistant-server/domain/session"
-	"github.com/superwhys/snooker-assistant-server/pkg/exception"
-	"github.com/superwhys/snooker-assistant-server/server"
-	"github.com/superwhys/snooker-assistant-server/server/dto"
+	"github.com/superwhys/billiard-assistant-server/api/middlewares"
+	"github.com/superwhys/billiard-assistant-server/domain/session"
+	"github.com/superwhys/billiard-assistant-server/pkg/exception"
+	"github.com/superwhys/billiard-assistant-server/server"
+	"github.com/superwhys/billiard-assistant-server/server/dto"
 )
 
 type RoomApp interface {
@@ -31,11 +31,11 @@ type RoomApp interface {
 
 type RoomHandler struct {
 	roomApp           RoomApp
-	middleware        *middlewares.SaMiddleware
+	middleware        *middlewares.BilliardMiddleware
 	websocketUpgrader *websocket.Upgrader
 }
 
-func NewRoomHandler(server *server.SaServer, middleware *middlewares.SaMiddleware) *RoomHandler {
+func NewRoomHandler(server *server.BilliardServer, middleware *middlewares.BilliardMiddleware) *RoomHandler {
 	return &RoomHandler{
 		roomApp:    server,
 		middleware: middleware,
@@ -93,7 +93,7 @@ func (r *RoomHandler) websocketHandler(ctx *gin.Context) {
 
 func (r *RoomHandler) getCurrentUserId(ctx *gin.Context) (int, error) {
 	userId, err := r.middleware.CurrentUserId(ctx)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return 0, errors.Cause(err)
 	} else if err != nil {
 		plog.Errorc(ctx, "getCurrentUserId error: %v", err)
@@ -110,7 +110,7 @@ func (r *RoomHandler) createGameRoom(ctx *gin.Context, req *dto.CreateGameRoomRe
 	}
 	
 	gr, err := r.roomApp.CreateRoom(ctx, userId, req.GameId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrCreateGameRoom
@@ -126,7 +126,7 @@ func (r *RoomHandler) deleteGameRoom(ctx *gin.Context, req *dto.DeleteGameRoomRe
 	}
 	
 	err = r.roomApp.DeleteRoom(ctx, userId, req.RoomId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrDeleteGame
@@ -137,7 +137,7 @@ func (r *RoomHandler) deleteGameRoom(ctx *gin.Context, req *dto.DeleteGameRoomRe
 
 func (r *RoomHandler) getRoomInfo(ctx *gin.Context, req *dto.GetRoomRequest) (*dto.GameRoom, error) {
 	gr, err := r.roomApp.GetGameRoom(ctx, req.RoomId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrGetGameRoom
@@ -153,7 +153,7 @@ func (r *RoomHandler) updateGameRoomStatus(ctx *gin.Context, req *dto.UpdateGame
 	}
 	
 	err = r.roomApp.UpdateGameRoomStatus(ctx, userId, req)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrUpdateGameRoom
@@ -169,7 +169,7 @@ func (r *RoomHandler) enterGameRoom(ctx *gin.Context, req *dto.EnterGameRoomRequ
 	}
 	
 	err = r.roomApp.EnterGameRoom(ctx, userId, req.RoomId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrEnterGameRoom
@@ -185,7 +185,7 @@ func (r *RoomHandler) leaveGameRoom(ctx *gin.Context, req *dto.LeaveGameRoomRequ
 	}
 	
 	err = r.roomApp.LeaveGameRoom(ctx, userId, req.RoomId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrLeaveGameRoom
@@ -196,7 +196,7 @@ func (r *RoomHandler) leaveGameRoom(ctx *gin.Context, req *dto.LeaveGameRoomRequ
 
 func (r *RoomHandler) getUserGameRoom(ctx *gin.Context) (*dto.GetUserGameRoomsResp, error) {
 	userId, err := r.middleware.CurrentUserId(ctx)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		plog.Errorc(ctx, "get user game room error: %v", err)
@@ -204,7 +204,7 @@ func (r *RoomHandler) getUserGameRoom(ctx *gin.Context) (*dto.GetUserGameRoomsRe
 	}
 	
 	rooms, err := r.roomApp.GetUserGameRooms(ctx, userId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrGetGameRoomList
@@ -220,7 +220,7 @@ func (r *RoomHandler) prepareGame(ctx *gin.Context, req *dto.PrepareGameRequest)
 	}
 	
 	err = r.roomApp.PrepareGame(ctx, userId, req.RoomId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrPrepareGame
@@ -236,7 +236,7 @@ func (r *RoomHandler) startGame(ctx *gin.Context, req *dto.StartGameRequest) err
 	}
 	
 	err = r.roomApp.StartGame(ctx, userId, req.RoomId)
-	if exception.CheckSaException(err) {
+	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrStartGame

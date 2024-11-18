@@ -9,7 +9,7 @@
 package room
 
 import (
-	"github.com/superwhys/snooker-assistant-server/domain/shared"
+	"github.com/superwhys/billiard-assistant-server/domain/shared"
 )
 
 type User interface {
@@ -19,7 +19,7 @@ type User interface {
 type Game interface {
 	shared.BaseGame
 	GetMaxPlayers() int
-	GetGameType() shared.SaGameType
+	GetGameType() shared.BilliardGameType
 }
 
 type Player struct {
@@ -55,7 +55,7 @@ func (r *Room) CanStart() bool {
 			return false
 		}
 	}
-
+	
 	return true
 }
 
@@ -73,7 +73,7 @@ func (r *Room) IsInRoom(userId int) bool {
 			return true
 		}
 	}
-
+	
 	return false
 }
 

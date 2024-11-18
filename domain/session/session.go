@@ -11,10 +11,10 @@ package session
 import (
 	"context"
 	"fmt"
-
+	
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/superwhys/snooker-assistant-server/pkg/events"
+	"github.com/superwhys/billiard-assistant-server/pkg/events"
 )
 
 /*

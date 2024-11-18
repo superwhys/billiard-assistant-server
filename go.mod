@@ -1,4 +1,4 @@
-module github.com/superwhys/snooker-assistant-server
+module github.com/superwhys/billiard-assistant-server
 
 go 1.23.3
 

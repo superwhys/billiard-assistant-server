@@ -10,8 +10,8 @@ package dto
 
 import (
 	"errors"
-
-	"github.com/superwhys/snooker-assistant-server/domain/user"
+	
+	"github.com/superwhys/billiard-assistant-server/domain/user"
 )
 
 type User struct {
@@ -30,14 +30,14 @@ type User struct {
 func UserEntityToDto(u *user.User) *User {
 	var wechatId string
 	var authTypes []int
-
+	
 	for _, auth := range u.UserAuths {
 		authTypes = append(authTypes, int(auth.AuthType))
 		if auth.AuthType == user.AuthTypeWechat {
 			wechatId = auth.Identifier
 		}
 	}
-
+	
 	user := &User{
 		UserId:    u.UserId,
 		Name:      u.Name,
@@ -47,13 +47,13 @@ func UserEntityToDto(u *user.User) *User {
 		AuthTypes: authTypes,
 		IsAdmin:   u.IsAdmin(),
 	}
-
+	
 	if u.UserInfo != nil {
 		user.Email = u.UserInfo.Email
 		user.Phone = u.UserInfo.Phone
 		user.Avatar = u.UserInfo.Avatar
 	}
-
+	
 	return user
 }
 
@@ -69,7 +69,7 @@ func UserDtoToEntity(u *User) *user.User {
 		Status: user.Status(u.Status),
 		Role:   user.Role(u.Role),
 	}
-
+	
 	if u.WechatId != "" {
 		userEntity.UserAuths = append(userEntity.UserAuths, &user.UserAuth{
 			UserId:     u.UserId,
@@ -77,7 +77,7 @@ func UserDtoToEntity(u *User) *user.User {
 			Identifier: u.WechatId,
 		})
 	}
-
+	
 	return userEntity
 }
 
@@ -112,11 +112,11 @@ func (req *RegisterRequest) Validate() error {
 	if req.Username == "" {
 		return errors.New("missing account")
 	}
-
+	
 	if req.Password == "" {
 		return errors.New("missing password")
 	}
-
+	
 	return nil
 }
 

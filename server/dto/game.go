@@ -9,8 +9,8 @@
 package dto
 
 import (
-	"github.com/superwhys/snooker-assistant-server/domain/game"
-	"github.com/superwhys/snooker-assistant-server/domain/shared"
+	"github.com/superwhys/billiard-assistant-server/domain/game"
+	"github.com/superwhys/billiard-assistant-server/domain/shared"
 )
 
 type Game struct {
@@ -25,12 +25,12 @@ func GameEntityToDto(g *game.Game) *Game {
 		GameId:   g.GameId,
 		GameType: g.GameType.String(),
 	}
-
+	
 	if g.GameConfig != nil {
 		game.MaxPlayers = g.GameConfig.MaxPlayers
 		game.Desc = g.GameConfig.Desc
 	}
-
+	
 	return game
 }
 
@@ -39,9 +39,9 @@ type GetGameListResp struct {
 }
 
 type CreateGameRequest struct {
-	MaxPlayers int               `json:"max_players" binding:"required"`
-	GameType   shared.SaGameType `json:"game_type" binding:"required"`
-	Desc       string            `json:"desc"`
+	MaxPlayers int                     `json:"max_players" binding:"required"`
+	GameType   shared.BilliardGameType `json:"game_type" binding:"required"`
+	Desc       string                  `json:"desc"`
 }
 
 type DeleteGameRequest struct {

@@ -8,7 +8,7 @@
 
 package dto
 
-import "github.com/superwhys/snooker-assistant-server/domain/notice"
+import "github.com/superwhys/billiard-assistant-server/domain/notice"
 
 type Notice struct {
 	Message string

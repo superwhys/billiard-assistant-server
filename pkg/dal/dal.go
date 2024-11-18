@@ -2,7 +2,7 @@ package dal
 
 import (
 	"github.com/go-puzzles/puzzles/pgorm"
-	"github.com/superwhys/snooker-assistant-server/pkg/dal/model"
+	"github.com/superwhys/billiard-assistant-server/pkg/dal/model"
 )
 
 func AllTables() []pgorm.SqlModel {

@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
-	"github.com/superwhys/snooker-assistant-server/domain/user"
-	"github.com/superwhys/snooker-assistant-server/pkg/token"
-	"github.com/superwhys/snooker-assistant-server/server"
+	"github.com/superwhys/billiard-assistant-server/domain/user"
+	"github.com/superwhys/billiard-assistant-server/pkg/token"
+	"github.com/superwhys/billiard-assistant-server/server"
 )
 
 const (
-	tokenContextPrefix = "snooker:token"
-	tokenHeaderKey     = "X-SA-Token"
+	tokenContextPrefix = "billiard:token"
+	tokenHeaderKey     = "X-BILLIARD-Token"
 )
 
 type UserToken struct {
@@ -47,50 +47,50 @@ func (t *UserToken) GetKey() string {
 	return t.TokenId
 }
 
-type SaMiddleware struct {
+type BilliardMiddleware struct {
 	manager *token.Manager
-	server  *server.SaServer
+	server  *server.BilliardServer
 }
 
-func NewSaMiddleware(manager *token.Manager, saServer *server.SaServer) *SaMiddleware {
-	return &SaMiddleware{
+func NewBilliardMiddleware(manager *token.Manager, billiardSrv *server.BilliardServer) *BilliardMiddleware {
+	return &BilliardMiddleware{
 		manager: manager,
-		server:  saServer,
+		server:  billiardSrv,
 	}
 }
 
-func (m *SaMiddleware) getTokenContextKey(t token.Token) string {
+func (m *BilliardMiddleware) getTokenContextKey(t token.Token) string {
 	return m.getTokenContextKeyByReflect(reflect.TypeOf(t).Elem())
 }
 
-func (m *SaMiddleware) getTokenContextKeyByReflect(rt reflect.Type) string {
+func (m *BilliardMiddleware) getTokenContextKeyByReflect(rt reflect.Type) string {
 	return fmt.Sprintf("%s:%s", tokenContextPrefix, rt.Name())
 }
 
-func (m *SaMiddleware) SaveToken(t token.Token, c *gin.Context) {
+func (m *BilliardMiddleware) SaveToken(t token.Token, c *gin.Context) {
 	c.Set(m.getTokenContextKey(t), t)
 }
 
-func (m *SaMiddleware) UserLoginStatMiddleware() gin.HandlerFunc {
+func (m *BilliardMiddleware) UserLoginStatMiddleware() gin.HandlerFunc {
 	return m.headerTokenMiddleware(tokenHeaderKey, &UserToken{})
 }
 
-func (m *SaMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl token.Token) gin.HandlerFunc {
+func (m *BilliardMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl token.Token) gin.HandlerFunc {
 	t := reflect.TypeOf(tokenTmpl)
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
 		plog.Fatalf("TokenManagerMiddleware: token template should be ptr to struct")
 	}
-
+	
 	t = t.Elem()
 	tokenContextKey := m.getTokenContextKeyByReflect(t)
-
+	
 	return func(c *gin.Context) {
 		tokenStr := c.GetHeader(headerKey)
-
+		
 		var nt token.Token
 		if tokenStr != "" {
 			nt = reflect.New(t).Interface().(token.Token)
-
+			
 			err := m.manager.Read(tokenStr, nt)
 			if errors.Is(err, redis.ErrNil) {
 				nt = nil
@@ -98,21 +98,21 @@ func (m *SaMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl token.T
 				plog.Errorf("token manager read token: %v error: %v", tokenStr, err)
 			}
 		}
-
+		
 		c.Set(tokenContextKey, nt)
 		c.Next()
-
+		
 		afterProcessTokenTmp, exists := c.Get(tokenContextKey)
 		if !exists || afterProcessTokenTmp == nil {
 			return
 		}
-
+		
 		afterProcessToken, ok := afterProcessTokenTmp.(token.Token)
 		if !ok {
 			plog.Errorf("AfterProcessToken should be a Token object")
 			return
 		}
-
+		
 		if err := m.manager.Save(afterProcessToken); err != nil {
 			plog.Errorf("token manager save token: %v error: %v", afterProcessToken, err)
 			return
@@ -120,7 +120,7 @@ func (m *SaMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl token.T
 	}
 }
 
-func (m *SaMiddleware) UserLoginRequired() gin.HandlerFunc {
+func (m *BilliardMiddleware) UserLoginRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		t := m.GetLoginToken(c)
 		if t == nil {
@@ -133,46 +133,46 @@ func (m *SaMiddleware) UserLoginRequired() gin.HandlerFunc {
 	}
 }
 
-func (m *SaMiddleware) GetLoginToken(c *gin.Context) token.Token {
+func (m *BilliardMiddleware) GetLoginToken(c *gin.Context) token.Token {
 	val, exists := c.Get(m.getTokenContextKey(&UserToken{}))
 	if !exists || val == nil {
 		return nil
 	}
-
+	
 	return val.(token.Token)
 }
 
-func (m *SaMiddleware) CurrentUserId(c *gin.Context) (int, error) {
+func (m *BilliardMiddleware) CurrentUserId(c *gin.Context) (int, error) {
 	t := m.GetLoginToken(c)
-
+	
 	if t == nil {
 		return -1, errors.New("token required")
 	}
-
-	saToken, ok := t.(*UserToken)
+	
+	userToken, ok := t.(*UserToken)
 	if !ok {
 		return -1, errors.New("invalid token")
 	}
-
-	return saToken.Uid, nil
+	
+	return userToken.Uid, nil
 }
 
-func (m *SaMiddleware) CurrentUser(c *gin.Context) (*user.User, error) {
+func (m *BilliardMiddleware) CurrentUser(c *gin.Context) (*user.User, error) {
 	t := m.GetLoginToken(c)
-
+	
 	if t == nil {
 		return nil, errors.New("token required")
 	}
-
-	saToken, ok := t.(*UserToken)
+	
+	userToken, ok := t.(*UserToken)
 	if !ok {
 		return nil, errors.New("invalid token")
 	}
-
-	return m.server.UserSrv.GetUserById(c, saToken.Uid)
+	
+	return m.server.UserSrv.GetUserById(c, userToken.Uid)
 }
 
-func (m *SaMiddleware) AdminRequired() gin.HandlerFunc {
+func (m *BilliardMiddleware) AdminRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, err := m.CurrentUser(c)
 		if err != nil || !user.IsAdmin() {

@@ -2,13 +2,13 @@ package game
 
 import (
 	"fmt"
-
-	"github.com/superwhys/snooker-assistant-server/domain/shared"
+	
+	"github.com/superwhys/billiard-assistant-server/domain/shared"
 )
 
 type Game struct {
 	GameId     int
-	GameType   shared.SaGameType
+	GameType   shared.BilliardGameType
 	GameConfig *Config
 }
 
@@ -24,7 +24,7 @@ func (c *Game) GetMaxPlayers() int {
 	return c.GameConfig.MaxPlayers
 }
 
-func (c *Game) GetGameType() shared.SaGameType {
+func (c *Game) GetGameType() shared.BilliardGameType {
 	return c.GameType
 }
 
@@ -42,13 +42,13 @@ type IGameStrategy interface {
 	HandleAction()
 }
 
-var strategyFactory = make(map[shared.SaGameType]IGameStrategy)
+var strategyFactory = make(map[shared.BilliardGameType]IGameStrategy)
 
-func RegisterStrategy(gt shared.SaGameType, strategy IGameStrategy) {
+func RegisterStrategy(gt shared.BilliardGameType, strategy IGameStrategy) {
 	strategyFactory[gt] = strategy
 }
 
-func NewGameStrategy(gameType shared.SaGameType) (IGameStrategy, error) {
+func NewGameStrategy(gameType shared.BilliardGameType) (IGameStrategy, error) {
 	strategy, ok := strategyFactory[gameType]
 	if !ok {
 		return nil, fmt.Errorf("No strategy registered for the given game type: %v", gameType)

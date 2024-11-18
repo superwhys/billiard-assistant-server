@@ -10,9 +10,9 @@ package noticeSrv
 
 import (
 	"context"
-
+	
 	"github.com/pkg/errors"
-	"github.com/superwhys/snooker-assistant-server/domain/notice"
+	"github.com/superwhys/billiard-assistant-server/domain/notice"
 )
 
 var _ notice.INoticeService = (*NoticeService)(nil)
