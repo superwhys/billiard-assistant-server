@@ -24,8 +24,11 @@ const (
 type UserToken struct {
 	TokenId  string
 	Uid      int
-	WechatId string
 	Username string
+	// WechatId is openid
+	WechatId         string
+	WechatUnionId    string
+	WechatSessionKey string
 }
 
 func NewUserToken(uid int, wechatId string, username string) *UserToken {
@@ -38,6 +41,9 @@ func NewUserToken(uid int, wechatId string, username string) *UserToken {
 }
 
 func (t *UserToken) GetKey() string {
+	if t.TokenId == "" {
+		t.TokenId = uuid.New().String()
+	}
 	return t.TokenId
 }
 
@@ -80,6 +86,7 @@ func (m *SaMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl token.T
 
 	return func(c *gin.Context) {
 		tokenStr := c.GetHeader(headerKey)
+		plog.Debugc(c, "request header token: %s", tokenStr)
 
 		var nt token.Token
 		if tokenStr != "" {

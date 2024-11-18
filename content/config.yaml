@@ -1,7 +1,6 @@
 conf:
-  wxAppId: wx018d25746881635b
-  wxAppSecret: 3a3027d6cb756d73fbb448770f4d3c5e
   avatarDir: "avatar"
+  userSaApi: "https://billiard.superwhys.top/api/v1/user"
 redisAuth:
   server: localhost:6379
   db: 10
@@ -11,12 +10,15 @@ mysqlAuth:
   username: root
   password: yang4869
 minioAuth:
-  endpoint: 10.11.43.115:9000 
-  accessKey: jRdUastUrl69Nn1Zv6CZ 
-  secretKey: EooHGXHOp8CFDZlKoczzKtJ3WO8pNv9167PDuwx5
+  endpoint: minio-api 
+  accessKey: YbZOX5qJ15ZQaKUsLLpe 
+  secretKey: lBit97vxQMbye2Cf3pDcb2EFNqQeH1iNJm1DqTZH
   bucket: snooker-assistant
-
-  # endpoint: minio-api 
-  # accessKey: YbZOX5qJ15ZQaKUsLLpe 
-  # secretKey: lBit97vxQMbye2Cf3pDcb2EFNqQeH1iNJm1DqTZH
+  # endpoint: 10.11.43.115:9000 
+  # accessKey: jRdUastUrl69Nn1Zv6CZ 
+  # secretKey: EooHGXHOp8CFDZlKoczzKtJ3WO8pNv9167PDuwx5
   # bucket: snooker-assistant
+wxAppId: wx7920f25bceaf0457
+wxAppSecret: 30c97c35830bad2bb74f265f1ed83900
+
+

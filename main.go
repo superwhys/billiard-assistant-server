@@ -12,6 +12,7 @@ import (
 	"github.com/superwhys/snooker-assistant-server/pkg/oss/minio"
 	"github.com/superwhys/snooker-assistant-server/server"
 
+	consulpuzzle "github.com/go-puzzles/puzzles/cores/puzzles/consul-puzzle"
 	httppuzzle "github.com/go-puzzles/puzzles/cores/puzzles/http-puzzle"
 )
 
@@ -24,8 +25,7 @@ var (
 )
 
 func main() {
-	pflags.Parse(pflags.WithConsulEnable())
-
+	pflags.Parse()
 	saConfig, redisConf, mysqlConf, minioConf := models.ParseConfig(
 		saConfigFlag,
 		redisConfFlag,
@@ -33,7 +33,7 @@ func main() {
 		minioConfFlag,
 	)
 
-	minioClient := minio.NewMinioOss(minioConf)
+	minioClient := minio.NewMinioOss(saConfig.UserSaApi, minioConf)
 	redisClient := predis.NewRedisClient(redisConf.DialRedisPool())
 	plog.PanicError(pgorm.RegisterSqlModelWithConf(mysqlConf, dal.AllTables()...))
 	plog.PanicError(pgorm.AutoMigrate(mysqlConf))
@@ -44,6 +44,7 @@ func main() {
 	engine := api.SetupRouter(redisClient, saServer)
 	srv := cores.NewPuzzleCore(
 		cores.WithService(pflags.GetServiceName()),
+		consulpuzzle.WithConsulRegister(),
 		httppuzzle.WithCoreHttpCORS(),
 		httppuzzle.WithCoreHttpPuzzle("/api", engine),
 	)

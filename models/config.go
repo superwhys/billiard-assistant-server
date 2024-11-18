@@ -12,14 +12,13 @@ import (
 	"errors"
 
 	"github.com/go-puzzles/puzzles/pgorm"
-	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/plog"
+	"github.com/go-puzzles/puzzles/predis"
 )
 
 type SaConfig struct {
-	WxAppId     string
-	WxAppSecret string
-	AvatarDir   string
+	AvatarDir string
+	UserSaApi string
 }
 
 type MinioConfig struct {

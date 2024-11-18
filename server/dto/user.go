@@ -11,19 +11,19 @@ package dto
 import (
 	"errors"
 	"time"
-	
+
 	"github.com/superwhys/snooker-assistant-server/domain/user"
 )
 
 type User struct {
 	UserId      int       `json:"user_id"`
 	Name        string    `json:"name"`
-	WechatId    string    `json:"wechat_id"`
+	WechatId    string    `json:"wechat_id,omitempty"`
 	Email       string    `json:"email"`
 	Phone       string    `json:"phone"`
 	Avatar      string    `json:"avatar"`
-	Status      int       `json:"status"`
-	LastLoginAt time.Time `json:"last_login_at"`
+	Status      int       `json:"status,omitempty"`
+	LastLoginAt time.Time `json:"last_login_at,omitempty"`
 }
 
 func UserEntityToDto(u *user.User) *User {
@@ -33,13 +33,13 @@ func UserEntityToDto(u *user.User) *User {
 		WechatId: u.WechatId,
 		Status:   int(u.Status),
 	}
-	
+
 	if u.UserInfo != nil {
 		user.Email = u.UserInfo.Email
 		user.Phone = u.UserInfo.Phone
 		user.Avatar = u.UserInfo.Avatar
 	}
-	
+
 	return user
 }
 
@@ -57,6 +57,15 @@ func UserDtoToEntity(u *User) *user.User {
 	}
 }
 
+type WechatLoginRequest struct {
+	Code string `json:"code"`
+}
+
+type WechatLoginResponse struct {
+	Token string `json:"token"`
+	User  *User  `json:"user"`
+}
+
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -64,6 +73,7 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	Token string `json:"token"`
+	User  *User  `json:"user"`
 }
 
 type RegisterRequest struct {
@@ -78,11 +88,11 @@ func (req *RegisterRequest) Validate() error {
 	if req.Username == "" {
 		return errors.New("missing account")
 	}
-	
+
 	if req.Password == "" {
 		return errors.New("missing password")
 	}
-	
+
 	return nil
 }
 
@@ -108,4 +118,8 @@ type UpdateUserRequest struct {
 
 type UploadAvatarResponse struct {
 	AvatarUrl string `json:"avatar_url"`
+}
+
+type GetUserAvatarRequest struct {
+	AvatarName string `uri:"avatar_name"`
 }

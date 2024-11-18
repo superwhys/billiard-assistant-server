@@ -21,6 +21,7 @@ var (
 	ErrGetUserInfo        = NewSaException(400, "获取用户信息失败")
 	ErrUpdateUserInfo     = NewSaException(400, "更新用户信息失败")
 	ErrUploadAvatar       = NewSaException(400, "上传头像失败")
+	ErrGetAvatar          = NewSaException(400, "获取头像失败")
 	ErrLoginFailed        = NewSaException(400, "登录失败")
 
 	ErrCreateGame   = NewSaException(400, "创建游戏失败")

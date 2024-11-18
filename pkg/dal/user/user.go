@@ -58,6 +58,20 @@ func (u *UserRepoImpl) GetUserById(ctx context.Context, userId int) (*user.User,
 	return usr.ToEntity(), nil
 }
 
+func (u *UserRepoImpl) GetUserByWechatId(ctx context.Context, wechatId string) (*user.User, error) {
+	userDb := u.db.UserPo
+	usr, err := userDb.WithContext(ctx).
+		Where(userDb.WechatId.Eq(wechatId)).
+		First()
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, exception.ErrUserNotFound
+	} else if err != nil {
+		return nil, err
+	}
+
+	return usr.ToEntity(), nil
+}
+
 func (u *UserRepoImpl) GetUserByName(ctx context.Context, username string) (*user.User, error) {
 	userDb := u.db.UserPo
 	usr, err := userDb.WithContext(ctx).

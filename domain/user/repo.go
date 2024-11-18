@@ -9,6 +9,7 @@ type IUserRepo interface {
 	DeleteUser(ctx context.Context, userId int) error
 	UpdateUser(ctx context.Context, u *User) error
 	GetUserById(ctx context.Context, userId int) (*User, error)
+	GetUserByWechatId(ctx context.Context, wechatId string) (*User, error)
 	GetUserByName(ctx context.Context, username string) (*User, error)
 	GetUserWithRoomById(ctx context.Context, userId int) (*User, error)
 }

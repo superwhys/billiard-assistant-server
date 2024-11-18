@@ -11,6 +11,7 @@ package userSrv
 import (
 	"context"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/superwhys/snooker-assistant-server/pkg/exception"
 	"github.com/superwhys/snooker-assistant-server/pkg/oss"
 	"github.com/superwhys/snooker-assistant-server/pkg/password"
+	"github.com/superwhys/snooker-assistant-server/pkg/wechat"
 )
 
 var _ user.IUserService = (*UserService)(nil)
@@ -45,6 +47,26 @@ func (us *UserService) Login(ctx context.Context, username, pwd string) (*user.U
 	u.LastLoginAt = time.Now()
 	if err := us.UpdateUser(ctx, u); err != nil {
 		return nil, exception.ErrUpdateUserInfo
+	}
+
+	return u, nil
+}
+
+func (us *UserService) WechatLogin(ctx context.Context, wxSess *wechat.WechatSessionKeyResponse) (*user.User, error) {
+	u, err := us.userRepo.GetUserByWechatId(ctx, wxSess.OpenID)
+	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
+		return nil, errors.Wrap(err, "GetUserByWechatOpenId")
+	}
+
+	if u == nil {
+		u = &user.User{
+			Name:     wxSess.OpenID,
+			WechatId: wxSess.OpenID,
+			Status:   user.StatusActive,
+		}
+		if err := us.userRepo.CreateUser(ctx, u); err != nil {
+			return nil, errors.Wrap(err, "CreateUser")
+		}
 	}
 
 	return u, nil
@@ -127,4 +149,9 @@ func (us *UserService) UploadAvatar(ctx context.Context, userId int, dest string
 	}
 
 	return avatarUrl, nil
+}
+
+func (us *UserService) GetUserAvatar(ctx context.Context, avatarName string, dst io.Writer) error {
+	objName := fmt.Sprintf("avatar/%s", avatarName)
+	return us.oss.GetFile(ctx, objName, dst)
 }

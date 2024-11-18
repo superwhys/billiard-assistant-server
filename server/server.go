@@ -10,11 +10,12 @@ package server
 
 import (
 	"context"
+	"io"
 	"mime/multipart"
 	"os"
 
-	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/plog"
+	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/gorilla/websocket"
 	"github.com/superwhys/snooker-assistant-server/domain/game"
@@ -26,6 +27,7 @@ import (
 	"github.com/superwhys/snooker-assistant-server/pkg/events"
 	"github.com/superwhys/snooker-assistant-server/pkg/exception"
 	"github.com/superwhys/snooker-assistant-server/pkg/oss/minio"
+	"github.com/superwhys/snooker-assistant-server/pkg/wechat"
 	"github.com/superwhys/snooker-assistant-server/server/dto"
 	"gorm.io/gorm"
 
@@ -84,6 +86,22 @@ func (s *SaServer) Login(ctx context.Context, username string, pwd string) (*dto
 	return dto.UserEntityToDto(u), nil
 }
 
+func (s *SaServer) WechatLogin(ctx context.Context, code string) (*dto.User, *wechat.WechatSessionKeyResponse, error) {
+	wxSessionKey, err := wechat.GetSessionKey(ctx, code)
+	if err != nil {
+		plog.Errorf("get session key error: %v", err)
+		return nil, nil, exception.ErrLoginFailed
+	}
+
+	u, err := s.UserSrv.WechatLogin(ctx, wxSessionKey)
+	if err != nil {
+		plog.Errorf("wechat login error: %v", err)
+		return nil, nil, err
+	}
+
+	return dto.UserEntityToDto(u), wxSessionKey, nil
+}
+
 func (s *SaServer) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error) {
 	u := &user.User{
 		Name:     req.Username,
@@ -133,6 +151,16 @@ func (s *SaServer) UploadAvatar(ctx context.Context, userId int, file *multipart
 	}
 
 	return avatarUrl, nil
+}
+
+func (s *SaServer) GetAvatar(ctx context.Context, avatarName string, dst io.Writer) error {
+	err := s.UserSrv.GetUserAvatar(ctx, avatarName, dst)
+	if err != nil {
+		plog.Errorc(ctx, "get avatar error: %v", err)
+		return exception.ErrGetAvatar
+	}
+
+	return nil
 }
 
 func (s *SaServer) GetNoticeList(ctx context.Context) ([]*dto.Notice, error) {
