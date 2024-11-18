@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  auth:
+    build:
+      context: .
+      args:
+        GO_PUZZLE_SERVICE: ${GO_PUZZLE_SERVICE}
+    image: billiard-server:latest
+    restart: always
+    container_name: billiard-server 
+    network_mode: host
+    command:
+      - ./server
+      - --useRemoteConfig
+      - --watchRemoteConfig
+    logging:
+      options:
+        max-size: 100m
