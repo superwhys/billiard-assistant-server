@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -32,10 +33,12 @@ var _ oss.IOSS = (*MinioOss)(nil)
 type MinioOss struct {
 	*models.MinioConfig
 	client *minio.Client
+	saApi  string
 }
 
-func NewMinioOss(conf *models.MinioConfig) *MinioOss {
+func NewMinioOss(saApi string, conf *models.MinioConfig) *MinioOss {
 	discoverAddr := discover.GetAddress(conf.Endpoint)
+	conf.Endpoint = discoverAddr
 
 	client, err := minio.New(discoverAddr, &minio.Options{
 		Creds:  credentials.NewStaticV4(conf.AccessKey, conf.SecretKey, ""),
@@ -53,12 +56,13 @@ func NewMinioOss(conf *models.MinioConfig) *MinioOss {
 	return &MinioOss{
 		MinioConfig: conf,
 		client:      client,
+		saApi:       saApi,
 	}
 }
 
 func (m *MinioOss) checkUrl(u string) (string, error) {
-	if !strings.Contains(u, "://") {
-		u = "http://" + u
+	if !strings.Contains(u, "http://") || !strings.Contains(u, "https://") {
+		u = "https://" + u
 	}
 	url, err := url.Parse(u)
 	if err != nil {
@@ -66,7 +70,7 @@ func (m *MinioOss) checkUrl(u string) (string, error) {
 	}
 
 	if url.Scheme == "" {
-		url.Scheme = "http"
+		url.Scheme = "https"
 	}
 
 	return url.String(), nil
@@ -102,9 +106,25 @@ func (m *MinioOss) UploadFile(ctx context.Context, size int64, objName string, o
 		return "", errors.Wrap(err, "uploadMinio")
 	}
 
-	fileUrl := fmt.Sprintf("%s/%s/%s", m.Endpoint, m.Bucket, objName)
+	// https://billiard.superwhys.top/api/v1/user/avatar/1731850656800-d887240b-0177-44c7-853d-69f14b7cf874.jpeg
+	fileUrl := fmt.Sprintf("%s/%s", m.saApi, objName)
 
 	return m.checkUrl(fileUrl)
+}
+
+func (m *MinioOss) GetFile(ctx context.Context, objName string, w io.Writer) error {
+	object, err := m.client.GetObject(ctx, m.Bucket, objName, minio.GetObjectOptions{})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer object.Close()
+
+	_, err = io.Copy(w, object)
+	if err != nil {
+		return errors.Wrap(err, "getMinioObject")
+	}
+
+	return nil
 }
 
 func (m *MinioOss) DownloadFile(ctx context.Context, objName string, dest string) (filepath string, err error) {
