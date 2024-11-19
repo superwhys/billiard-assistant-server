@@ -18,10 +18,10 @@ import (
 type UserAuthPo struct {
 	ID int `gorm:"primaryKey"`
 
-	UserPoID   int `gorm:"index"`
-	AuthType   auth.AuthType
-	Identifier string `gorm:"size:255;uniqueIndex:idx_auth_type_identifier"`
-	Credential string `gorm:"size:255"`
+	UserPoID   int           `gorm:"index"`
+	AuthType   auth.AuthType `gorm:"uniqueIndex:idx_auth_type_identifier"`
+	Identifier string        `gorm:"size:255;uniqueIndex:idx_auth_type_identifier"`
+	Credential string        `gorm:"size:255"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -41,6 +41,10 @@ func (ua *UserAuthPo) FromEntity(entity *auth.Auth) {
 }
 
 func (ua *UserAuthPo) ToEntity() *auth.Auth {
+	if ua == nil {
+		return nil
+	}
+
 	return &auth.Auth{
 		Id:         ua.ID,
 		UserId:     ua.UserPoID,

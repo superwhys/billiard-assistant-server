@@ -90,13 +90,26 @@ func NewBilliardServer(conf *models.Config, db *gorm.DB, redis *predis.RedisClie
 }
 
 func (s *BilliardServer) Login(ctx context.Context, username string, pwd string) (*dto.User, error) {
-	u, err := s.UserSrv.Login(ctx, username, pwd)
-	if err != nil {
-		plog.Errorc(ctx, "login error: %v", err)
-		return nil, err
+	auth, err := s.AuthSrv.GetUserAuthByIdentifier(ctx, auth.AuthTypePassword, username)
+	if err != nil && errors.Is(err, exception.ErrUserAuthNotFound) {
+		return nil, exception.ErrUserNotFound
+	} else if err != nil {
+		plog.Errorc(ctx, "get user auth by identifier error: %v", err)
+		return nil, exception.ErrLoginFailed
 	}
 
-	return dto.UserEntityToDto(u), nil
+	if !password.CheckPasswordHash(pwd, auth.Credential) {
+		plog.Errorc(ctx, "check password error: %v", err)
+		return nil, exception.ErrPasswordNotCorrect
+	}
+
+	user, err := s.UserSrv.GetUserById(ctx, auth.UserId)
+	if err != nil {
+		plog.Errorc(ctx, "get user by id error: %v", err)
+		return nil, exception.ErrLoginFailed
+	}
+
+	return dto.UserEntityToDto(user), nil
 }
 
 func (s *BilliardServer) WechatLogin(ctx context.Context, code string) (*dto.User, *wechat.WechatSessionKeyResponse, error) {
@@ -112,10 +125,14 @@ func (s *BilliardServer) WechatLogin(ctx context.Context, code string) (*dto.Use
 		return nil, nil, exception.ErrLoginFailed
 	}
 
-	var user *user.User
+	var loginUser *user.User
+	// first login, create a new user and userAuth
 	if ua == nil {
-		userName := fmt.Sprintf("微信用户%s", wxSessionKey.OpenID)
-		user, err = s.UserSrv.Register(ctx, userName)
+		newUser := &user.User{
+			Name:   fmt.Sprintf("微信用户%s", wxSessionKey.OpenID),
+			Status: user.StatusActive,
+		}
+		loginUser, err = s.UserSrv.CreateUser(ctx, newUser)
 		if err != nil {
 			plog.Errorc(ctx, "create user error: %v", err)
 			return nil, nil, exception.ErrLoginFailed
@@ -127,39 +144,56 @@ func (s *BilliardServer) WechatLogin(ctx context.Context, code string) (*dto.Use
 			Credential: wxSessionKey.SessionKey,
 		}
 
-		if err = s.AuthSrv.CreateUserAuth(ctx, user.UserId, ua); err != nil {
+		if err = s.AuthSrv.CreateUserAuth(ctx, loginUser.UserId, ua); err != nil {
 			plog.Errorc(ctx, "create user auth error: %v", err)
 			return nil, nil, exception.ErrLoginFailed
 		}
 	} else {
-		user, err = s.UserSrv.GetUserById(ctx, ua.UserId)
+		loginUser, err = s.UserSrv.GetUserById(ctx, ua.UserId)
 		if err != nil {
 			plog.Errorc(ctx, "get user by id error: %v", err)
 			return nil, nil, exception.ErrLoginFailed
 		}
 	}
 
-	return dto.UserEntityToDto(user), wxSessionKey, nil
+	return dto.UserEntityToDto(loginUser), wxSessionKey, nil
 }
 
 func (s *BilliardServer) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error) {
-	u, err := s.UserSrv.Register(ctx, req.Username)
-	if err != nil {
-		plog.Errorc(ctx, "create user error: %v", err)
+	// check whether a same userAuth is exists
+	a, err := s.AuthSrv.GetUserAuthByIdentifier(ctx, auth.AuthTypePassword, req.Username)
+	if err != nil && !errors.Is(err, exception.ErrUserAuthNotFound) {
+		plog.Errorc(ctx, "get user auth by identifier error: %v", err)
 		return nil, err
 	}
 
-	userAuth := &auth.Auth{
-		AuthType:   auth.AuthTypePassword,
-		Identifier: req.Username,
+	if a != nil {
+		return nil, exception.ErrUserAlreadyExists
 	}
 
 	hashPwd, err := password.HashPassword(req.Password)
 	if err != nil {
 		return nil, errors.Wrap(err, "hashPassword")
 	}
-	userAuth.Credential = hashPwd
-	err = s.AuthSrv.CreateUserAuth(ctx, u.UserId, userAuth)
+
+	newUser := &user.User{
+		Name:   req.Username,
+		Status: user.StatusActive,
+	}
+
+	newAuth := &auth.Auth{
+		AuthType:   auth.AuthTypePassword,
+		Identifier: req.Username,
+		Credential: hashPwd,
+	}
+
+	u, err := s.UserSrv.CreateUser(ctx, newUser)
+	if err != nil {
+		plog.Errorc(ctx, "create user error: %v", err)
+		return nil, err
+	}
+
+	err = s.AuthSrv.CreateUserAuth(ctx, u.UserId, newAuth)
 	if err != nil {
 		plog.Errorc(ctx, "create user auth error: %v", err)
 		return nil, err
@@ -181,6 +215,20 @@ func (s *BilliardServer) UpdateUser(ctx context.Context, userId int, update *dto
 	if err != nil {
 		plog.Errorc(ctx, "update user info error: %v", err)
 		return nil, err
+	}
+
+	if update.Username != "" {
+		auth, err := s.AuthSrv.GetUserAuthByType(ctx, userId, auth.AuthTypePassword)
+		if err != nil {
+			plog.Errorc(ctx, "get user auth error: %v", err)
+			return nil, err
+		}
+
+		auth.Identifier = update.Username
+		if err := s.AuthSrv.UpdateUserAuth(ctx, auth); err != nil {
+			plog.Errorc(ctx, "update user auth identifier error: %v", err)
+			return nil, err
+		}
 	}
 
 	return dto.UserEntityToDto(user), nil

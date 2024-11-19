@@ -2,7 +2,7 @@ package model
 
 import (
 	"time"
-	
+
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gorm.io/gorm"
 )
@@ -23,15 +23,15 @@ type RoomPo struct {
 	ID     int `gorm:"primarykey"`
 	GameID int
 	Game   *GamePo
-	
+
 	OwnerID int
 	Owner   *UserPo `gorm:"foreignKey:OwnerID"`
-	
-	Users []*UserPo `gorm:"many2many:room_users;"`
-	
+
+	Users []*UserPo `gorm:"many2many:room_users;foreignKey:ID;joinForeignKey:room_id;References:ID;joinReferences:user_id"`
+
 	GameStatus    room.Status
 	WinLoseStatus room.WinLoseStatus
-	
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -45,22 +45,25 @@ func (r *RoomPo) FromEntity(gr *room.Room) *RoomPo {
 	r.ID = gr.RoomId
 	r.GameID = gr.GameId
 	r.OwnerID = gr.OwnerId
-	
+
 	r.GameStatus = gr.GameStatus
 	r.WinLoseStatus = gr.WinLoseStatus
 	return r
 }
 
 func (r *RoomPo) ToEntity() *room.Room {
+	if r == nil {
+		return nil
+	}
+
 	players := make([]room.Player, 0, len(r.Users))
-	
 	for _, u := range r.Users {
 		players = append(players, room.Player{
 			User:     u.ToEntity(),
 			Prepared: false,
 		})
 	}
-	
+
 	return &room.Room{
 		RoomId:        r.ID,
 		GameId:        r.GameID,

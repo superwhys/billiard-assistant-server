@@ -24,7 +24,6 @@ func NewAuthService(authRepo auth.IAuthRepo) auth.IAuthService {
 	return &AuthService{authRepo: authRepo}
 }
 
-// Auth management
 func (as *AuthService) CreateUserAuth(ctx context.Context, userId int, auth *auth.Auth) error {
 	return as.authRepo.CreateUserAuth(ctx, userId, auth)
 }
@@ -35,6 +34,10 @@ func (as *AuthService) UpdateUserAuth(ctx context.Context, auth *auth.Auth) erro
 
 func (as *AuthService) DeleteUserAuth(ctx context.Context, authId int) error {
 	return as.authRepo.DeleteUserAuth(ctx, authId)
+}
+
+func (as *AuthService) GetUserAuthByType(ctx context.Context, userId int, authType auth.AuthType) (*auth.Auth, error) {
+	return as.authRepo.GetUserAuthByType(ctx, userId, authType)
 }
 
 func (as *AuthService) GetUserAuths(ctx context.Context, userId int) ([]*auth.Auth, error) {

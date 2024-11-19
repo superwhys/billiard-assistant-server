@@ -183,12 +183,18 @@ func (m *BilliardMiddleware) CurrentUser(c *gin.Context) (*user.User, error) {
 func (m *BilliardMiddleware) AdminRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, err := m.CurrentUser(c)
-		if err != nil || !user.IsAdmin() {
-			c.AbortWithStatusJSON(
-				http.StatusUnauthorized,
-				pgin.ErrorRet(http.StatusUnauthorized, "admin required"),
-			)
+		if user != nil && user.IsAdmin() {
 			return
 		}
+
+		if err != nil {
+			plog.Errorf("get current user error: %v", err)
+		}
+
+		c.AbortWithStatusJSON(
+			http.StatusUnauthorized,
+			pgin.ErrorRet(http.StatusUnauthorized, "admin required"),
+		)
+		return
 	}
 }

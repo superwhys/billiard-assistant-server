@@ -7,11 +7,8 @@ import (
 )
 
 type IUserService interface {
-	// Authentication related
-	Login(ctx context.Context, username, password string) (*User, error)
-	Register(ctx context.Context, username string) (*User, error)
-
-	// Basic user operations
+	// Login(ctx context.Context, username, password string) (*User, error)
+	CreateUser(ctx context.Context, u *User) (*User, error)
 	DeleteUser(ctx context.Context, userId int) error
 	GetUserById(ctx context.Context, userId int) (*User, error)
 	GetUserWithRoom(ctx context.Context, userId int) (*User, error)

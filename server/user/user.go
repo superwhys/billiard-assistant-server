@@ -19,7 +19,6 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/password"
 )
 
 var _ user.IUserService = (*UserService)(nil)
@@ -34,30 +33,8 @@ func NewUserService(userRepo user.IUserRepo, authRepo auth.IAuthRepo, oss oss.IO
 	return &UserService{userRepo: userRepo, authRepo: authRepo, oss: oss}
 }
 
-func (us *UserService) Login(ctx context.Context, username, pwd string) (*user.User, error) {
-	u, err := us.userRepo.GetUserByName(ctx, username)
-	if err != nil {
-		return nil, errors.Wrap(err, "getUserByName")
-	}
-
-	userAuth, err := us.authRepo.GetUserAuthByType(ctx, u.UserId, auth.AuthTypePassword)
-	if err != nil {
-		return nil, errors.Wrap(err, "getUserAuth")
-	}
-
-	if !password.CheckPasswordHash(pwd, userAuth.Credential) {
-		return nil, exception.ErrPasswordNotCorrect
-	}
-
-	if u, err = us.UpdateUser(ctx, u); err != nil {
-		return nil, exception.ErrUpdateUserInfo
-	}
-
-	return u, nil
-}
-
-func (us *UserService) Register(ctx context.Context, username string) (*user.User, error) {
-	existingUser, err := us.userRepo.GetUserByName(ctx, username)
+func (us *UserService) CreateUser(ctx context.Context, u *user.User) (*user.User, error) {
+	existingUser, err := us.userRepo.GetUserByName(ctx, u.Name)
 	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
 		return nil, errors.Wrap(err, "getUserByName")
 	}
@@ -65,16 +42,11 @@ func (us *UserService) Register(ctx context.Context, username string) (*user.Use
 		return nil, exception.ErrUserAlreadyExists
 	}
 
-	newUser := &user.User{
-		Name:   username,
-		Status: user.StatusActive,
-	}
-
-	if newUser, err = us.userRepo.CreateUser(ctx, newUser); err != nil {
+	if u, err = us.userRepo.CreateUser(ctx, u); err != nil {
 		return nil, errors.Wrap(err, "createUser")
 	}
 
-	return newUser, nil
+	return u, nil
 }
 
 func (us *UserService) DeleteUser(ctx context.Context, userId int) error {
