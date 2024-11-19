@@ -15,22 +15,23 @@ import (
 	"mime/multipart"
 
 	"github.com/pkg/errors"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/password"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 )
 
 var _ user.IUserService = (*UserService)(nil)
 
 type UserService struct {
 	userRepo user.IUserRepo
+	authRepo auth.IAuthRepo
 	oss      oss.IOSS
 }
 
-func NewUserService(userRepo user.IUserRepo, oss oss.IOSS) *UserService {
-	return &UserService{userRepo: userRepo, oss: oss}
+func NewUserService(userRepo user.IUserRepo, authRepo auth.IAuthRepo, oss oss.IOSS) *UserService {
+	return &UserService{userRepo: userRepo, authRepo: authRepo, oss: oss}
 }
 
 func (us *UserService) Login(ctx context.Context, username, pwd string) (*user.User, error) {
@@ -39,7 +40,7 @@ func (us *UserService) Login(ctx context.Context, username, pwd string) (*user.U
 		return nil, errors.Wrap(err, "getUserByName")
 	}
 
-	userAuth, err := us.userRepo.GetUserAuthByType(ctx, u.UserId, user.AuthTypePassword)
+	userAuth, err := us.authRepo.GetUserAuthByType(ctx, u.UserId, auth.AuthTypePassword)
 	if err != nil {
 		return nil, errors.Wrap(err, "getUserAuth")
 	}
@@ -55,32 +56,7 @@ func (us *UserService) Login(ctx context.Context, username, pwd string) (*user.U
 	return u, nil
 }
 
-func (us *UserService) WechatLogin(ctx context.Context, wxSess *wechat.WechatSessionKeyResponse) (*user.User, error) {
-	u, err := us.userRepo.GetUserByAuth(ctx, user.AuthTypeWechat, wxSess.OpenID)
-	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
-		return nil, errors.Wrap(err, "GetUserByAuth")
-	}
-
-	if u == nil {
-		u = &user.User{
-			Name:   fmt.Sprintf("微信用户%s", wxSess.OpenID),
-			Status: user.StatusActive,
-		}
-
-		ua := &user.UserAuth{
-			AuthType:   user.AuthTypeWechat,
-			Identifier: wxSess.OpenID,
-			Credential: wxSess.SessionKey,
-		}
-		if err := us.userRepo.CreateUser(ctx, u, ua); err != nil {
-			return nil, errors.Wrap(err, "CreateUser")
-		}
-	}
-
-	return u, nil
-}
-
-func (us *UserService) Register(ctx context.Context, username, pwd string) (*user.User, error) {
+func (us *UserService) Register(ctx context.Context, username string) (*user.User, error) {
 	existingUser, err := us.userRepo.GetUserByName(ctx, username)
 	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
 		return nil, errors.Wrap(err, "getUserByName")
@@ -94,19 +70,7 @@ func (us *UserService) Register(ctx context.Context, username, pwd string) (*use
 		Status: user.StatusActive,
 	}
 
-	userAuth := &user.UserAuth{
-		AuthType:   user.AuthTypePassword,
-		Identifier: username,
-		Credential: pwd,
-	}
-
-	hashPwd, err := password.HashPassword(pwd)
-	if err != nil {
-		return nil, errors.Wrap(err, "hashPassword")
-	}
-	userAuth.Credential = hashPwd
-
-	if err := us.userRepo.CreateUser(ctx, newUser, userAuth); err != nil {
+	if newUser, err = us.userRepo.CreateUser(ctx, newUser); err != nil {
 		return nil, errors.Wrap(err, "createUser")
 	}
 
@@ -124,6 +88,10 @@ func (us *UserService) DeleteUser(ctx context.Context, userId int) error {
 
 func (us *UserService) GetUserById(ctx context.Context, userId int) (*user.User, error) {
 	return us.userRepo.GetUserById(ctx, userId)
+}
+
+func (us *UserService) GetUserWithRoom(ctx context.Context, userId int) (*user.User, error) {
+	return us.userRepo.GetUserWithRoomById(ctx, userId)
 }
 
 func (us *UserService) UpdateUser(ctx context.Context, update *user.User) (*user.User, error) {
@@ -174,22 +142,6 @@ func (us *UserService) GetUserAvatar(ctx context.Context, avatarName string, dst
 	return us.oss.GetFile(ctx, objName, dst)
 }
 
-func (us *UserService) CreateUserAuth(ctx context.Context, userId int, auth *user.UserAuth) error {
-	return us.userRepo.CreateUserAuth(ctx, userId, auth)
-}
-
-func (us *UserService) UpdateUserAuth(ctx context.Context, auth *user.UserAuth) error {
-	return us.userRepo.UpdateUserAuth(ctx, auth)
-}
-
-func (us *UserService) DeleteUserAuth(ctx context.Context, authId int) error {
-	return us.userRepo.DeleteUserAuth(ctx, authId)
-}
-
-func (us *UserService) GetUserAuths(ctx context.Context, userId int) ([]*user.UserAuth, error) {
-	return us.userRepo.GetUserAuths(ctx, userId)
-}
-
 func (us *UserService) UpdateUserStatus(ctx context.Context, userId int, status user.Status) error {
 	u, err := us.GetUserById(ctx, userId)
 	if err != nil {
@@ -206,8 +158,4 @@ func (us *UserService) UpdateUserRole(ctx context.Context, userId int, role user
 	}
 	u.Role = role
 	return us.userRepo.UpdateUser(ctx, u)
-}
-
-func (us *UserService) GetUserWithRoom(ctx context.Context, userId int) (*user.User, error) {
-	return us.userRepo.GetUserWithRoom(ctx, userId)
 }

@@ -11,21 +11,10 @@ type BaseInfo struct {
 	Password string
 }
 
-type UserAuth struct {
-	Id       int
-	UserId   int
-	AuthType AuthType
-	// username or phone or wechatId or email
-	Identifier string
-	// password or something else (can be empty)
-	Credential string
-}
-
 type User struct {
-	UserId    int
-	Name      string
-	UserAuths []*UserAuth
-	UserInfo  *BaseInfo
+	UserId   int
+	Name     string
+	UserInfo *BaseInfo
 
 	Status Status
 	Role   Role
@@ -67,14 +56,4 @@ const (
 	RoleUnknown Role = iota
 	RoleUser
 	RoleAdmin
-)
-
-type AuthType int
-
-const (
-	AuthTypeUnknown AuthType = iota
-	AuthTypeWechat
-	AuthTypeEmail
-	AuthTypePhone
-	AuthTypePassword
 )

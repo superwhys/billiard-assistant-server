@@ -16,11 +16,13 @@ import (
 	"mime/multipart"
 	"os"
 	"time"
-	
+
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -30,14 +32,17 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/password"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
 	"gorm.io/gorm"
-	
+
+	authDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/auth"
 	gameDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/game"
 	noticeDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/notice"
 	roomDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/room"
 	userDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/user"
+	authSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/auth"
 	gameSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/game"
 	noticeSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/notice"
 	roomSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/room"
@@ -48,6 +53,7 @@ type BilliardServer struct {
 	avatarDir   string
 	redisClient *predis.RedisClient
 	UserSrv     user.IUserService
+	AuthSrv     auth.IAuthService
 	GameSrv     game.IGameService
 	RoomSrv     room.IRoomService
 	NoticeSrv   notice.INoticeService
@@ -60,24 +66,26 @@ func NewBilliardServer(conf *models.Config, db *gorm.DB, redis *predis.RedisClie
 		err := os.MkdirAll(conf.AvatarDir, 0755)
 		plog.PanicError(err, "createAvatarDir")
 	}
-	
+
 	userRepo := userDal.NewUserRepo(db)
+	authRepo := authDal.NewAuthRepo(db)
 	gameRepo := gameDal.NewGameRepo(db)
 	roomRepo := roomDal.NewRoomRepo(db)
 	noticeRepo := noticeDal.NewNoticeRepo(db)
-	
+
 	s := &BilliardServer{
 		avatarDir:   conf.AvatarDir,
 		redisClient: redis,
 		EventBus:    events.NewEventBus(),
-		UserSrv:     userSrv.NewUserService(userRepo, minioClient),
+		UserSrv:     userSrv.NewUserService(userRepo, authRepo, minioClient),
+		AuthSrv:     authSrv.NewAuthService(authRepo),
 		GameSrv:     gameSrv.NewGameService(gameRepo, userRepo),
 		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis),
 		NoticeSrv:   noticeSrv.NewNoticeService(noticeRepo),
 	}
-	
+
 	s.setupEventsSubscription()
-	
+
 	return s
 }
 
@@ -87,7 +95,7 @@ func (s *BilliardServer) Login(ctx context.Context, username string, pwd string)
 		plog.Errorc(ctx, "login error: %v", err)
 		return nil, err
 	}
-	
+
 	return dto.UserEntityToDto(u), nil
 }
 
@@ -97,23 +105,66 @@ func (s *BilliardServer) WechatLogin(ctx context.Context, code string) (*dto.Use
 		plog.Errorc(ctx, "get session key error: %v", err)
 		return nil, nil, exception.ErrLoginFailed
 	}
-	
-	u, err := s.UserSrv.WechatLogin(ctx, wxSessionKey)
-	if err != nil {
-		plog.Errorc(ctx, "wechat login error: %v", err)
-		return nil, nil, err
+
+	ua, err := s.AuthSrv.GetUserAuthByIdentifier(ctx, auth.AuthTypeWechat, wxSessionKey.OpenID)
+	if err != nil && !errors.Is(err, exception.ErrUserAuthNotFound) {
+		plog.Errorc(ctx, "get user auth by open id error: %v", err)
+		return nil, nil, exception.ErrLoginFailed
 	}
-	
-	return dto.UserEntityToDto(u), wxSessionKey, nil
+
+	var user *user.User
+	if ua == nil {
+		userName := fmt.Sprintf("微信用户%s", wxSessionKey.OpenID)
+		user, err = s.UserSrv.Register(ctx, userName)
+		if err != nil {
+			plog.Errorc(ctx, "create user error: %v", err)
+			return nil, nil, exception.ErrLoginFailed
+		}
+
+		ua := &auth.Auth{
+			AuthType:   auth.AuthTypeWechat,
+			Identifier: wxSessionKey.OpenID,
+			Credential: wxSessionKey.SessionKey,
+		}
+
+		if err = s.AuthSrv.CreateUserAuth(ctx, user.UserId, ua); err != nil {
+			plog.Errorc(ctx, "create user auth error: %v", err)
+			return nil, nil, exception.ErrLoginFailed
+		}
+	} else {
+		user, err = s.UserSrv.GetUserById(ctx, ua.UserId)
+		if err != nil {
+			plog.Errorc(ctx, "get user by id error: %v", err)
+			return nil, nil, exception.ErrLoginFailed
+		}
+	}
+
+	return dto.UserEntityToDto(user), wxSessionKey, nil
 }
 
 func (s *BilliardServer) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error) {
-	u, err := s.UserSrv.Register(ctx, req.Username, req.Password)
+	u, err := s.UserSrv.Register(ctx, req.Username)
 	if err != nil {
 		plog.Errorc(ctx, "create user error: %v", err)
 		return nil, err
 	}
-	
+
+	userAuth := &auth.Auth{
+		AuthType:   auth.AuthTypePassword,
+		Identifier: req.Username,
+	}
+
+	hashPwd, err := password.HashPassword(req.Password)
+	if err != nil {
+		return nil, errors.Wrap(err, "hashPassword")
+	}
+	userAuth.Credential = hashPwd
+	err = s.AuthSrv.CreateUserAuth(ctx, u.UserId, userAuth)
+	if err != nil {
+		plog.Errorc(ctx, "create user auth error: %v", err)
+		return nil, err
+	}
+
 	return dto.UserEntityToDto(u), nil
 }
 
@@ -125,13 +176,13 @@ func (s *BilliardServer) UpdateUser(ctx context.Context, userId int, update *dto
 			Avatar: update.AvatarUrl,
 		},
 	}
-	
+
 	user, err := s.UserSrv.UpdateUser(ctx, u)
 	if err != nil {
 		plog.Errorc(ctx, "update user info error: %v", err)
 		return nil, err
 	}
-	
+
 	return dto.UserEntityToDto(user), nil
 }
 
@@ -141,7 +192,7 @@ func (s *BilliardServer) UploadAvatar(ctx context.Context, userId int, file *mul
 		plog.Errorc(ctx, "upload avatar error: %v", err)
 		return "", exception.ErrUploadAvatar
 	}
-	
+
 	return avatarUrl, nil
 }
 
@@ -151,7 +202,7 @@ func (s *BilliardServer) GetAvatar(ctx context.Context, avatarName string, dst i
 		plog.Errorc(ctx, "get avatar error: %v", err)
 		return exception.ErrGetAvatar
 	}
-	
+
 	return nil
 }
 
@@ -161,12 +212,12 @@ func (s *BilliardServer) GetNoticeList(ctx context.Context) ([]*dto.Notice, erro
 		plog.Errorc(ctx, "get notice list error: %v", err)
 		return nil, err
 	}
-	
+
 	ret := make([]*dto.Notice, 0, len(notices))
 	for _, n := range notices {
 		ret = append(ret, dto.NoticeEntityToDto(n))
 	}
-	
+
 	return ret, nil
 }
 
@@ -176,12 +227,12 @@ func (s *BilliardServer) GetGameList(ctx context.Context) ([]*dto.Game, error) {
 		plog.Errorc(ctx, "get game list error: %v", err)
 		return nil, err
 	}
-	
+
 	ret := make([]*dto.Game, 0, len(gameList))
 	for _, g := range gameList {
 		ret = append(ret, dto.GameEntityToDto(g))
 	}
-	
+
 	return ret, nil
 }
 
@@ -191,12 +242,12 @@ func (s *BilliardServer) GetUserGameRooms(ctx context.Context, userId int) ([]*d
 		plog.Errorc(ctx, "get user game rooms error: %v", err)
 		return nil, err
 	}
-	
+
 	ret := make([]*dto.GameRoom, 0, len(rs))
 	for _, r := range rs {
 		ret = append(ret, dto.GameRoomEntityToDto(r))
 	}
-	
+
 	return ret, nil
 }
 
@@ -213,7 +264,7 @@ func (s *BilliardServer) CreateGame(ctx context.Context, req *dto.CreateGameRequ
 		plog.Errorc(ctx, "create game error: %v", err)
 		return nil, err
 	}
-	
+
 	return dto.GameEntityToDto(g), nil
 }
 
@@ -223,7 +274,7 @@ func (s *BilliardServer) DeleteGame(ctx context.Context, gameId int) error {
 		plog.Errorc(ctx, "delete game error: %v", err)
 		return err
 	}
-	
+
 	return err
 }
 
@@ -233,7 +284,7 @@ func (s *BilliardServer) CreateRoom(ctx context.Context, userId, gameId int) (*d
 		plog.Errorc(ctx, "create game room error: %v", err)
 		return nil, err
 	}
-	
+
 	return dto.GameRoomEntityToDto(gr), nil
 }
 
@@ -244,13 +295,13 @@ func (s *BilliardServer) UpdateGameRoomStatus(ctx context.Context, userId int, r
 		GameStatus:    req.GameStatus,
 		WinLoseStatus: req.WinLoseStatus,
 	}
-	
+
 	err := s.RoomSrv.UpdateGameRoomStatus(ctx, gr)
 	if err != nil {
 		plog.Errorc(ctx, "update game room status error: %v", err)
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -260,7 +311,7 @@ func (s *BilliardServer) DeleteRoom(ctx context.Context, userId int, roomId int)
 		plog.Errorc(ctx, "delete game room error: %v", err)
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -270,9 +321,9 @@ func (s *BilliardServer) EnterGameRoom(ctx context.Context, userId int, roomId i
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return err
 	}
-	
+
 	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, enterUser))
-	
+
 	return nil
 }
 
@@ -281,9 +332,9 @@ func (s *BilliardServer) LeaveGameRoom(ctx context.Context, userId int, roomId i
 		plog.Errorc(ctx, "leave game room error: %v", err)
 		return err
 	}
-	
+
 	s.EventBus.Publish(room.NewLeaveRoomEvent(userId, roomId))
-	
+
 	return nil
 }
 
@@ -293,7 +344,7 @@ func (s *BilliardServer) GetGameRoom(ctx context.Context, roomId int) (*dto.Game
 		plog.Errorc(ctx, "get game room error: %v", err)
 		return nil, err
 	}
-	
+
 	return dto.GameRoomEntityToDto(r), nil
 }
 
@@ -303,9 +354,9 @@ func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId i
 		plog.Errorc(ctx, "register room session error: %v", err)
 		return nil, err
 	}
-	
+
 	s.SessionSrv.StartSession(sess)
-	
+
 	return sess, nil
 }
 
@@ -315,7 +366,7 @@ func (s *BilliardServer) PrepareGame(ctx context.Context, userId, roomId int) er
 		plog.Errorc(ctx, "prepare game error: %v", err)
 		return err
 	}
-	
+
 	s.EventBus.Publish(room.NewPrepareEvent(userId, roomId))
 	return nil
 }
@@ -326,11 +377,11 @@ func (s *BilliardServer) StartGame(ctx context.Context, userId, roomId int) erro
 		plog.Errorc(ctx, "start game error: %v", err)
 		return err
 	}
-	
+
 	// game init
 	gs, err := game.NewGameStrategy(currentGame.GetGameType())
 	payload := gs.SetupGame(currentGame.GetGameConfig())
-	
+
 	s.EventBus.Publish(room.NewGameStartEvent(roomId, payload))
 	return nil
 }
@@ -339,7 +390,7 @@ func (s *BilliardServer) BindPhone(ctx context.Context, userId int, phone, code 
 	if err := s.verifyPhoneCode(ctx, phone, code); err != nil {
 		return err
 	}
-	
+
 	u := &user.User{
 		UserId: userId,
 		UserInfo: &user.BaseInfo{
@@ -349,17 +400,17 @@ func (s *BilliardServer) BindPhone(ctx context.Context, userId int, phone, code 
 	if _, err := s.UserSrv.UpdateUser(ctx, u); err != nil {
 		return err
 	}
-	
-	auth := &user.UserAuth{
+
+	auth := &auth.Auth{
 		UserId:     userId,
-		AuthType:   user.AuthTypePhone,
+		AuthType:   auth.AuthTypePhone,
 		Identifier: phone,
 	}
-	if err := s.UserSrv.CreateUserAuth(ctx, userId, auth); err != nil {
+	if err := s.AuthSrv.CreateUserAuth(ctx, userId, auth); err != nil {
 		plog.Errorc(ctx, "create phone auth error: %v", err)
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -367,7 +418,7 @@ func (s *BilliardServer) BindEmail(ctx context.Context, userId int, email, code 
 	if err := s.verifyEmailCode(ctx, email, code); err != nil {
 		return err
 	}
-	
+
 	u := &user.User{
 		UserId: userId,
 		UserInfo: &user.BaseInfo{
@@ -377,30 +428,30 @@ func (s *BilliardServer) BindEmail(ctx context.Context, userId int, email, code 
 	if _, err := s.UserSrv.UpdateUser(ctx, u); err != nil {
 		return err
 	}
-	
-	auth := &user.UserAuth{
+
+	auth := &auth.Auth{
 		UserId:     userId,
-		AuthType:   user.AuthTypeEmail,
+		AuthType:   auth.AuthTypeEmail,
 		Identifier: email,
 	}
-	if err := s.UserSrv.CreateUserAuth(ctx, userId, auth); err != nil {
+	if err := s.AuthSrv.CreateUserAuth(ctx, userId, auth); err != nil {
 		plog.Errorc(ctx, "create email auth error: %v", err)
 		return err
 	}
-	
+
 	return nil
 }
 
 func (s *BilliardServer) SendPhoneCode(ctx context.Context, phone string) error {
 	code := s.generateVerificationCode()
 	expireAt := time.Now().Add(5 * time.Minute)
-	
+
 	key := fmt.Sprintf("phone_code:%s", phone)
 	if err := s.redisClient.SetWithTTL(key, code, 5*time.Minute); err != nil {
 		plog.Errorc(ctx, "save phone code error: %v", err)
 		return exception.ErrSendPhoneCode
 	}
-	
+
 	s.EventBus.Publish(user.NewSendPhoneCodeEvent(phone, code, expireAt))
 	return nil
 }
@@ -408,13 +459,13 @@ func (s *BilliardServer) SendPhoneCode(ctx context.Context, phone string) error 
 func (s *BilliardServer) SendEmailCode(ctx context.Context, email string) error {
 	code := s.generateVerificationCode()
 	expireAt := time.Now().Add(5 * time.Minute)
-	
+
 	key := fmt.Sprintf("email_code:%s", email)
 	if err := s.redisClient.SetWithTTL(key, code, 5*time.Minute); err != nil {
 		plog.Errorc(ctx, "save email code error: %v", err)
 		return exception.ErrSendEmailCode
 	}
-	
+
 	s.EventBus.Publish(user.NewSendEmailCodeEvent(email, code, expireAt))
 	return nil
 }
@@ -431,4 +482,22 @@ func (s *BilliardServer) verifyEmailCode(ctx context.Context, email, code string
 
 func (s *BilliardServer) generateVerificationCode() string {
 	return fmt.Sprintf("%06d", rand.Intn(1000000))
+}
+
+func (s *BilliardServer) checkAuthExists(ctx context.Context, authType auth.AuthType, identifier string) (bool, error) {
+	_, err := s.AuthSrv.GetUserAuthByIdentifier(ctx, authType, identifier)
+	if err != nil {
+		plog.Errorc(ctx, "get user auth by identifier(%v) error: %v", authType, err)
+		return false, err
+	}
+
+	return true, err
+}
+
+func (s *BilliardServer) CheckPhoneBind(ctx context.Context, phone string) (bool, error) {
+	return s.checkAuthExists(ctx, auth.AuthTypePhone, phone)
+}
+
+func (s *BilliardServer) CheckEmailBind(ctx context.Context, email string) (bool, error) {
+	return s.checkAuthExists(ctx, auth.AuthTypeEmail, email)
 }

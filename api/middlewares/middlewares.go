@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
@@ -31,12 +31,20 @@ type UserToken struct {
 	WechatSessionKey string
 }
 
-func NewUserToken(uid int, wechatId string, username string) *UserToken {
+func NewUserLoginToken(uid int, username string) *UserToken {
 	return &UserToken{
 		TokenId:  uuid.New().String(),
 		Uid:      uid,
 		Username: username,
-		WechatId: wechatId,
+	}
+}
+
+func NewWechatLoginToken(userId int, openId, unionId, sessionKey string) *UserToken {
+	return &UserToken{
+		Uid:              userId,
+		WechatId:         openId,
+		WechatUnionId:    unionId,
+		WechatSessionKey: sessionKey,
 	}
 }
 
@@ -80,17 +88,17 @@ func (m *BilliardMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl t
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
 		plog.Fatalf("TokenManagerMiddleware: token template should be ptr to struct")
 	}
-	
+
 	t = t.Elem()
 	tokenContextKey := m.getTokenContextKeyByReflect(t)
-	
+
 	return func(c *gin.Context) {
 		tokenStr := c.GetHeader(headerKey)
-		
+
 		var nt token.Token
 		if tokenStr != "" {
 			nt = reflect.New(t).Interface().(token.Token)
-			
+
 			err := m.manager.Read(tokenStr, nt)
 			if errors.Is(err, redis.ErrNil) {
 				nt = nil
@@ -98,21 +106,21 @@ func (m *BilliardMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl t
 				plog.Errorf("token manager read token: %v error: %v", tokenStr, err)
 			}
 		}
-		
+
 		c.Set(tokenContextKey, nt)
 		c.Next()
-		
+
 		afterProcessTokenTmp, exists := c.Get(tokenContextKey)
 		if !exists || afterProcessTokenTmp == nil {
 			return
 		}
-		
+
 		afterProcessToken, ok := afterProcessTokenTmp.(token.Token)
 		if !ok {
 			plog.Errorf("AfterProcessToken should be a Token object")
 			return
 		}
-		
+
 		if err := m.manager.Save(afterProcessToken); err != nil {
 			plog.Errorf("token manager save token: %v error: %v", afterProcessToken, err)
 			return
@@ -138,37 +146,37 @@ func (m *BilliardMiddleware) GetLoginToken(c *gin.Context) token.Token {
 	if !exists || val == nil {
 		return nil
 	}
-	
+
 	return val.(token.Token)
 }
 
 func (m *BilliardMiddleware) CurrentUserId(c *gin.Context) (int, error) {
 	t := m.GetLoginToken(c)
-	
+
 	if t == nil {
 		return -1, errors.New("token required")
 	}
-	
+
 	userToken, ok := t.(*UserToken)
 	if !ok {
 		return -1, errors.New("invalid token")
 	}
-	
+
 	return userToken.Uid, nil
 }
 
 func (m *BilliardMiddleware) CurrentUser(c *gin.Context) (*user.User, error) {
 	t := m.GetLoginToken(c)
-	
+
 	if t == nil {
 		return nil, errors.New("token required")
 	}
-	
+
 	userToken, ok := t.(*UserToken)
 	if !ok {
 		return nil, errors.New("invalid token")
 	}
-	
+
 	return m.server.UserSrv.GetUserById(c, userToken.Uid)
 }
 

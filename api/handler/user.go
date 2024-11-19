@@ -13,7 +13,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
@@ -36,6 +36,8 @@ type UserHandlerApp interface {
 	GetAvatar(ctx context.Context, avatarName string, dst io.Writer) error
 	SendPhoneCode(ctx context.Context, phone string) error
 	SendEmailCode(ctx context.Context, email string) error
+	CheckPhoneBind(ctx context.Context, phone string) (bool, error)
+	CheckEmailBind(ctx context.Context, email string) (bool, error)
 }
 
 type UserHandler struct {
@@ -56,15 +58,19 @@ func (u *UserHandler) Init(router gin.IRouter) {
 	user.POST("login/wx", pgin.RequestResponseHandler(u.wechatLoginHandler))
 	user.POST("register", pgin.RequestResponseHandler(u.registerHandler))
 	user.GET("avatar/:avatar_name", pgin.RequestHandler(u.getUserAvatarHandler))
-	
-	userAuth := router.Group("user", u.middleware.UserLoginRequired())
-	userAuth.GET("info", pgin.ResponseHandler(u.getUserInfoHandler))
-	userAuth.PUT("info/update", pgin.RequestWithErrorHandler(u.updateUserHandler))
-	userAuth.POST("avatar/upload", pgin.ResponseHandler(u.uploadAvatarHandler))
-	userAuth.POST("bind/phone", pgin.RequestWithErrorHandler(u.bindPhoneHandler))
-	userAuth.POST("bind/email", pgin.RequestWithErrorHandler(u.bindEmailHandler))
-	userAuth.POST("send/phone_code", pgin.RequestWithErrorHandler(u.sendPhoneCodeHandler))
-	userAuth.POST("send/email_code", pgin.RequestWithErrorHandler(u.sendEmailCodeHandler))
+
+	userNeedLogin := router.Group("user", u.middleware.UserLoginRequired())
+	userNeedLogin.GET("info", pgin.ResponseHandler(u.getUserInfoHandler))
+	userNeedLogin.PUT("info/update", pgin.RequestWithErrorHandler(u.updateUserHandler))
+	userNeedLogin.POST("avatar/upload", pgin.ResponseHandler(u.uploadAvatarHandler))
+
+	auth := userNeedLogin.Group("auth")
+	auth.POST("bind/phone", pgin.RequestWithErrorHandler(u.bindPhoneHandler))
+	auth.POST("bind/email", pgin.RequestWithErrorHandler(u.bindEmailHandler))
+	auth.POST("check/phone", pgin.RequestResponseHandler(u.checkPhoneBindHandler))
+	auth.POST("check/email", pgin.RequestResponseHandler(u.checkEmailBindHandler))
+	auth.POST("send/phone_code", pgin.RequestWithErrorHandler(u.sendPhoneCodeHandler))
+	auth.POST("send/email_code", pgin.RequestWithErrorHandler(u.sendEmailCodeHandler))
 }
 
 func (u *UserHandler) getUserAvatarHandler(ctx *gin.Context, req *dto.GetUserAvatarRequest) {
@@ -77,20 +83,20 @@ func (u *UserHandler) getUserAvatarHandler(ctx *gin.Context, req *dto.GetUserAva
 
 func (u *UserHandler) wechatLoginHandler(ctx *gin.Context, req *dto.WechatLoginRequest) (*dto.WechatLoginResponse, error) {
 	plog.Debugc(ctx, "wechat login code: %s", req.Code)
-	
+
 	user, wxSessionKey, err := u.userApp.WechatLogin(ctx, req.Code)
 	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrLoginFailed
 	}
-	
-	token := &middlewares.UserToken{
-		Uid:              user.UserId,
-		WechatId:         wxSessionKey.OpenID,
-		WechatUnionId:    wxSessionKey.UnionID,
-		WechatSessionKey: wxSessionKey.SessionKey,
-	}
+
+	token := middlewares.NewWechatLoginToken(
+		user.UserId,
+		wxSessionKey.OpenID,
+		wxSessionKey.UnionID,
+		wxSessionKey.SessionKey,
+	)
 	u.middleware.SaveToken(token, ctx)
 	return &dto.WechatLoginResponse{Token: token.GetKey(), User: user}, nil
 }
@@ -102,8 +108,8 @@ func (u *UserHandler) loginHandler(ctx *gin.Context, req *dto.LoginRequest) (*dt
 	} else if err != nil {
 		return nil, exception.ErrLoginFailed
 	}
-	
-	token := middlewares.NewUserToken(user.UserId, user.WechatId, user.Name)
+
+	token := middlewares.NewUserLoginToken(user.UserId, user.Name)
 	u.middleware.SaveToken(token, ctx)
 	return &dto.LoginResponse{Token: token.GetKey(), User: user}, nil
 }
@@ -115,7 +121,7 @@ func (u *UserHandler) registerHandler(ctx *gin.Context, req *dto.RegisterRequest
 	} else if err != nil {
 		return nil, exception.ErrRegisterUser
 	}
-	
+
 	return &dto.RegisterResponse{UserId: user.UserId, Username: user.Name}, nil
 }
 
@@ -127,7 +133,7 @@ func (u *UserHandler) getUserInfoHandler(ctx *gin.Context) (*dto.User, error) {
 	} else if err != nil {
 		return nil, exception.ErrGetUserInfo
 	}
-	
+
 	return dto.UserEntityToDto(user), nil
 }
 
@@ -138,14 +144,14 @@ func (u *UserHandler) updateUserHandler(ctx *gin.Context, req *dto.UpdateUserReq
 	} else if err != nil {
 		return exception.ErrGetUserInfo
 	}
-	
+
 	_, err = u.userApp.UpdateUser(ctx, userDomain.UserId, req)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrUpdateUserInfo
 	}
-	
+
 	return nil
 }
 
@@ -154,19 +160,19 @@ func (u *UserHandler) uploadAvatarHandler(ctx *gin.Context) (*dto.UploadAvatarRe
 	if err != nil {
 		return nil, err
 	}
-	
+
 	fh, err := ctx.FormFile("avatar")
 	if err != nil {
 		return nil, exception.ErrUploadAvatar
 	}
-	
+
 	avatarUrl, err := u.userApp.UploadAvatar(ctx, userId, fh)
 	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
 	} else if err != nil {
 		return nil, exception.ErrUploadAvatar
 	}
-	
+
 	return &dto.UploadAvatarResponse{AvatarUrl: avatarUrl}, nil
 }
 
@@ -175,14 +181,14 @@ func (u *UserHandler) bindPhoneHandler(ctx *gin.Context, req *dto.BindPhoneReque
 	if err != nil {
 		return err
 	}
-	
+
 	err = u.userApp.BindPhone(ctx, userId, req.Phone, req.Code)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrBindPhone
 	}
-	
+
 	return nil
 }
 
@@ -191,14 +197,14 @@ func (u *UserHandler) bindEmailHandler(ctx *gin.Context, req *dto.BindEmailReque
 	if err != nil {
 		return err
 	}
-	
+
 	err = u.userApp.BindEmail(ctx, userId, req.Email, req.Code)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrBindEmail
 	}
-	
+
 	return nil
 }
 
@@ -220,4 +226,26 @@ func (u *UserHandler) sendEmailCodeHandler(ctx *gin.Context, req *dto.SendEmailC
 		return exception.ErrSendEmailCode
 	}
 	return nil
+}
+
+func (u *UserHandler) checkPhoneBindHandler(ctx *gin.Context, req *dto.CheckPhoneBindRequest) (*dto.CheckPhoneBindResponse, error) {
+	isBound, err := u.userApp.CheckPhoneBind(ctx, req.Phone)
+	if exception.CheckException(err) {
+		return nil, errors.Cause(err)
+	} else if err != nil {
+		return nil, exception.ErrGetUserInfo
+	}
+
+	return &dto.CheckPhoneBindResponse{IsBound: isBound}, nil
+}
+
+func (u *UserHandler) checkEmailBindHandler(ctx *gin.Context, req *dto.CheckPhoneBindRequest) (*dto.CheckPhoneBindResponse, error) {
+	isBound, err := u.userApp.CheckEmailBind(ctx, req.Phone)
+	if exception.CheckException(err) {
+		return nil, errors.Cause(err)
+	} else if err != nil {
+		return nil, exception.ErrGetUserInfo
+	}
+
+	return &dto.CheckPhoneBindResponse{IsBound: isBound}, nil
 }

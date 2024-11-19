@@ -10,14 +10,13 @@ package dto
 
 import (
 	"errors"
-	
+
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
 type User struct {
 	UserId    int    `json:"user_id"`
 	Name      string `json:"name"`
-	WechatId  string `json:"wechat_id,omitempty"`
 	Email     string `json:"email,omitempty"`
 	Phone     string `json:"phone,omitempty"`
 	Avatar    string `json:"avatar,omitempty"`
@@ -28,32 +27,23 @@ type User struct {
 }
 
 func UserEntityToDto(u *user.User) *User {
-	var wechatId string
 	var authTypes []int
-	
-	for _, auth := range u.UserAuths {
-		authTypes = append(authTypes, int(auth.AuthType))
-		if auth.AuthType == user.AuthTypeWechat {
-			wechatId = auth.Identifier
-		}
-	}
-	
+
 	user := &User{
 		UserId:    u.UserId,
 		Name:      u.Name,
-		WechatId:  wechatId,
 		Status:    int(u.Status),
 		Role:      int(u.Role),
 		AuthTypes: authTypes,
 		IsAdmin:   u.IsAdmin(),
 	}
-	
+
 	if u.UserInfo != nil {
 		user.Email = u.UserInfo.Email
 		user.Phone = u.UserInfo.Phone
 		user.Avatar = u.UserInfo.Avatar
 	}
-	
+
 	return user
 }
 
@@ -69,15 +59,7 @@ func UserDtoToEntity(u *User) *user.User {
 		Status: user.Status(u.Status),
 		Role:   user.Role(u.Role),
 	}
-	
-	if u.WechatId != "" {
-		userEntity.UserAuths = append(userEntity.UserAuths, &user.UserAuth{
-			UserId:     u.UserId,
-			AuthType:   user.AuthTypeWechat,
-			Identifier: u.WechatId,
-		})
-	}
-	
+
 	return userEntity
 }
 
@@ -112,11 +94,11 @@ func (req *RegisterRequest) Validate() error {
 	if req.Username == "" {
 		return errors.New("missing account")
 	}
-	
+
 	if req.Password == "" {
 		return errors.New("missing password")
 	}
-	
+
 	return nil
 }
 
@@ -161,4 +143,12 @@ type SendPhoneCodeRequest struct {
 
 type SendEmailCodeRequest struct {
 	Email string `json:"email" binding:"required"`
+}
+
+type CheckPhoneBindRequest struct {
+	Phone string `json:"phone" binding:"required"`
+}
+
+type CheckPhoneBindResponse struct {
+	IsBound bool `json:"is_bound"`
 }
