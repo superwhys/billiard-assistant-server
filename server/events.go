@@ -9,6 +9,9 @@
 package server
 
 import (
+	"context"
+	"time"
+
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
@@ -54,7 +57,15 @@ func (s *BilliardServer) HandleSendPhoneSMS(event *events.EventMessage) error {
 }
 
 func (s *BilliardServer) HandleSendEmailCode(event *events.EventMessage) error {
-	// TODO: 实现具体的邮件发送逻辑
-	// plog.Infoc(ctx, "sending email code %s to email %s", code, email)
-	return nil
+	e := event.Payload.(*user.SendCodeEvent)
+
+	msg, err := user.GenerateSendCodeEventMessage(e.Code)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
+	defer cancel()
+
+	return s.emailSender.SendMsg(ctx, e.Target, msg)
 }
