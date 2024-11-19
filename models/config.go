@@ -9,13 +9,13 @@
 package models
 
 import (
-	"errors"
 	"time"
 
 	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/predis"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 )
 
 type Config struct {
@@ -35,29 +35,13 @@ func (c *Config) SetDefault() {
 	}
 }
 
-type MinioConfig struct {
-	Endpoint  string
-	AccessKey string
-	SecretKey string
-
-	Bucket string
-}
-
-func (c *MinioConfig) Validate() error {
-	if c.Endpoint == "" || c.AccessKey == "" || c.SecretKey == "" || c.Bucket == "" {
-		return errors.New("invalid minio config")
-	}
-
-	return nil
-}
-
 type parser func(out any) error
 
 type Configs struct {
 	SrvConf   *Config
 	RedisConf *predis.RedisConf
 	MysqlConf *pgorm.MysqlConfig
-	MinioConf *MinioConfig
+	MinioConf *minio.MinioConfig
 	EmailConf *email.EmailConf
 }
 
@@ -71,7 +55,7 @@ func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParse
 	mysqlConf := new(pgorm.MysqlConfig)
 	plog.PanicError(mysqlConfParser(mysqlConf))
 
-	minioConf := new(MinioConfig)
+	minioConf := new(minio.MinioConfig)
 	plog.PanicError(minioConfParser(minioConf))
 
 	emailConf := new(email.EmailConf)

@@ -24,19 +24,18 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss"
 )
 
 var _ oss.IOSS = (*MinioOss)(nil)
 
 type MinioOss struct {
-	*models.MinioConfig
+	*MinioConfig
 	client  *minio.Client
 	userApi string
 }
 
-func NewMinioOss(userApi string, conf *models.MinioConfig) *MinioOss {
+func NewMinioOss(userApi string, conf *MinioConfig) *MinioOss {
 	m := &MinioOss{
 		MinioConfig: conf,
 	}

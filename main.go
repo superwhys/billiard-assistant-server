@@ -22,7 +22,7 @@ var (
 	srvConfigFlag = pflags.Struct("conf", (*models.Config)(nil), "server config")
 	redisConfFlag = pflags.Struct("redisAuth", (*predis.RedisConf)(nil), "redis auth config")
 	mysqlConfFlag = pflags.Struct("mysqlAuth", (*pgorm.MysqlConfig)(nil), "mysql auth config")
-	minioConfFlag = pflags.Struct("minioAuth", (*models.MinioConfig)(nil), "minio auth config")
+	minioConfFlag = pflags.Struct("minioAuth", (*minio.MinioConfig)(nil), "minio auth config")
 	emailConfFlag = pflags.Struct("emailAuth", (*email.EmailConf)(nil), "email auth config")
 )
 
