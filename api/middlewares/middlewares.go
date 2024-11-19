@@ -21,6 +21,8 @@ const (
 	tokenHeaderKey     = "X-BILLIARD-Token"
 )
 
+type UserSourcr int
+
 type UserToken struct {
 	TokenId  string
 	Uid      int

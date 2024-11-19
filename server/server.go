@@ -226,18 +226,23 @@ func (s *BilliardServer) UpdateUser(ctx context.Context, userId int, update *dto
 		return nil, err
 	}
 
-	if update.Username != "" {
-		auth, err := s.AuthSrv.GetUserAuthByType(ctx, userId, auth.AuthTypePassword)
-		if err != nil {
-			plog.Errorc(ctx, "get user auth error: %v", err)
-			return nil, err
-		}
+	if update.Username == "" {
+		return dto.UserEntityToDto(user), nil
+	}
 
-		auth.Identifier = update.Username
-		if err := s.AuthSrv.UpdateUserAuth(ctx, auth); err != nil {
-			plog.Errorc(ctx, "update user auth identifier error: %v", err)
-			return nil, err
-		}
+	auth, err := s.AuthSrv.GetUserAuthByType(ctx, userId, auth.AuthTypePassword)
+	if err != nil && !errors.Is(err, exception.ErrUserAuthNotFound) {
+		plog.Errorc(ctx, "get user auth error: %v", err)
+		return nil, err
+	}
+	if auth == nil {
+		return dto.UserEntityToDto(user), nil
+	}
+
+	auth.Identifier = update.Username
+	if err := s.AuthSrv.UpdateUserAuth(ctx, auth); err != nil {
+		plog.Errorc(ctx, "update user auth identifier error: %v", err)
+		return nil, err
 	}
 
 	return dto.UserEntityToDto(user), nil
