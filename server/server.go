@@ -29,6 +29,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
@@ -59,9 +60,16 @@ type BilliardServer struct {
 	NoticeSrv   notice.INoticeService
 	SessionSrv  session.ISessionService
 	EventBus    *events.EventBus
+	emailSender email.EmailSender
 }
 
-func NewBilliardServer(conf *models.Config, db *gorm.DB, redis *predis.RedisClient, minioClient *minio.MinioOss) *BilliardServer {
+func NewBilliardServer(
+	conf *models.Config,
+	db *gorm.DB,
+	redis *predis.RedisClient,
+	minioClient *minio.MinioOss,
+	emailSender email.EmailSender,
+) *BilliardServer {
 	if !putils.FileExists(conf.AvatarDir) {
 		err := os.MkdirAll(conf.AvatarDir, 0755)
 		plog.PanicError(err, "createAvatarDir")
@@ -82,6 +90,7 @@ func NewBilliardServer(conf *models.Config, db *gorm.DB, redis *predis.RedisClie
 		GameSrv:     gameSrv.NewGameService(gameRepo, userRepo),
 		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis),
 		NoticeSrv:   noticeSrv.NewNoticeService(noticeRepo),
+		emailSender: emailSender,
 	}
 
 	s.setupEventsSubscription()
@@ -524,8 +533,18 @@ func (s *BilliardServer) verifyPhoneCode(ctx context.Context, phone, code string
 }
 
 func (s *BilliardServer) verifyEmailCode(ctx context.Context, email, code string) error {
-	// TODO: verify email code
-	panic("verify email code")
+	key := fmt.Sprintf("email_code:%s", email)
+	var cacheCode string
+	if err := s.redisClient.Get(key, &cacheCode); err != nil {
+		plog.Errorc(ctx, "get email code error: %v", err)
+		return exception.ErrVerifyCode
+	}
+
+	if code != cacheCode {
+		return exception.ErrVerifyCode
+	}
+
+	return nil
 }
 
 func (s *BilliardServer) generateVerificationCode() string {

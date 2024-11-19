@@ -9,6 +9,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
 
@@ -22,31 +23,34 @@ var (
 	redisConfFlag = pflags.Struct("redisAuth", (*predis.RedisConf)(nil), "redis auth config")
 	mysqlConfFlag = pflags.Struct("mysqlAuth", (*pgorm.MysqlConfig)(nil), "mysql auth config")
 	minioConfFlag = pflags.Struct("minioAuth", (*models.MinioConfig)(nil), "minio auth config")
+	emailConfFlag = pflags.Struct("emailAuth", (*email.EmailConf)(nil), "email auth config")
 )
 
 func main() {
 	pflags.Parse()
-	srvConfig, redisConf, mysqlConf, minioConf := models.ParseConfig(
+	configs := models.ParseConfig(
 		srvConfigFlag,
 		redisConfFlag,
 		mysqlConfFlag,
 		minioConfFlag,
+		emailConfFlag,
 	)
+	redisClient := predis.NewRedisClient(configs.RedisConf.DialRedisPool())
+	minioClient := minio.NewMinioOss(configs.SrvConf.UserApi, configs.MinioConf)
+	neteasyEmailSender := email.NewNetEasySender(configs.EmailConf, redisClient)
+	plog.PanicError(pgorm.RegisterSqlModelWithConf(configs.MysqlConf, dal.AllTables()...))
+	plog.PanicError(pgorm.AutoMigrate(configs.MysqlConf))
 
-	minioClient := minio.NewMinioOss(srvConfig.UserApi, minioConf)
-	redisClient := predis.NewRedisClient(redisConf.DialRedisPool())
-	plog.PanicError(pgorm.RegisterSqlModelWithConf(mysqlConf, dal.AllTables()...))
-	plog.PanicError(pgorm.AutoMigrate(mysqlConf))
+	db := pgorm.GetDbByConf(configs.MysqlConf)
 
-	db := pgorm.GetDbByConf(mysqlConf)
-
-	billiardSrv := server.NewBilliardServer(srvConfig, db, redisClient, minioClient)
-	engine := api.SetupRouter(srvConfig, redisClient, billiardSrv)
+	billiardSrv := server.NewBilliardServer(configs.SrvConf, db, redisClient, minioClient, neteasyEmailSender)
+	engine := api.SetupRouter(configs.SrvConf, redisClient, billiardSrv)
 	srv := cores.NewPuzzleCore(
 		cores.WithService(pflags.GetServiceName()),
 		consulpuzzle.WithConsulRegister(),
 		httppuzzle.WithCoreHttpCORS(),
 		httppuzzle.WithCoreHttpPuzzle("/api", engine),
+		cores.WithDaemonWorker(neteasyEmailSender.LoopAsyncTask),
 	)
 
 	plog.PanicError(cores.Start(srv, port()))
