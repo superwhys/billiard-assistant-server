@@ -10,11 +10,11 @@ package server
 
 import (
 	"context"
-	"time"
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
 )
@@ -64,8 +64,8 @@ func (s *BilliardServer) HandleSendEmailCode(event *events.EventMessage) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
-	defer cancel()
-
-	return s.emailSender.SendMsg(ctx, e.Target, msg)
+	return s.emailSender.AsyncSendMsg(context.Background(), &email.AsyncEmailTask{
+		TargetEmail: e.Target,
+		Msg:         string(msg),
+	})
 }

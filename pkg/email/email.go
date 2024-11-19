@@ -10,8 +10,6 @@ package email
 
 import (
 	"context"
-
-	"github.com/go-puzzles/puzzles/pqueue"
 )
 
 type EmailConf struct {
@@ -19,13 +17,24 @@ type EmailConf struct {
 	Password string
 }
 
-type AsyncSendTask interface {
-	pqueue.Item
-	Target() string
-	Mesasge() string
+type AsyncEmailTask struct {
+	TargetEmail string
+	Msg         string
+}
+
+func (t *AsyncEmailTask) Target() string {
+	return t.TargetEmail
+}
+
+func (t *AsyncEmailTask) Message() string {
+	return t.Msg
+}
+
+func (t *AsyncEmailTask) Key() string {
+	return "AsyncEmailTask" + t.TargetEmail
 }
 
 type EmailSender interface {
 	SendMsg(ctx context.Context, target string, msg []byte) error
-	AsyncSendMsg(ctx context.Context, task AsyncSendTask) error
+	AsyncSendMsg(ctx context.Context, task *AsyncEmailTask) error
 }

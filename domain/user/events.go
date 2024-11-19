@@ -36,6 +36,7 @@ func GenerateSendCodeEventMessage(code string) ([]byte, error) {
 type SendCodeEvent struct {
 	Code     string
 	Target   string // phone number or email address
+	Message  string
 	ExpireAt time.Time
 }
 

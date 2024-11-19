@@ -33,7 +33,7 @@ type NetEasyEmailSender struct {
 	conf    *EmailConf
 	auth    smtp.Auth
 	tlsConf *tls.Config
-	queue   *pqueue.RedisQueue[AsyncSendTask]
+	queue   *pqueue.RedisQueue[*AsyncEmailTask]
 }
 
 func NewNetEasySender(conf *EmailConf, redisClient *predis.RedisClient) *NetEasyEmailSender {
@@ -43,7 +43,7 @@ func NewNetEasySender(conf *EmailConf, redisClient *predis.RedisClient) *NetEasy
 		ServerName:         smtpServer,
 	}
 
-	queue := pqueue.NewRedisQueue[AsyncSendTask](redisClient.GetPool(), asyncQueue)
+	queue := pqueue.NewRedisQueue[*AsyncEmailTask](redisClient.GetPool(), asyncQueue)
 	return &NetEasyEmailSender{
 		conf:    conf,
 		auth:    auth,
@@ -69,7 +69,7 @@ func (e *NetEasyEmailSender) LoopAsyncTask(ctx context.Context) error {
 			return errors.Wrap(err, "asyncTaskDequeue")
 		}
 
-		if err := e.SendMsg(ctx, task.Target(), []byte(task.Mesasge())); err != nil {
+		if err := e.SendMsg(ctx, task.Target(), []byte(task.Message())); err != nil {
 			plog.Errorc(ctx, "send email to %s error: %v", task.Target(), err)
 			time.Sleep(time.Millisecond * 500)
 			continue
@@ -134,6 +134,6 @@ func (e *NetEasyEmailSender) SendMsg(ctx context.Context, target string, msg []b
 	return nil
 }
 
-func (e *NetEasyEmailSender) AsyncSendMsg(ctx context.Context, task AsyncSendTask) error {
+func (e *NetEasyEmailSender) AsyncSendMsg(ctx context.Context, task *AsyncEmailTask) error {
 	return e.queue.Enqueue(task)
 }
