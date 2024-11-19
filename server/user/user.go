@@ -66,10 +66,21 @@ func (us *UserService) GetUserWithRoom(ctx context.Context, userId int) (*user.U
 	return us.userRepo.GetUserWithRoomById(ctx, userId)
 }
 
+func (us *UserService) checkEqual(ou, nu *user.User) bool {
+	return ou.UserId == nu.UserId &&
+		ou.Name == nu.Name &&
+		ou.UserInfo == nu.UserInfo &&
+		ou.Status == nu.Status
+}
+
 func (us *UserService) UpdateUser(ctx context.Context, update *user.User) (*user.User, error) {
 	oldUser, err := us.GetUserById(ctx, update.UserId)
 	if err != nil {
 		return nil, errors.Wrap(err, "getUserById")
+	}
+
+	if !oldUser.HasUpdate(update) {
+		return oldUser, nil
 	}
 
 	oldUser.Name = update.Name

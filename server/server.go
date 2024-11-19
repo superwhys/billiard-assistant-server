@@ -211,41 +211,40 @@ func (s *BilliardServer) Register(ctx context.Context, req *dto.RegisterRequest)
 	return dto.UserEntityToDto(u), nil
 }
 
-func (s *BilliardServer) UpdateUser(ctx context.Context, userId int, update *dto.UpdateUserRequest) (*dto.User, error) {
+func (s *BilliardServer) UpdateUserName(ctx context.Context, userId int, userName string) error {
 	u := &user.User{
 		UserId: userId,
-		Name:   update.Username,
-		UserInfo: &user.BaseInfo{
-			Avatar: update.AvatarUrl,
-		},
+		Name:   userName,
 	}
 
-	user, err := s.UserSrv.UpdateUser(ctx, u)
-	if err != nil {
-		plog.Errorc(ctx, "update user info error: %v", err)
-		return nil, err
+	u, err := s.UserSrv.UpdateUser(ctx, u)
+	if errors.Is(err, exception.ErrUserNotFound) {
+		return exception.ErrUserNotFound
+	} else if err != nil {
+		plog.Errorc(ctx, "update user name error: %v", err)
+		return err
 	}
 
-	if update.Username == "" {
-		return dto.UserEntityToDto(user), nil
+	if u.Name == userName {
+		return nil
 	}
 
 	auth, err := s.AuthSrv.GetUserAuthByType(ctx, userId, auth.AuthTypePassword)
 	if err != nil && !errors.Is(err, exception.ErrUserAuthNotFound) {
 		plog.Errorc(ctx, "get user auth error: %v", err)
-		return nil, err
+		return err
 	}
 	if auth == nil {
-		return dto.UserEntityToDto(user), nil
+		return nil
 	}
 
-	auth.Identifier = update.Username
+	auth.Identifier = userName
 	if err := s.AuthSrv.UpdateUserAuth(ctx, auth); err != nil {
 		plog.Errorc(ctx, "update user auth identifier error: %v", err)
-		return nil, err
+		return err
 	}
 
-	return dto.UserEntityToDto(user), nil
+	return nil
 }
 
 func (s *BilliardServer) UploadAvatar(ctx context.Context, userId int, file *multipart.FileHeader) (string, error) {

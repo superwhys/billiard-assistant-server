@@ -29,7 +29,7 @@ type UserHandlerApp interface {
 	Login(ctx context.Context, username, password string) (*dto.User, error)
 	WechatLogin(ctx context.Context, code string) (*dto.User, *wechat.WechatSessionKeyResponse, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error)
-	UpdateUser(ctx context.Context, userId int, update *dto.UpdateUserRequest) (*dto.User, error)
+	UpdateUserName(ctx context.Context, userId int, userName string) error
 	UploadAvatar(ctx context.Context, userId int, fh *multipart.FileHeader) (string, error)
 	GetAvatar(ctx context.Context, avatarName string, dst io.Writer) error
 }
@@ -56,7 +56,7 @@ func (u *UserHandler) Init(router gin.IRouter) {
 	userNeedLogin := router.Group("user", u.middleware.UserLoginRequired())
 	userNeedLogin.GET("logout", pgin.ErrorReturnHandler(u.logoutHandler))
 	userNeedLogin.GET("info", pgin.ResponseHandler(u.getUserInfoHandler))
-	userNeedLogin.PUT("info/update", pgin.RequestWithErrorHandler(u.updateUserHandler))
+	userNeedLogin.PUT("nickname/update", pgin.RequestWithErrorHandler(u.updateUserNameHandler))
 	userNeedLogin.POST("avatar/upload", pgin.ResponseHandler(u.uploadAvatarHandler))
 }
 
@@ -132,7 +132,7 @@ func (u *UserHandler) getUserInfoHandler(ctx *gin.Context) (*dto.User, error) {
 	return dto.UserEntityToDto(user), nil
 }
 
-func (u *UserHandler) updateUserHandler(ctx *gin.Context, req *dto.UpdateUserRequest) error {
+func (u *UserHandler) updateUserNameHandler(ctx *gin.Context, req *dto.UpdateUserNameRequest) error {
 	userDomain, err := u.middleware.CurrentUser(ctx)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
@@ -140,11 +140,11 @@ func (u *UserHandler) updateUserHandler(ctx *gin.Context, req *dto.UpdateUserReq
 		return exception.ErrGetUserInfo
 	}
 
-	_, err = u.userApp.UpdateUser(ctx, userDomain.UserId, req)
+	err = u.userApp.UpdateUserName(ctx, userDomain.UserId, req.UserName)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
-		return exception.ErrUpdateUserInfo
+		return exception.ErrUpdateUserName
 	}
 
 	return nil

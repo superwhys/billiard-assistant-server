@@ -11,6 +11,22 @@ type BaseInfo struct {
 	Password string
 }
 
+func (b *BaseInfo) HasUpdate(other *BaseInfo) bool {
+	if other.Email != "" && other.Email != b.Email {
+		return true
+	}
+
+	if other.Phone != "" && other.Phone != b.Phone {
+		return true
+	}
+
+	if other.Avatar != "" && other.Avatar != b.Avatar {
+		return true
+	}
+
+	return false
+}
+
 type User struct {
 	UserId   int
 	Name     string
@@ -20,6 +36,28 @@ type User struct {
 	Role   Role
 
 	Rooms []Room
+}
+
+// HasUpdate is used to determine whether certain options have been updated
+// only Name, Status, Role, UserInfo support
+func (u *User) HasUpdate(other *User) bool {
+	if other.Name != "" && other.Name != u.Name {
+		return true
+	}
+
+	if other.Status != 0 && other.Status != u.Status {
+		return true
+	}
+
+	if other.Role != 0 && other.Role != u.Role {
+		return true
+	}
+
+	if u.UserInfo.HasUpdate(other.UserInfo) {
+		return true
+	}
+
+	return false
 }
 
 func (u *User) GetUserId() int {

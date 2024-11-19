@@ -114,9 +114,8 @@ type GetUserInfoRequest struct {
 type GetUserInfoResponse struct {
 }
 
-type UpdateUserRequest struct {
-	Username  string `json:"username"`
-	AvatarUrl string `json:"avatar_url"`
+type UpdateUserNameRequest struct {
+	UserName string `json:"username"`
 }
 
 type UploadAvatarResponse struct {
