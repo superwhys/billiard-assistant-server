@@ -10,11 +10,12 @@ package api
 
 import (
 	"net/http"
-	
+
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/predis"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/handler"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/token"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
 )
@@ -23,10 +24,14 @@ type BilliardApi struct {
 	handler http.Handler
 }
 
-func SetupRouter(redisClient *predis.RedisClient, server *server.BilliardServer) *BilliardApi {
-	tokenManager := token.NewManager(redisClient, token.WithCachePrefix("billiard"))
+func SetupRouter(srvConf *models.Config, redisClient *predis.RedisClient, server *server.BilliardServer) *BilliardApi {
+	tokenManager := token.NewManager(
+		redisClient,
+		token.WithCacheTTL(srvConf.TokenTtl),
+		token.WithCachePrefix(srvConf.TokenPrefix),
+	)
 	middleware := middlewares.NewBilliardMiddleware(tokenManager, server)
-	
+
 	router := pgin.NewServerHandlerWithOptions(
 		pgin.WithMiddlewares(middleware.UserLoginStatMiddleware()),
 		pgin.WithRouters("/v1",
@@ -36,7 +41,7 @@ func SetupRouter(redisClient *predis.RedisClient, server *server.BilliardServer)
 			handler.NewNoticeHandler(server, middleware),
 		),
 	)
-	
+
 	return &BilliardApi{
 		handler: router,
 	}

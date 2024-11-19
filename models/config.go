@@ -10,22 +10,35 @@ package models
 
 import (
 	"errors"
-	
+	"time"
+
 	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/predis"
 )
 
 type Config struct {
-	AvatarDir string
-	UserApi   string
+	AvatarDir   string
+	UserApi     string
+	TokenPrefix string
+	TokenTtl    time.Duration
+}
+
+func (c *Config) SetDefault() {
+	if c.TokenPrefix == "" {
+		c.TokenPrefix = "billiard"
+	}
+
+	if c.TokenTtl == 0 {
+		c.TokenTtl = time.Hour
+	}
 }
 
 type MinioConfig struct {
 	Endpoint  string
 	AccessKey string
 	SecretKey string
-	
+
 	Bucket string
 }
 
@@ -33,7 +46,7 @@ func (c *MinioConfig) Validate() error {
 	if c.Endpoint == "" || c.AccessKey == "" || c.SecretKey == "" || c.Bucket == "" {
 		return errors.New("invalid minio config")
 	}
-	
+
 	return nil
 }
 
@@ -42,15 +55,15 @@ type parser func(out any) error
 func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParser parser) (*Config, *predis.RedisConf, *pgorm.MysqlConfig, *MinioConfig) {
 	srvConfig := new(Config)
 	plog.PanicError(srvConfParser(srvConfig))
-	
+
 	redisConf := new(predis.RedisConf)
 	plog.PanicError(redisConfParser(redisConf))
-	
+
 	mysqlConf := new(pgorm.MysqlConfig)
 	plog.PanicError(mysqlConfParser(mysqlConf))
-	
+
 	minioConf := new(MinioConfig)
 	plog.PanicError(minioConfParser(minioConf))
-	
+
 	return srvConfig, redisConf, mysqlConf, minioConf
 }

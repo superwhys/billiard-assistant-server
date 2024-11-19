@@ -1,6 +1,8 @@
 conf:
   avatarDir: "avatar"
-  userSaApi: "https://billiard.superwhys.top/api/v1/user"
+  userApi: "https://billiard.superwhys.top/api/v1/user"
+  # 30d
+  tokenTtl: 816h 
 redisAuth:
   server: localhost:6379
   db: 10

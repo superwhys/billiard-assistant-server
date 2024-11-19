@@ -11,7 +11,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
-	
+
 	consulpuzzle "github.com/go-puzzles/puzzles/cores/puzzles/consul-puzzle"
 	httppuzzle "github.com/go-puzzles/puzzles/cores/puzzles/http-puzzle"
 )
@@ -32,22 +32,22 @@ func main() {
 		mysqlConfFlag,
 		minioConfFlag,
 	)
-	
+
 	minioClient := minio.NewMinioOss(srvConfig.UserApi, minioConf)
 	redisClient := predis.NewRedisClient(redisConf.DialRedisPool())
 	plog.PanicError(pgorm.RegisterSqlModelWithConf(mysqlConf, dal.AllTables()...))
 	plog.PanicError(pgorm.AutoMigrate(mysqlConf))
-	
+
 	db := pgorm.GetDbByConf(mysqlConf)
-	
+
 	billiardSrv := server.NewBilliardServer(srvConfig, db, redisClient, minioClient)
-	engine := api.SetupRouter(redisClient, billiardSrv)
+	engine := api.SetupRouter(srvConfig, redisClient, billiardSrv)
 	srv := cores.NewPuzzleCore(
 		cores.WithService(pflags.GetServiceName()),
 		consulpuzzle.WithConsulRegister(),
 		httppuzzle.WithCoreHttpCORS(),
 		httppuzzle.WithCoreHttpPuzzle("/api", engine),
 	)
-	
+
 	plog.PanicError(cores.Start(srv, port()))
 }
