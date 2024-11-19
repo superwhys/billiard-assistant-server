@@ -36,6 +36,7 @@ func SetupRouter(srvConf *models.Config, redisClient *predis.RedisClient, server
 		pgin.WithMiddlewares(middleware.UserLoginStatMiddleware()),
 		pgin.WithRouters("/v1",
 			handler.NewUserHandler(server, middleware),
+			handler.NewAuthHandler(server, middleware),
 			handler.NewGameHandler(server, middleware),
 			handler.NewRoomHandler(server, middleware),
 			handler.NewNoticeHandler(server, middleware),

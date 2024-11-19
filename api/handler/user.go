@@ -30,14 +30,8 @@ type UserHandlerApp interface {
 	WechatLogin(ctx context.Context, code string) (*dto.User, *wechat.WechatSessionKeyResponse, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error)
 	UpdateUser(ctx context.Context, userId int, update *dto.UpdateUserRequest) (*dto.User, error)
-	BindPhone(ctx context.Context, userId int, phone, code string) error
-	BindEmail(ctx context.Context, userId int, email, code string) error
 	UploadAvatar(ctx context.Context, userId int, fh *multipart.FileHeader) (string, error)
 	GetAvatar(ctx context.Context, avatarName string, dst io.Writer) error
-	SendPhoneCode(ctx context.Context, phone string) error
-	SendEmailCode(ctx context.Context, email string) error
-	CheckPhoneBind(ctx context.Context, phone string) (bool, error)
-	CheckEmailBind(ctx context.Context, email string) (bool, error)
 }
 
 type UserHandler struct {
@@ -63,14 +57,6 @@ func (u *UserHandler) Init(router gin.IRouter) {
 	userNeedLogin.GET("info", pgin.ResponseHandler(u.getUserInfoHandler))
 	userNeedLogin.PUT("info/update", pgin.RequestWithErrorHandler(u.updateUserHandler))
 	userNeedLogin.POST("avatar/upload", pgin.ResponseHandler(u.uploadAvatarHandler))
-
-	auth := userNeedLogin.Group("auth")
-	auth.POST("bind/phone", pgin.RequestWithErrorHandler(u.bindPhoneHandler))
-	auth.POST("bind/email", pgin.RequestWithErrorHandler(u.bindEmailHandler))
-	auth.POST("check/phone", pgin.RequestResponseHandler(u.checkPhoneBindHandler))
-	auth.POST("check/email", pgin.RequestResponseHandler(u.checkEmailBindHandler))
-	auth.POST("send/phone_code", pgin.RequestWithErrorHandler(u.sendPhoneCodeHandler))
-	auth.POST("send/email_code", pgin.RequestWithErrorHandler(u.sendEmailCodeHandler))
 }
 
 func (u *UserHandler) getUserAvatarHandler(ctx *gin.Context, req *dto.GetUserAvatarRequest) {
@@ -174,78 +160,4 @@ func (u *UserHandler) uploadAvatarHandler(ctx *gin.Context) (*dto.UploadAvatarRe
 	}
 
 	return &dto.UploadAvatarResponse{AvatarUrl: avatarUrl}, nil
-}
-
-func (u *UserHandler) bindPhoneHandler(ctx *gin.Context, req *dto.BindPhoneRequest) error {
-	userId, err := u.middleware.CurrentUserId(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = u.userApp.BindPhone(ctx, userId, req.Phone, req.Code)
-	if exception.CheckException(err) {
-		return errors.Cause(err)
-	} else if err != nil {
-		return exception.ErrBindPhone
-	}
-
-	return nil
-}
-
-func (u *UserHandler) bindEmailHandler(ctx *gin.Context, req *dto.BindEmailRequest) error {
-	userId, err := u.middleware.CurrentUserId(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = u.userApp.BindEmail(ctx, userId, req.Email, req.Code)
-	if exception.CheckException(err) {
-		return errors.Cause(err)
-	} else if err != nil {
-		return exception.ErrBindEmail
-	}
-
-	return nil
-}
-
-func (u *UserHandler) sendPhoneCodeHandler(ctx *gin.Context, req *dto.SendPhoneCodeRequest) error {
-	err := u.userApp.SendPhoneCode(ctx, req.Phone)
-	if exception.CheckException(err) {
-		return errors.Cause(err)
-	} else if err != nil {
-		return exception.ErrSendPhoneCode
-	}
-	return nil
-}
-
-func (u *UserHandler) sendEmailCodeHandler(ctx *gin.Context, req *dto.SendEmailCodeRequest) error {
-	err := u.userApp.SendEmailCode(ctx, req.Email)
-	if exception.CheckException(err) {
-		return errors.Cause(err)
-	} else if err != nil {
-		return exception.ErrSendEmailCode
-	}
-	return nil
-}
-
-func (u *UserHandler) checkPhoneBindHandler(ctx *gin.Context, req *dto.CheckPhoneBindRequest) (*dto.CheckPhoneBindResponse, error) {
-	isBound, err := u.userApp.CheckPhoneBind(ctx, req.Phone)
-	if exception.CheckException(err) {
-		return nil, errors.Cause(err)
-	} else if err != nil {
-		return nil, exception.ErrGetUserInfo
-	}
-
-	return &dto.CheckPhoneBindResponse{IsBound: isBound}, nil
-}
-
-func (u *UserHandler) checkEmailBindHandler(ctx *gin.Context, req *dto.CheckPhoneBindRequest) (*dto.CheckPhoneBindResponse, error) {
-	isBound, err := u.userApp.CheckEmailBind(ctx, req.Phone)
-	if exception.CheckException(err) {
-		return nil, errors.Cause(err)
-	} else if err != nil {
-		return nil, exception.ErrGetUserInfo
-	}
-
-	return &dto.CheckPhoneBindResponse{IsBound: isBound}, nil
 }
