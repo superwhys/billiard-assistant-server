@@ -23,6 +23,7 @@ var (
 	ErrUploadAvatar       = NewBilliardException(400, "上传头像失败")
 	ErrGetAvatar          = NewBilliardException(400, "获取头像失败")
 	ErrLoginFailed        = NewBilliardException(400, "登录失败")
+	ErrLogoutFailed       = NewBilliardException(400, "退出登录失败")
 	ErrUserAuthNotFound   = NewBilliardException(404, "用户认证信息不存在")
 
 	ErrCreateGame   = NewBilliardException(400, "创建游戏失败")

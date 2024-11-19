@@ -54,6 +54,7 @@ func (u *UserHandler) Init(router gin.IRouter) {
 	user.GET("avatar/:avatar_name", pgin.RequestHandler(u.getUserAvatarHandler))
 
 	userNeedLogin := router.Group("user", u.middleware.UserLoginRequired())
+	userNeedLogin.GET("logout", pgin.ErrorReturnHandler(u.logoutHandler))
 	userNeedLogin.GET("info", pgin.ResponseHandler(u.getUserInfoHandler))
 	userNeedLogin.PUT("info/update", pgin.RequestWithErrorHandler(u.updateUserHandler))
 	userNeedLogin.POST("avatar/upload", pgin.ResponseHandler(u.uploadAvatarHandler))
@@ -98,6 +99,14 @@ func (u *UserHandler) loginHandler(ctx *gin.Context, req *dto.LoginRequest) (*dt
 	token := middlewares.NewUserLoginToken(user.UserId, user.Name)
 	u.middleware.SaveToken(token, ctx)
 	return &dto.LoginResponse{Token: token.GetKey(), User: user}, nil
+}
+
+func (u *UserHandler) logoutHandler(ctx *gin.Context) error {
+	token := u.middleware.GetLoginToken(ctx)
+	if err := u.middleware.CancelToken(token); err != nil {
+		return exception.ErrLogoutFailed
+	}
+	return nil
 }
 
 func (u *UserHandler) registerHandler(ctx *gin.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {

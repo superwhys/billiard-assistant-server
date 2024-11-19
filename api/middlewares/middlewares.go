@@ -79,6 +79,10 @@ func (m *BilliardMiddleware) SaveToken(t token.Token, c *gin.Context) {
 	c.Set(m.getTokenContextKey(t), t)
 }
 
+func (m *BilliardMiddleware) CancelToken(t token.Token) error {
+	return m.manager.Remove(t)
+}
+
 func (m *BilliardMiddleware) UserLoginStatMiddleware() gin.HandlerFunc {
 	return m.headerTokenMiddleware(tokenHeaderKey, &UserToken{})
 }
