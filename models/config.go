@@ -15,6 +15,7 @@ import (
 	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/predis"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 )
 
 type Config struct {
@@ -52,7 +53,15 @@ func (c *MinioConfig) Validate() error {
 
 type parser func(out any) error
 
-func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParser parser) (*Config, *predis.RedisConf, *pgorm.MysqlConfig, *MinioConfig) {
+type Configs struct {
+	SrvConf   *Config
+	RedisConf *predis.RedisConf
+	MysqlConf *pgorm.MysqlConfig
+	MinioConf *MinioConfig
+	EmailConf *email.EmailConf
+}
+
+func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParser, emailConfParser parser) *Configs {
 	srvConfig := new(Config)
 	plog.PanicError(srvConfParser(srvConfig))
 
@@ -65,5 +74,14 @@ func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParse
 	minioConf := new(MinioConfig)
 	plog.PanicError(minioConfParser(minioConf))
 
-	return srvConfig, redisConf, mysqlConf, minioConf
+	emailConf := new(email.EmailConf)
+	plog.PanicError(emailConfParser(emailConf))
+
+	return &Configs{
+		SrvConf:   srvConfig,
+		RedisConf: redisConf,
+		MysqlConf: mysqlConf,
+		MinioConf: minioConf,
+		EmailConf: emailConf,
+	}
 }
