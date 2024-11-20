@@ -8,6 +8,7 @@ const (
 	Version   NoticeType = "version"
 	Usage     NoticeType = "usage"
 	Privacy   NoticeType = "privacy"
+	Feedback  NoticeType = "feedback"
 	Agreement NoticeType = "agreement"
 )
 
