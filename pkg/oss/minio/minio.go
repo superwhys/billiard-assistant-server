@@ -41,6 +41,7 @@ type MinioOss struct {
 func NewMinioOss(baseApi string, conf *MinioConfig) *MinioOss {
 	m := &MinioOss{
 		MinioConfig: conf,
+		baseApi:     baseApi,
 	}
 
 	var err error
