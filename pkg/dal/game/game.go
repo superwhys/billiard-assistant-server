@@ -53,7 +53,7 @@ func (g *GameRepoImpl) UpdateGame(ctx context.Context, game *game.Game) error {
 		return err
 	}
 
-	ret.MaxPlayers = game.GameConfig.MaxPlayers
+	ret.MaxPlayers = game.GetMaxPlayers()
 
 	return gameDb.WithContext(ctx).Save(ret)
 }

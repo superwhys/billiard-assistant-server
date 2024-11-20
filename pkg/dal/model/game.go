@@ -13,6 +13,7 @@ type GamePo struct {
 
 	MaxPlayers  int
 	GameType    shared.BilliardGameType
+	Icon        string `gorm:"type:varchar(255)"`
 	Description string `gorm:"type:text"`
 
 	CreatedAt time.Time
@@ -27,6 +28,7 @@ func (g *GamePo) TableName() string {
 func (g *GamePo) FromEntity(ge *game.Game) {
 	g.ID = ge.GameId
 	g.GameType = ge.GameType
+	g.Icon = ge.Icon
 	if ge.GameConfig != nil {
 		g.MaxPlayers = ge.GameConfig.MaxPlayers
 		g.Description = ge.GameConfig.Desc
@@ -41,6 +43,7 @@ func (g *GamePo) ToEntity() *game.Game {
 	return &game.Game{
 		GameId:   g.ID,
 		GameType: g.GameType,
+		Icon:     g.Icon,
 		GameConfig: &game.Config{
 			MaxPlayers: g.MaxPlayers,
 			Desc:       g.Description,

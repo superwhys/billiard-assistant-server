@@ -14,12 +14,10 @@ import (
 	"io"
 	"math/rand"
 	"mime/multipart"
-	"os"
 	"time"
 
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/predis"
-	"github.com/go-puzzles/puzzles/putils"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
@@ -51,7 +49,6 @@ import (
 )
 
 type BilliardServer struct {
-	avatarDir   string
 	redisClient *predis.RedisClient
 	UserSrv     user.IUserService
 	AuthSrv     auth.IAuthService
@@ -70,11 +67,6 @@ func NewBilliardServer(
 	minioClient *minio.MinioOss,
 	emailSender email.EmailSender,
 ) *BilliardServer {
-	if !putils.FileExists(conf.AvatarDir) {
-		err := os.MkdirAll(conf.AvatarDir, 0755)
-		plog.PanicError(err, "createAvatarDir")
-	}
-
 	userRepo := userDal.NewUserRepo(db)
 	authRepo := authDal.NewAuthRepo(db)
 	gameRepo := gameDal.NewGameRepo(db)
@@ -82,12 +74,11 @@ func NewBilliardServer(
 	noticeRepo := noticeDal.NewNoticeRepo(db)
 
 	s := &BilliardServer{
-		avatarDir:   conf.AvatarDir,
 		redisClient: redis,
 		EventBus:    events.NewEventBus(),
 		UserSrv:     userSrv.NewUserService(userRepo, authRepo, minioClient),
 		AuthSrv:     authSrv.NewAuthService(authRepo),
-		GameSrv:     gameSrv.NewGameService(gameRepo, userRepo),
+		GameSrv:     gameSrv.NewGameService(gameRepo, minioClient),
 		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis),
 		NoticeSrv:   noticeSrv.NewNoticeService(noticeRepo),
 		emailSender: emailSender,
@@ -248,7 +239,7 @@ func (s *BilliardServer) UpdateUserName(ctx context.Context, userId int, userNam
 }
 
 func (s *BilliardServer) UploadAvatar(ctx context.Context, userId int, file *multipart.FileHeader) (string, error) {
-	avatarUrl, err := s.UserSrv.UploadAvatar(ctx, userId, s.avatarDir, file)
+	avatarUrl, err := s.UserSrv.UploadAvatar(ctx, userId, file)
 	if err != nil {
 		plog.Errorc(ctx, "upload avatar error: %v", err)
 		return "", exception.ErrUploadAvatar
@@ -364,6 +355,16 @@ func (s *BilliardServer) DeleteGame(ctx context.Context, gameId int) error {
 	}
 
 	return err
+}
+
+func (s *BilliardServer) UploadGameIcon(ctx context.Context, fh *multipart.FileHeader) (string, error) {
+	iconUrl, err := s.GameSrv.UploadGameIcon(ctx, fh)
+	if err != nil {
+		plog.Errorc(ctx, "upload gameIcon error: %v", err)
+		return "", exception.ErrUploadGameIcon
+	}
+
+	return iconUrl, nil
 }
 
 func (s *BilliardServer) CreateRoom(ctx context.Context, userId, gameId int) (*dto.GameRoom, error) {

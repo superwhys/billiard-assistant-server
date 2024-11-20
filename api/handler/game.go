@@ -10,9 +10,11 @@ package handler
 
 import (
 	"context"
+	"mime/multipart"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
+	"github.com/go-puzzles/puzzles/plog"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
@@ -24,6 +26,7 @@ type GameHandlerApp interface {
 	GetGameList(ctx context.Context) ([]*dto.Game, error)
 	CreateGame(ctx context.Context, req *dto.CreateGameRequest) (*dto.Game, error)
 	DeleteGame(ctx context.Context, gameId int) error
+	UploadGameIcon(ctx context.Context, fh *multipart.FileHeader) (string, error)
 }
 
 type GameHandler struct {
@@ -46,6 +49,24 @@ func (g *GameHandler) Init(router gin.IRouter) {
 	gameAdmin := router.Group("game/admin", g.middleware.AdminRequired())
 	gameAdmin.POST("create", pgin.RequestResponseHandler(g.createGame))
 	gameAdmin.DELETE("/:gameId", pgin.RequestWithErrorHandler(g.deleteGameHandler))
+	gameAdmin.POST("icon/upload", pgin.ResponseHandler(g.uploadGameIcon))
+}
+
+func (g *GameHandler) uploadGameIcon(ctx *gin.Context) (*dto.UploadGameIconResponse, error) {
+	fh, err := ctx.FormFile("icon")
+	if err != nil {
+		plog.Errorc(ctx, "get fileHeader error: %v", err)
+		return nil, exception.ErrUploadGameIcon
+	}
+
+	iconUrl, err := g.gameApp.UploadGameIcon(ctx, fh)
+	if exception.CheckException(err) {
+		return nil, errors.Cause(err)
+	} else if err != nil {
+		return nil, exception.ErrUploadAvatar
+	}
+
+	return &dto.UploadGameIconResponse{IconUrl: iconUrl}, nil
 }
 
 func (g *GameHandler) getGamesList(ctx *gin.Context) (*dto.GetGameListResp, error) {

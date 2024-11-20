@@ -13,12 +13,15 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/cores/discover"
+	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
@@ -32,16 +35,16 @@ var _ oss.IOSS = (*MinioOss)(nil)
 type MinioOss struct {
 	*MinioConfig
 	client  *minio.Client
-	userApi string
+	baseApi string
 }
 
-func NewMinioOss(userApi string, conf *MinioConfig) *MinioOss {
+func NewMinioOss(baseApi string, conf *MinioConfig) *MinioOss {
 	m := &MinioOss{
 		MinioConfig: conf,
 	}
 
 	var err error
-	m.userApi, err = m.checkUrl(userApi)
+	m.baseApi, err = m.checkUrl(baseApi)
 	plog.PanicError(err)
 
 	discoverAddr := discover.GetAddress(conf.Endpoint)
@@ -60,6 +63,25 @@ func NewMinioOss(userApi string, conf *MinioConfig) *MinioOss {
 	}
 
 	return m
+}
+
+func (m *MinioOss) Init(router gin.IRouter) {
+	minioGroup := router.Group("minio")
+	minioGroup.GET(":sourceType/:sourceName", pgin.RequestHandler(m.getMinioSourceHandler))
+}
+
+type GetMinioSourceRequest struct {
+	SourceType string `uri:"sourceType" binding:"required"`
+	SourceName string `uri:"sourceName" binding:"required"`
+}
+
+func (m *MinioOss) getMinioSourceHandler(ctx *gin.Context, req *GetMinioSourceRequest) {
+	objName := fmt.Sprintf("%s/%s", req.SourceType, req.SourceName)
+	if err := m.GetFile(ctx, objName, ctx.Writer); err != nil {
+		plog.Errorc(ctx, "get minio source(%s) error: %v", objName, err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
 }
 
 func (m *MinioOss) checkUrl(u string) (string, error) {
@@ -82,34 +104,30 @@ func (m *MinioOss) getFileExt(file string) string {
 	return filepath.Ext(file)
 }
 
-func (m *MinioOss) parseObjInfo(obj string) (originName, objName string) {
+func (m *MinioOss) generateObjName(obj string) string {
 	fileName := fmt.Sprintf("%d-%s", time.Now().UnixMilli(), uuid.New().String())
-
-	objDir := filepath.Dir(obj)
 	ext := m.getFileExt(obj)
-
-	originName = filepath.Base(obj)
-	objName = fmt.Sprintf("%s/%s%s", objDir, fileName, ext)
-
-	return
+	return fileName + ext
 }
 
-func (m *MinioOss) UploadFile(ctx context.Context, size int64, objName string, obj io.Reader) (uri string, err error) {
-	originName, objName := m.parseObjInfo(objName)
+func (m *MinioOss) UploadFile(ctx context.Context, size int64, sourceType oss.OssSourceType, objName string, obj io.Reader) (uri string, err error) {
+	newObjName := m.generateObjName(objName)
 
 	putOpt := minio.PutObjectOptions{
 		UserTags: map[string]string{
-			"type": "avatar",
-			"name": originName,
+			"type": sourceType.String(),
+			"name": objName,
 		},
 	}
-	_, err = m.client.PutObject(ctx, m.Bucket, objName, obj, size, putOpt)
+
+	newObjName = fmt.Sprintf("%s/%s", sourceType.String(), newObjName)
+	_, err = m.client.PutObject(ctx, m.Bucket, newObjName, obj, size, putOpt)
 	if err != nil {
 		return "", errors.Wrap(err, "uploadMinio")
 	}
 
-	// https://billiard.superwhys.top/api/v1/user/avatar/1731850656800-d887240b-0177-44c7-853d-69f14b7cf874.jpeg
-	return fmt.Sprintf("%s/%s", m.userApi, objName), nil
+	// https://billiard.superwhys.top/api/v1/minio/avatar/1731850656800-d887240b-0177-44c7-853d-69f14b7cf874.jpeg
+	return fmt.Sprintf("%s/minio/%s", m.baseApi, newObjName), nil
 }
 
 func (m *MinioOss) GetFile(ctx context.Context, objName string, w io.Writer) error {

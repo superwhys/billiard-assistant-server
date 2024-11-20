@@ -94,15 +94,14 @@ func (us *UserService) UpdateUser(ctx context.Context, update *user.User) (*user
 	return oldUser, nil
 }
 
-func (us *UserService) UploadAvatar(ctx context.Context, userId int, dest string, file *multipart.FileHeader) (string, error) {
+func (us *UserService) UploadAvatar(ctx context.Context, userId int, file *multipart.FileHeader) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
 	}
 	defer src.Close()
 
-	objName := fmt.Sprintf("%s/%s", dest, file.Filename)
-	avatarUrl, err := us.oss.UploadFile(ctx, file.Size, objName, src)
+	avatarUrl, err := us.oss.UploadFile(ctx, file.Size, oss.SourceAvatar, file.Filename, src)
 	if err != nil {
 		return "", errors.Wrap(err, "uploadAvatar")
 	}

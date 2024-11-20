@@ -157,3 +157,7 @@ type AddNoticeRequest struct {
 	NoticeType notice.NoticeType `json:"notice_type" binding:"required"`
 	Contents   []string          `json:"contents" binding:"required"`
 }
+
+type UploadGameIconResponse struct {
+	IconUrl string `json:"icon_url"`
+}

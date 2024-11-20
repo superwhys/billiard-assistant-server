@@ -36,7 +36,7 @@ func main() {
 		emailConfFlag,
 	)
 	redisClient := predis.NewRedisClient(configs.RedisConf.DialRedisPool())
-	minioClient := minio.NewMinioOss(configs.SrvConf.UserApi, configs.MinioConf)
+	minioClient := minio.NewMinioOss(configs.SrvConf.BaseApi, configs.MinioConf)
 	neteasyEmailSender := email.NewNetEasySender(configs.EmailConf, redisClient)
 	plog.PanicError(pgorm.RegisterSqlModelWithConf(configs.MysqlConf, dal.AllTables()...))
 	plog.PanicError(pgorm.AutoMigrate(configs.MysqlConf))
@@ -44,7 +44,7 @@ func main() {
 	db := pgorm.GetDbByConf(configs.MysqlConf)
 
 	billiardSrv := server.NewBilliardServer(configs.SrvConf, db, redisClient, minioClient, neteasyEmailSender)
-	engine := api.SetupRouter(configs.SrvConf, redisClient, billiardSrv)
+	engine := api.SetupRouter(configs.SrvConf, redisClient, minioClient, billiardSrv)
 	srv := cores.NewPuzzleCore(
 		cores.WithService(pflags.GetServiceName()),
 		consulpuzzle.WithConsulRegister(),

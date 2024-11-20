@@ -16,6 +16,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/handler"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/token"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
 )
@@ -24,7 +25,12 @@ type BilliardApi struct {
 	handler http.Handler
 }
 
-func SetupRouter(srvConf *models.Config, redisClient *predis.RedisClient, server *server.BilliardServer) *BilliardApi {
+func SetupRouter(
+	srvConf *models.Config,
+	redisClient *predis.RedisClient,
+	minioClient *minio.MinioOss,
+	server *server.BilliardServer,
+) *BilliardApi {
 	tokenManager := token.NewManager(
 		redisClient,
 		token.WithCacheTTL(srvConf.TokenTtl),
@@ -40,6 +46,7 @@ func SetupRouter(srvConf *models.Config, redisClient *predis.RedisClient, server
 			handler.NewGameHandler(server, middleware),
 			handler.NewRoomHandler(server, middleware),
 			handler.NewNoticeHandler(server, middleware),
+			minioClient,
 		),
 	)
 

@@ -16,6 +16,6 @@ type IUserService interface {
 	UpdateUserRole(ctx context.Context, userId int, role Role) error
 
 	// Avatar management
-	UploadAvatar(ctx context.Context, userId int, dest string, fh *multipart.FileHeader) (string, error)
+	UploadAvatar(ctx context.Context, userId int, fh *multipart.FileHeader) (string, error)
 	GetUserAvatar(ctx context.Context, avatarName string, dst io.Writer) error
 }

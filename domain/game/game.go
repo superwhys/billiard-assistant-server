@@ -2,13 +2,14 @@ package game
 
 import (
 	"fmt"
-	
+
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type Game struct {
 	GameId     int
 	GameType   shared.BilliardGameType
+	Icon       string
 	GameConfig *Config
 }
 

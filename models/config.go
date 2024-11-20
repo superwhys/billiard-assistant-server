@@ -19,8 +19,7 @@ import (
 )
 
 type Config struct {
-	AvatarDir   string
-	UserApi     string
+	BaseApi     string
 	TokenPrefix string
 	TokenTtl    time.Duration
 }
