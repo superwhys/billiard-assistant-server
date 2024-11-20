@@ -25,12 +25,12 @@ func GameEntityToDto(g *game.Game) *Game {
 		GameId:   g.GameId,
 		GameType: g.GameType.String(),
 	}
-	
+
 	if g.GameConfig != nil {
 		game.MaxPlayers = g.GameConfig.MaxPlayers
 		game.Desc = g.GameConfig.Desc
 	}
-	
+
 	return game
 }
 
@@ -38,9 +38,19 @@ type GetGameListResp struct {
 	Games []*Game `json:"games"`
 }
 
+type UpdateGameRequest struct {
+	GameId     int    `uri:"gameId" binding:"gt=0"`
+	MaxPlayers int    `json:"max_players"`
+	IsActivate bool   `json:"is_activate"`
+	IconUrl    string `json:"icon_url"`
+	Desc       string `json:"desc"`
+}
+
 type CreateGameRequest struct {
 	MaxPlayers int                     `json:"max_players" binding:"required"`
 	GameType   shared.BilliardGameType `json:"game_type" binding:"required"`
+	IsActivate bool                    `json:"is_activate" binding:"required"`
+	IconUrl    string                  `json:"icon_url"`
 	Desc       string                  `json:"desc"`
 }
 

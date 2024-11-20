@@ -333,6 +333,7 @@ func (s *BilliardServer) GetUserGameRooms(ctx context.Context, userId int) ([]*d
 func (s *BilliardServer) CreateGame(ctx context.Context, req *dto.CreateGameRequest) (*dto.Game, error) {
 	g := &game.Game{
 		GameType: req.GameType,
+		Icon:     req.IconUrl,
 		GameConfig: &game.Config{
 			MaxPlayers: req.MaxPlayers,
 			Desc:       req.Desc,
@@ -345,6 +346,24 @@ func (s *BilliardServer) CreateGame(ctx context.Context, req *dto.CreateGameRequ
 	}
 
 	return dto.GameEntityToDto(g), nil
+}
+
+func (s *BilliardServer) UpdateGame(ctx context.Context, req *dto.UpdateGameRequest) error {
+	g := &game.Game{
+		GameId: req.GameId,
+		Icon:   req.IconUrl,
+		GameConfig: &game.Config{
+			MaxPlayers: req.MaxPlayers,
+			Desc:       req.Desc,
+		},
+	}
+	err := s.GameSrv.UpdateGame(ctx, g)
+	if err != nil {
+		plog.Errorc(ctx, "update game error: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *BilliardServer) DeleteGame(ctx context.Context, gameId int) error {

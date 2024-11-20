@@ -29,6 +29,7 @@ var (
 
 	ErrCreateGame     = NewBilliardException(400, "创建游戏失败")
 	ErrDeleteGame     = NewBilliardException(400, "删除游戏失败")
+	ErrUpdateGame     = NewBilliardException(400, "更新游戏信息失败")
 	ErrGameNotFound   = NewBilliardException(404, "游戏不存在")
 	ErrUploadGameIcon = NewBilliardException(400, "上传游戏图标失败")
 

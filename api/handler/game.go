@@ -25,6 +25,7 @@ import (
 type GameHandlerApp interface {
 	GetGameList(ctx context.Context) ([]*dto.Game, error)
 	CreateGame(ctx context.Context, req *dto.CreateGameRequest) (*dto.Game, error)
+	UpdateGame(ctx context.Context, req *dto.UpdateGameRequest) error
 	DeleteGame(ctx context.Context, gameId int) error
 	UploadGameIcon(ctx context.Context, fh *multipart.FileHeader) (string, error)
 }
@@ -48,8 +49,20 @@ func (g *GameHandler) Init(router gin.IRouter) {
 	// game admin router
 	gameAdmin := router.Group("game/admin", g.middleware.AdminRequired())
 	gameAdmin.POST("create", pgin.RequestResponseHandler(g.createGame))
+	gameAdmin.PUT("update/:gameId", pgin.RequestWithErrorHandler(g.updateGameHandler))
 	gameAdmin.DELETE("/:gameId", pgin.RequestWithErrorHandler(g.deleteGameHandler))
 	gameAdmin.POST("icon/upload", pgin.ResponseHandler(g.uploadGameIcon))
+}
+
+func (g *GameHandler) updateGameHandler(ctx *gin.Context, req *dto.UpdateGameRequest) error {
+	err := g.gameApp.UpdateGame(ctx, req)
+	if exception.CheckException(err) {
+		return errors.Cause(err)
+	} else if err != nil {
+		return exception.ErrUpdateGame
+	}
+
+	return nil
 }
 
 func (g *GameHandler) uploadGameIcon(ctx *gin.Context) (*dto.UploadGameIconResponse, error) {

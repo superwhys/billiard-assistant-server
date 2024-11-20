@@ -39,6 +39,10 @@ func (gs *GameService) DeleteGame(ctx context.Context, gameId int) error {
 	return gs.gameRepo.DeleteGame(ctx, gameId)
 }
 
+func (gs *GameService) UpdateGame(ctx context.Context, g *game.Game) error {
+	return gs.gameRepo.UpdateGame(ctx, g)
+}
+
 func (gs *GameService) GetGameList(ctx context.Context) ([]*game.Game, error) {
 	return gs.gameRepo.GetGameList(ctx)
 }
