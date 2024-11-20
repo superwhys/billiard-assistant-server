@@ -10,7 +10,8 @@ import (
 type NoticePo struct {
 	ID int `gorm:"primarykey"`
 
-	Message string
+	NoticeType notice.NoticeType
+	Message    string
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -27,6 +28,16 @@ func (n *NoticePo) ToEntity() *notice.Notice {
 	}
 
 	return &notice.Notice{
-		Message: n.Message,
+		NoticeType: n.NoticeType,
+		Message:    n.Message,
 	}
+}
+
+func (n *NoticePo) FromEntity(nt *notice.Notice) {
+	if nt == nil {
+		return
+	}
+
+	n.NoticeType = nt.NoticeType
+	n.Message = nt.Message
 }

@@ -282,6 +282,33 @@ func (s *BilliardServer) GetNoticeList(ctx context.Context) ([]*dto.Notice, erro
 	return ret, nil
 }
 
+func (s *BilliardServer) GetSystemNotice(ctx context.Context) ([]*dto.Notice, error) {
+	notices, err := s.NoticeSrv.GetNoticeByType(ctx, notice.System)
+	if err != nil {
+		plog.Errorc(ctx, "get notice list error: %v", err)
+		return nil, err
+	}
+
+	ret := make([]*dto.Notice, 0, len(notices))
+	for _, n := range notices {
+		ret = append(ret, dto.NoticeEntityToDto(n))
+	}
+
+	return ret, nil
+}
+
+func (s *BilliardServer) AddNotices(ctx context.Context, req *dto.AddNoticeRequest) error {
+	notices := make([]*notice.Notice, 0, len(req.Contents))
+	for _, content := range req.Contents {
+		notices = append(notices, &notice.Notice{
+			NoticeType: req.NoticeType,
+			Message:    content,
+		})
+	}
+
+	return s.NoticeSrv.AddNotices(ctx, notices)
+}
+
 func (s *BilliardServer) GetGameList(ctx context.Context) ([]*dto.Game, error) {
 	gameList, err := s.GameSrv.GetGameList(ctx)
 	if err != nil {

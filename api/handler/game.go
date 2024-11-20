@@ -10,7 +10,7 @@ package handler
 
 import (
 	"context"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/pkg/errors"
@@ -41,7 +41,7 @@ func NewGameHandler(server *server.BilliardServer, middleware *middlewares.Billi
 func (g *GameHandler) Init(router gin.IRouter) {
 	game := router.Group("game")
 	game.GET("list", pgin.ResponseHandler(g.getGamesList))
-	
+
 	// game admin router
 	gameAdmin := router.Group("game/admin", g.middleware.AdminRequired())
 	gameAdmin.POST("create", pgin.RequestResponseHandler(g.createGame))
@@ -55,7 +55,7 @@ func (g *GameHandler) getGamesList(ctx *gin.Context) (*dto.GetGameListResp, erro
 	} else if err != nil {
 		return nil, exception.ErrGetGameList
 	}
-	
+
 	return &dto.GetGameListResp{Games: games}, nil
 }
 
@@ -66,7 +66,7 @@ func (g *GameHandler) createGame(ctx *gin.Context, req *dto.CreateGameRequest) (
 	} else if err != nil {
 		return nil, exception.ErrCreateGame
 	}
-	
+
 	return game, nil
 }
 
@@ -77,6 +77,6 @@ func (g *GameHandler) deleteGameHandler(ctx *gin.Context, req *dto.DeleteGameReq
 	} else if err != nil {
 		return exception.ErrDeleteGame
 	}
-	
+
 	return nil
 }

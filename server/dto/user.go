@@ -11,6 +11,7 @@ package dto
 import (
 	"errors"
 
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
@@ -150,4 +151,9 @@ type CheckPhoneBindRequest struct {
 
 type CheckPhoneBindResponse struct {
 	IsBound bool `json:"is_bound"`
+}
+
+type AddNoticeRequest struct {
+	NoticeType notice.NoticeType `json:"notice_type" binding:"required"`
+	Contents   []string          `json:"contents" binding:"required"`
 }

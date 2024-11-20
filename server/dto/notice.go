@@ -11,7 +11,8 @@ package dto
 import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
 
 type Notice struct {
-	Message string
+	NoticeType notice.NoticeType `json:"notice_type"`
+	Message    string            `json:"message"`
 }
 
 type GetNoticeListResp struct {
@@ -20,6 +21,7 @@ type GetNoticeListResp struct {
 
 func NoticeEntityToDto(n *notice.Notice) *Notice {
 	return &Notice{
-		Message: n.Message,
+		NoticeType: n.NoticeType,
+		Message:    n.Message,
 	}
 }

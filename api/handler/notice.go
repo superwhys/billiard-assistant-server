@@ -10,7 +10,7 @@ package handler
 
 import (
 	"context"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/pkg/errors"
@@ -22,6 +22,8 @@ import (
 
 type NoticeHandlerApp interface {
 	GetNoticeList(ctx context.Context) ([]*dto.Notice, error)
+	GetSystemNotice(ctx context.Context) ([]*dto.Notice, error)
+	AddNotices(ctx context.Context, req *dto.AddNoticeRequest) error
 }
 
 type NoticeHandler struct {
@@ -37,8 +39,36 @@ func NewNoticeHandler(server *server.BilliardServer, middleware *middlewares.Bil
 }
 
 func (g *NoticeHandler) Init(router gin.IRouter) {
-	notic := router.Group("notice")
-	notic.GET("list", pgin.ResponseHandler(g.getNoticeList))
+	notice := router.Group("notice")
+	notice.GET("", pgin.ResponseHandler(g.getNoticeList))
+	notice.GET("system", pgin.ResponseHandler(g.getSystemNotice))
+
+	noticeAdmin := router.Group("notice/admin", g.middleware.AdminRequired())
+	noticeAdmin.POST("", pgin.RequestWithErrorHandler(g.addNotice))
+}
+
+func (g *NoticeHandler) addNotice(ctx *gin.Context, req *dto.AddNoticeRequest) error {
+	err := g.noticeApp.AddNotices(ctx, req)
+	if exception.CheckException(err) {
+		return errors.Cause(err)
+	} else if err != nil {
+		return exception.ErrAddNotice
+	}
+
+	return nil
+}
+
+func (g *NoticeHandler) getSystemNotice(ctx *gin.Context) (*dto.GetNoticeListResp, error) {
+	notices, err := g.noticeApp.GetSystemNotice(ctx)
+	if exception.CheckException(err) {
+		return nil, errors.Cause(err)
+	} else if err != nil {
+		return nil, exception.ErrGetSystemNotice
+	}
+
+	return &dto.GetNoticeListResp{
+		Notices: notices,
+	}, nil
 }
 
 func (g *NoticeHandler) getNoticeList(ctx *gin.Context) (*dto.GetNoticeListResp, error) {
@@ -48,7 +78,7 @@ func (g *NoticeHandler) getNoticeList(ctx *gin.Context) (*dto.GetNoticeListResp,
 	} else if err != nil {
 		return nil, exception.ErrGetNoticeList
 	}
-	
+
 	return &dto.GetNoticeListResp{
 		Notices: notices,
 	}, nil

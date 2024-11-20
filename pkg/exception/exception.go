@@ -43,7 +43,9 @@ var (
 	ErrGetGameRoomList = NewBilliardException(400, "获取房间列表失败")
 	ErrGetGameRoom     = NewBilliardException(400, "获取游戏房间失败")
 
-	ErrGetNoticeList = NewBilliardException(400, "获取通知列表失败")
+	ErrGetNoticeList   = NewBilliardException(400, "获取通知列表失败")
+	ErrGetSystemNotice = NewBilliardException(400, "获取系统通知失败")
+	ErrAddNotice       = NewBilliardException(400, "添加通知失败")
 
 	ErrUserNotInRoom  = NewBilliardException(400, "用户不在房间内")
 	ErrNotRoomOwner   = NewBilliardException(400, "不是房主")

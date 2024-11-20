@@ -27,6 +27,7 @@ func newNoticePo(db *gorm.DB, opts ...gen.DOOption) noticePo {
 	tableName := _noticePo.noticePoDo.TableName()
 	_noticePo.ALL = field.NewAsterisk(tableName)
 	_noticePo.ID = field.NewInt(tableName, "id")
+	_noticePo.NoticeType = field.NewString(tableName, "notice_type")
 	_noticePo.Message = field.NewString(tableName, "message")
 	_noticePo.CreatedAt = field.NewTime(tableName, "created_at")
 	_noticePo.UpdatedAt = field.NewTime(tableName, "updated_at")
@@ -40,12 +41,13 @@ func newNoticePo(db *gorm.DB, opts ...gen.DOOption) noticePo {
 type noticePo struct {
 	noticePoDo noticePoDo
 
-	ALL       field.Asterisk
-	ID        field.Int
-	Message   field.String
-	CreatedAt field.Time
-	UpdatedAt field.Time
-	DeletedAt field.Field
+	ALL        field.Asterisk
+	ID         field.Int
+	NoticeType field.String
+	Message    field.String
+	CreatedAt  field.Time
+	UpdatedAt  field.Time
+	DeletedAt  field.Field
 
 	fieldMap map[string]field.Expr
 }
@@ -63,6 +65,7 @@ func (n noticePo) As(alias string) *noticePo {
 func (n *noticePo) updateTableName(table string) *noticePo {
 	n.ALL = field.NewAsterisk(table)
 	n.ID = field.NewInt(table, "id")
+	n.NoticeType = field.NewString(table, "notice_type")
 	n.Message = field.NewString(table, "message")
 	n.CreatedAt = field.NewTime(table, "created_at")
 	n.UpdatedAt = field.NewTime(table, "updated_at")
@@ -91,8 +94,9 @@ func (n *noticePo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (n *noticePo) fillFieldMap() {
-	n.fieldMap = make(map[string]field.Expr, 5)
+	n.fieldMap = make(map[string]field.Expr, 6)
 	n.fieldMap["id"] = n.ID
+	n.fieldMap["notice_type"] = n.NoticeType
 	n.fieldMap["message"] = n.Message
 	n.fieldMap["created_at"] = n.CreatedAt
 	n.fieldMap["updated_at"] = n.UpdatedAt

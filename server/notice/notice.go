@@ -10,7 +10,7 @@ package noticeSrv
 
 import (
 	"context"
-	
+
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
 )
@@ -31,4 +31,16 @@ func (n *NoticeService) GetNoticeList(ctx context.Context) ([]*notice.Notice, er
 		return nil, errors.Wrap(err, "getNoticeList")
 	}
 	return notices, nil
+}
+
+func (n *NoticeService) GetNoticeByType(ctx context.Context, bt notice.NoticeType) ([]*notice.Notice, error) {
+	notices, err := n.noticeRepo.GetNoticesByType(ctx, bt)
+	if err != nil {
+		return nil, errors.Wrap(err, "getNoticeByType")
+	}
+	return notices, nil
+}
+
+func (n *NoticeService) AddNotices(ctx context.Context, notices []*notice.Notice) error {
+	return n.noticeRepo.AddNoticeBatch(ctx, notices)
 }
