@@ -25,6 +25,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
@@ -332,7 +333,7 @@ func (s *BilliardServer) GetUserGameRooms(ctx context.Context, userId int) ([]*d
 
 func (s *BilliardServer) CreateGame(ctx context.Context, req *dto.CreateGameRequest) (*dto.Game, error) {
 	g := &game.Game{
-		GameType: req.GameType,
+		GameType: shared.BilliardGameType(req.GameType),
 		Icon:     req.IconUrl,
 		GameConfig: &game.Config{
 			MaxPlayers: req.MaxPlayers,
