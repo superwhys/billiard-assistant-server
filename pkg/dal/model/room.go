@@ -64,12 +64,17 @@ func (r *RoomPo) ToEntity() *room.Room {
 		})
 	}
 
+	var game room.Game
+	if r.Game != nil {
+		game = r.Game.ToEntity()
+	}
+
 	return &room.Room{
 		RoomId:        r.ID,
 		GameId:        r.GameID,
 		OwnerId:       r.OwnerID,
 		Players:       players,
-		Game:          r.Game.ToEntity(),
+		Game:          game,
 		GameStatus:    r.GameStatus,
 		WinLoseStatus: r.WinLoseStatus,
 		CreateAt:      r.CreatedAt,
