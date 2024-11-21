@@ -10,6 +10,7 @@ type Game struct {
 	GameId     int
 	GameType   shared.BilliardGameType
 	Icon       string
+	IsActivate bool
 	GameConfig *Config
 }
 

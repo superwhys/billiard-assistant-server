@@ -16,13 +16,15 @@ type Game struct {
 	GameId     int
 	MaxPlayers int
 	GameType   string
+	IsActivate bool
 	Desc       string
 }
 
 func GameEntityToDto(g *game.Game) *Game {
 	game := &Game{
-		GameId:   g.GameId,
-		GameType: g.GameType.String(),
+		GameId:     g.GameId,
+		GameType:   g.GameType.String(),
+		IsActivate: g.IsActivate,
 	}
 
 	if g.GameConfig != nil {
