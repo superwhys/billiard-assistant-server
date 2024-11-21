@@ -10,7 +10,6 @@ package dto
 
 import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type Game struct {
@@ -47,11 +46,11 @@ type UpdateGameRequest struct {
 }
 
 type CreateGameRequest struct {
-	MaxPlayers int                     `json:"max_players" binding:"required"`
-	GameType   shared.BilliardGameType `json:"game_type" binding:"required"`
-	IsActivate bool                    `json:"is_activate" binding:"required"`
-	IconUrl    string                  `json:"icon_url"`
-	Desc       string                  `json:"desc"`
+	MaxPlayers int    `json:"max_players" binding:"required"`
+	GameType   int    `json:"game_type" binding:"required"`
+	IsActivate bool   `json:"is_activate" binding:"required"`
+	IconUrl    string `json:"icon_url"`
+	Desc       string `json:"desc"`
 }
 
 type DeleteGameRequest struct {

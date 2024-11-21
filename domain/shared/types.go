@@ -3,7 +3,8 @@ package shared
 type BilliardGameType int
 
 const (
-	ChineseEightBall BilliardGameType = iota
+	GameTypeUnkonwon BilliardGameType = iota
+	ChineseEightBall
 	Snooker
 	Genting
 )
