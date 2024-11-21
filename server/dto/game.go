@@ -48,7 +48,7 @@ type UpdateGameRequest struct {
 type CreateGameRequest struct {
 	MaxPlayers int    `json:"max_players" binding:"required"`
 	GameType   int    `json:"game_type" binding:"required"`
-	IsActivate bool   `json:"is_activate" binding:"required"`
+	IsActivate bool   `json:"is_activate"`
 	IconUrl    string `json:"icon_url"`
 	Desc       string `json:"desc"`
 }
