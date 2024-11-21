@@ -30,6 +30,10 @@ func (c *Game) GetGameType() shared.BilliardGameType {
 	return c.GameType
 }
 
+func (c *Game) GetIcon() string {
+	return c.Icon
+}
+
 type Config struct {
 	MaxPlayers int
 	Desc       string

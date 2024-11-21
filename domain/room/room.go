@@ -9,6 +9,8 @@
 package room
 
 import (
+	"time"
+
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
@@ -20,6 +22,7 @@ type Game interface {
 	shared.BaseGame
 	GetMaxPlayers() int
 	GetGameType() shared.BilliardGameType
+	GetIcon() string
 }
 
 type Player struct {
@@ -35,6 +38,7 @@ type Room struct {
 	Game          Game
 	GameStatus    Status
 	WinLoseStatus WinLoseStatus
+	CreateAt      time.Time
 }
 
 func (r *Room) GetRoomId() int {
@@ -55,7 +59,7 @@ func (r *Room) CanStart() bool {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -73,7 +77,7 @@ func (r *Room) IsInRoom(userId int) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -84,7 +88,7 @@ func (r *Room) StartGame() {
 type WinLoseStatus int
 
 const (
-	Unknown = iota
+	WinLoseUnknown = iota
 	Win
 	Lose
 	Tie
@@ -106,7 +110,8 @@ func (gt WinLoseStatus) String() string {
 type Status int
 
 const (
-	Preparing Status = iota
+	StatusUnknown Status = iota
+	Preparing
 	Playing
 	Finish
 )

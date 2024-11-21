@@ -72,5 +72,6 @@ func (r *RoomPo) ToEntity() *room.Room {
 		Game:          r.Game.ToEntity(),
 		GameStatus:    r.GameStatus,
 		WinLoseStatus: r.WinLoseStatus,
+		CreateAt:      r.CreatedAt,
 	}
 }

@@ -8,26 +8,43 @@
 
 package dto
 
-import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+import (
+	"time"
+
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+)
 
 type GameRoom struct {
-	RoomId        int
-	GameId        int
-	OwnerId       int
-	Players       []int
-	GameStatus    string
-	WinLoseStatus string
+	RoomId int `json:"room_id"`
+
+	GameId     int    `json:"game_id"`
+	GameIcon   string `json:"game_icon"`
+	GameType   string `json:"game_type"`
+	GameStatus string `json:"game_status"`
+
+	OwnerId       int       `json:"owner_id"`
+	Players       []int     `json:"players"`
+	WinLoseStatus string    `json:"win_lose_status"`
+	CreateAt      time.Time `json:"create_at"`
 }
 
 func GameRoomEntityToDto(gr *room.Room) *GameRoom {
-	return &GameRoom{
+	gameRoom := &GameRoom{
 		RoomId:        gr.RoomId,
 		GameId:        gr.GameId,
 		OwnerId:       gr.OwnerId,
 		Players:       gr.PlayerIds(),
 		GameStatus:    gr.GameStatus.String(),
 		WinLoseStatus: gr.WinLoseStatus.String(),
+		CreateAt:      gr.CreateAt,
 	}
+
+	if gr.Game != nil {
+		gameRoom.GameType = gr.Game.GetGameType().String()
+		gameRoom.GameIcon = gr.Game.GetIcon()
+	}
+
+	return gameRoom
 }
 
 type CreateGameRoomRequest struct {
