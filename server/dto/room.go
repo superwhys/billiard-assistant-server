@@ -62,7 +62,7 @@ type UpdateGameRoomRequest struct {
 }
 
 type DeleteGameRoomRequest struct {
-	RoomId int `json:"game_id"`
+	RoomId int `json:"room_id"`
 }
 
 type EnterGameRoomRequest struct {
