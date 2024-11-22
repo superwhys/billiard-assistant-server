@@ -30,7 +30,7 @@ type UserHandlerApp interface {
 	WechatLogin(ctx context.Context, code string) (*dto.User, *wechat.WechatSessionKeyResponse, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error)
 	UpdateUserName(ctx context.Context, userId int, userName string) error
-	UpdateUserGender(ctx context.Context, userId int, gender string) error
+	UpdateUserGender(ctx context.Context, userId int, gender int) error
 	UploadAvatar(ctx context.Context, userId int, fh *multipart.FileHeader) (string, error)
 	GetAvatar(ctx context.Context, avatarName string, dst io.Writer) error
 }

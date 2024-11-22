@@ -123,7 +123,7 @@ type UpdateUserNameRequest struct {
 }
 
 type UpdateUserGenderRequest struct {
-	Gender string `json:"gender"`
+	Gender int `json:"gender" binding:"oneof=1 2"`
 }
 
 type UploadAvatarResponse struct {

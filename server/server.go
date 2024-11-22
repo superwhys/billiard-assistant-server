@@ -239,10 +239,10 @@ func (s *BilliardServer) UpdateUserName(ctx context.Context, userId int, userNam
 	return nil
 }
 
-func (s *BilliardServer) UpdateUserGender(ctx context.Context, userId int, gender string) error {
+func (s *BilliardServer) UpdateUserGender(ctx context.Context, userId int, gender int) error {
 	u := &user.User{
 		UserId: userId,
-		Gender: user.Gender.Parse(0, gender),
+		Gender: user.Gender(gender),
 	}
 
 	u, err := s.UserSrv.UpdateUser(ctx, u)
