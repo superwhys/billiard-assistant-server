@@ -8,6 +8,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gorm.io/gen"
 	"gorm.io/gorm"
 )
 
@@ -149,13 +150,28 @@ func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room,
 	return room, nil
 }
 
-func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int) ([]*room.Room, error) {
+func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64, error) {
+	roomDb := r.db.RoomPo
+
+	count, err := roomDb.WithContext(ctx).
+		Where(roomDb.OwnerID.Eq(userId)).
+		Count()
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
 	userDb := r.db.UserPo
+
+	condition := []gen.Condition{userDb.ID.Eq(userId)}
 	user, err := userDb.WithContext(ctx).
 		Preload(userDb.Rooms).
 		Preload(userDb.Rooms.Users).
 		Preload(userDb.Rooms.Game).
-		Where(userDb.ID.Eq(userId)).
+		Where(condition...).
 		First()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, exception.ErrUserNotFound
@@ -165,6 +181,9 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int) ([]*roo
 
 	ret := make([]*room.Room, 0, len(user.Rooms))
 	for _, room := range user.Rooms {
+		if justOwner && room.OwnerID != userId {
+			continue
+		}
 		ret = append(ret, room.ToEntity())
 	}
 

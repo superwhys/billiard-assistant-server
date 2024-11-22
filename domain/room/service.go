@@ -16,7 +16,7 @@ type IRoomService interface {
 	CreateGameRoom(ctx context.Context, userId, gameId int) (*Room, error)
 	DeleteGameRoom(ctx context.Context, roomId, userId int) error
 	UpdateGameRoomStatus(ctx context.Context, room *Room) error
-	GetUserGameRooms(ctx context.Context, userId int) ([]*Room, error)
+	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
 	EnterGameRoom(ctx context.Context, userId, roomId int) (User, error)
 	QuitGameRoom(ctx context.Context, userId, roomId int) (User, error)

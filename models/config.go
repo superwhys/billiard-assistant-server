@@ -18,10 +18,21 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 )
 
+type RoomConfig struct {
+	UserMaxRoomCreateNumber int64
+}
+
+func (r *RoomConfig) SetDefault() {
+	if r.UserMaxRoomCreateNumber == 0 {
+		r.UserMaxRoomCreateNumber = 20
+	}
+}
+
 type Config struct {
 	BaseApi     string
 	TokenPrefix string
 	TokenTtl    time.Duration
+	RoomConfig  *RoomConfig
 }
 
 func (c *Config) SetDefault() {

@@ -80,7 +80,7 @@ func NewBilliardServer(
 		UserSrv:     userSrv.NewUserService(userRepo, authRepo, minioClient),
 		AuthSrv:     authSrv.NewAuthService(authRepo),
 		GameSrv:     gameSrv.NewGameService(gameRepo, minioClient),
-		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis),
+		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis, conf.RoomConfig),
 		NoticeSrv:   noticeSrv.NewNoticeService(noticeRepo),
 		emailSender: emailSender,
 	}
@@ -317,7 +317,7 @@ func (s *BilliardServer) GetGameList(ctx context.Context) ([]*dto.Game, error) {
 }
 
 func (s *BilliardServer) GetUserGameRooms(ctx context.Context, userId int) ([]*dto.GameRoom, error) {
-	rs, err := s.RoomSrv.GetUserGameRooms(ctx, userId)
+	rs, err := s.RoomSrv.GetUserGameRooms(ctx, userId, true)
 	if err != nil {
 		plog.Errorc(ctx, "get user game rooms error: %v", err)
 		return nil, err
@@ -332,6 +332,7 @@ func (s *BilliardServer) GetUserGameRooms(ctx context.Context, userId int) ([]*d
 }
 
 func (s *BilliardServer) CreateGame(ctx context.Context, req *dto.CreateGameRequest) (*dto.Game, error) {
+
 	g := &game.Game{
 		GameType: shared.BilliardGameType(req.GameType),
 		Icon:     req.IconUrl,

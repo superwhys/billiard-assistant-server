@@ -17,7 +17,8 @@ type IRoomRepo interface {
 	UpdateRoom(ctx context.Context, room *Room) error
 	DeleteRoom(ctx context.Context, roomId int) error
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
-	GetUserGameRooms(ctx context.Context, userId int) ([]*Room, error)
+	GetOwnerRoomCount(ctx context.Context, userId int) (int64, error)
+	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)
 	AddUserToRoom(ctx context.Context, userId, roomId int) (User, error)
 	RemoveUserFromRoom(ctx context.Context, userId, roomId int) (User, error)
 	UpdatePlayerPrepared(ctx context.Context, userId, roomId int, prepared bool) error
