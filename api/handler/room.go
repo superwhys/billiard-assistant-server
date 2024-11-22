@@ -41,7 +41,6 @@ func NewRoomHandler(server *server.BilliardServer, middleware *middlewares.Billi
 }
 
 func (r *RoomHandler) Init(router gin.IRouter) {
-
 	roomAuth := router.Group("room", r.middleware.UserLoginRequired())
 	roomAuth.POST("create", pgin.RequestResponseHandler(r.createGameRoom))
 	roomAuth.DELETE("delete", pgin.RequestWithErrorHandler(r.deleteGameRoom))

@@ -77,7 +77,7 @@ func NewBilliardException(code int, err string) *BilliardException {
 }
 
 func (se *BilliardException) Error() string {
-	return fmt.Sprintf("错误: %s.", se.Err)
+	return fmt.Sprintf("%s.", se.Err)
 }
 
 func CheckException(err error) bool {
