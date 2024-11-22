@@ -21,8 +21,9 @@ type RoomService struct {
 
 func NewRoomService(remoRepo room.IRoomRepo, redisClient *predis.RedisClient, roomConfig *models.RoomConfig) *RoomService {
 	return &RoomService{
-		roomRepo: remoRepo,
-		locker:   locker.NewLocker(redisClient, locker.WithPrefix("billiard:room")),
+		roomRepo:   remoRepo,
+		roomConfig: roomConfig,
+		locker:     locker.NewLocker(redisClient, locker.WithPrefix("billiard:room")),
 	}
 }
 
