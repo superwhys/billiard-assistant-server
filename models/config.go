@@ -43,6 +43,11 @@ func (c *Config) SetDefault() {
 	if c.TokenTtl == 0 {
 		c.TokenTtl = time.Hour
 	}
+
+	if c.RoomConfig == nil {
+		c.RoomConfig = new(RoomConfig)
+		c.RoomConfig.SetDefault()
+	}
 }
 
 type parser func(out any) error
