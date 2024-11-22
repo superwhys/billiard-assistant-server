@@ -30,6 +30,7 @@ type UserHandlerApp interface {
 	WechatLogin(ctx context.Context, code string) (*dto.User, *wechat.WechatSessionKeyResponse, error)
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.User, error)
 	UpdateUserName(ctx context.Context, userId int, userName string) error
+	UpdateUserGender(ctx context.Context, userId int, gender string) error
 	UploadAvatar(ctx context.Context, userId int, fh *multipart.FileHeader) (string, error)
 	GetAvatar(ctx context.Context, avatarName string, dst io.Writer) error
 }
@@ -57,6 +58,7 @@ func (u *UserHandler) Init(router gin.IRouter) {
 	userNeedLogin.GET("logout", pgin.ErrorReturnHandler(u.logoutHandler))
 	userNeedLogin.GET("info", pgin.ResponseHandler(u.getUserInfoHandler))
 	userNeedLogin.PUT("nickname/update", pgin.RequestWithErrorHandler(u.updateUserNameHandler))
+	userNeedLogin.PUT("gender/update", pgin.RequestWithErrorHandler(u.updateUserGenderHander))
 	userNeedLogin.POST("avatar/upload", pgin.ResponseHandler(u.uploadAvatarHandler))
 }
 
@@ -145,6 +147,24 @@ func (u *UserHandler) updateUserNameHandler(ctx *gin.Context, req *dto.UpdateUse
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrUpdateUserName
+	}
+
+	return nil
+}
+
+func (u *UserHandler) updateUserGenderHander(ctx *gin.Context, req *dto.UpdateUserGenderRequest) error {
+	userDomain, err := u.middleware.CurrentUser(ctx)
+	if exception.CheckException(err) {
+		return errors.Cause(err)
+	} else if err != nil {
+		return exception.ErrGetUserInfo
+	}
+
+	err = u.userApp.UpdateUserGender(ctx, userDomain.UserId, req.Gender)
+	if exception.CheckException(err) {
+		return errors.Cause(err)
+	} else if err != nil {
+		return exception.ErrUpdateUserGender
 	}
 
 	return nil

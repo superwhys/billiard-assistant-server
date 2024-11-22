@@ -86,6 +86,7 @@ func (us *UserService) UpdateUser(ctx context.Context, update *user.User) (*user
 	oldUser.Name = update.Name
 	oldUser.UserInfo = update.UserInfo
 	oldUser.Status = update.Status
+	oldUser.Gender = update.Gender
 
 	if err := us.userRepo.UpdateUser(ctx, oldUser); err != nil {
 		return nil, errors.Wrap(err, "updateUser")

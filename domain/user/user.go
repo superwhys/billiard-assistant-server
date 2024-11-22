@@ -30,6 +30,7 @@ func (b *BaseInfo) HasUpdate(other *BaseInfo) bool {
 type User struct {
 	UserId   int
 	Name     string
+	Gender   Gender
 	UserInfo *BaseInfo
 
 	Status Status
@@ -53,7 +54,15 @@ func (u *User) HasUpdate(other *User) bool {
 		return true
 	}
 
-	if u.UserInfo.HasUpdate(other.UserInfo) {
+	if other.Gender != 0 && other.Gender != u.Gender {
+		return true
+	}
+
+	if u.UserInfo == nil && other.UserInfo != nil {
+		return true
+	}
+
+	if u.UserInfo != nil && other.UserInfo != nil && u.UserInfo.HasUpdate(other.UserInfo) {
 		return true
 	}
 
@@ -78,6 +87,40 @@ func (u *User) GetAvatar() string {
 
 func (u *User) IsAdmin() bool {
 	return u.Role == RoleAdmin
+}
+
+type Gender int
+
+const (
+	GenderUnknown Gender = iota
+	GenderMale
+	GenderFemale
+)
+
+func (g Gender) String() string {
+	switch g {
+	case GenderUnknown:
+		return "未知"
+	case GenderMale:
+		return "男"
+	case GenderFemale:
+		return "女"
+	default:
+		return "未知"
+	}
+}
+
+func (g Gender) Parse(str string) Gender {
+	switch str {
+	case "未知":
+		return GenderUnknown
+	case "男":
+		return GenderMale
+	case "女":
+		return GenderFemale
+	default:
+		return GenderUnknown
+	}
 }
 
 type Status int

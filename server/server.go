@@ -239,6 +239,23 @@ func (s *BilliardServer) UpdateUserName(ctx context.Context, userId int, userNam
 	return nil
 }
 
+func (s *BilliardServer) UpdateUserGender(ctx context.Context, userId int, gender string) error {
+	u := &user.User{
+		UserId: userId,
+		Gender: user.Gender.Parse(0, gender),
+	}
+
+	u, err := s.UserSrv.UpdateUser(ctx, u)
+	if errors.Is(err, exception.ErrUserNotFound) {
+		return exception.ErrUserNotFound
+	} else if err != nil {
+		plog.Errorc(ctx, "update user gender error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *BilliardServer) UploadAvatar(ctx context.Context, userId int, file *multipart.FileHeader) (string, error) {
 	avatarUrl, err := s.UserSrv.UploadAvatar(ctx, userId, file)
 	if err != nil {

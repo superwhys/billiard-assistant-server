@@ -13,6 +13,7 @@ type UserPo struct {
 	Email  string `gorm:"type:varchar(100);not null"`
 	Phone  string `gorm:"type:varchar(11)"`
 	Avatar string `gorm:"type:varchar(255)"`
+	Gender user.Gender
 	Status user.Status
 	Role   user.Role
 
@@ -32,6 +33,7 @@ func (u *UserPo) FromEntity(ue *user.User) *UserPo {
 	u.ID = ue.UserId
 	u.Name = ue.Name
 	u.Status = ue.Status
+	u.Gender = ue.Gender
 	u.Role = ue.Role
 	if ue.UserInfo != nil {
 		u.Email = ue.UserInfo.Email
@@ -58,6 +60,7 @@ func (u *UserPo) ToEntity() *user.User {
 		Status: u.Status,
 		Role:   u.Role,
 		Rooms:  rooms,
+		Gender: u.Gender,
 		UserInfo: &user.BaseInfo{
 			Email:  u.Email,
 			Phone:  u.Phone,

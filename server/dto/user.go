@@ -21,6 +21,7 @@ type User struct {
 	Email     string `json:"email,omitempty"`
 	Phone     string `json:"phone,omitempty"`
 	Avatar    string `json:"avatar,omitempty"`
+	Gender    string `json:"gender,omitempty"`
 	Status    int    `json:"status,omitempty"`
 	Role      int    `json:"role,omitempty"`
 	AuthTypes []int  `json:"auth_types,omitempty"`
@@ -35,6 +36,7 @@ func UserEntityToDto(u *user.User) *User {
 		Name:      u.Name,
 		Status:    int(u.Status),
 		Role:      int(u.Role),
+		Gender:    u.Gender.String(),
 		AuthTypes: authTypes,
 		IsAdmin:   u.IsAdmin(),
 	}
@@ -57,6 +59,7 @@ func UserDtoToEntity(u *User) *user.User {
 			Phone:  u.Phone,
 			Avatar: u.Avatar,
 		},
+		Gender: user.Gender.Parse(0, u.Gender),
 		Status: user.Status(u.Status),
 		Role:   user.Role(u.Role),
 	}
@@ -117,6 +120,10 @@ type GetUserInfoResponse struct {
 
 type UpdateUserNameRequest struct {
 	UserName string `json:"username"`
+}
+
+type UpdateUserGenderRequest struct {
+	Gender string `json:"gender"`
 }
 
 type UploadAvatarResponse struct {

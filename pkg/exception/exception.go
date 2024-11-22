@@ -21,6 +21,7 @@ var (
 	ErrGetUserInfo        = NewBilliardException(400, "获取用户信息失败")
 	ErrUpdateUserInfo     = NewBilliardException(400, "更新用户信息失败")
 	ErrUpdateUserName     = NewBilliardException(400, "更新用户昵称失败")
+	ErrUpdateUserGender   = NewBilliardException(400, "更新性别失败")
 	ErrUploadAvatar       = NewBilliardException(400, "上传头像失败")
 	ErrGetAvatar          = NewBilliardException(400, "获取头像失败")
 	ErrLoginFailed        = NewBilliardException(400, "登录失败")
