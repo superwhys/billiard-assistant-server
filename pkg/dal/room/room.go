@@ -165,10 +165,11 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 
 func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
 	userDb := r.db.UserPo
+	roomDb := r.db.RoomPo
 
 	condition := []gen.Condition{userDb.ID.Eq(userId)}
 	user, err := userDb.WithContext(ctx).
-		Preload(userDb.Rooms).
+		Preload(userDb.Rooms.Order(roomDb.CreatedAt.Desc())).
 		Preload(userDb.Rooms.Users).
 		Preload(userDb.Rooms.Game).
 		Where(condition...).
