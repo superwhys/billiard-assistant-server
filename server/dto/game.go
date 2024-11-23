@@ -15,7 +15,7 @@ import (
 type Game struct {
 	GameId     int    `json:"game_id"`
 	MaxPlayers int    `json:"max_players"`
-	GameType   string `json:"game_type"`
+	GameType   int    `json:"game_type"`
 	Icon       string `json:"icon"`
 	IsActivate bool   `json:"is_activate"`
 	Desc       string `json:"desc"`
@@ -24,7 +24,7 @@ type Game struct {
 func GameEntityToDto(g *game.Game) *Game {
 	game := &Game{
 		GameId:     g.GameId,
-		GameType:   g.GameType.String(),
+		GameType:   int(g.GameType),
 		Icon:       g.Icon,
 		IsActivate: g.IsActivate,
 	}
