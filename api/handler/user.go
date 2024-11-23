@@ -105,9 +105,10 @@ func (u *UserHandler) loginHandler(ctx *gin.Context, req *dto.LoginRequest) (*dt
 
 func (u *UserHandler) logoutHandler(ctx *gin.Context) error {
 	token := u.middleware.GetLoginToken(ctx)
-	if err := u.middleware.CancelToken(token); err != nil {
+	if err := u.middleware.CancelToken(ctx, token); err != nil {
 		return exception.ErrLogoutFailed
 	}
+
 	return nil
 }
 

@@ -79,7 +79,8 @@ func (m *BilliardMiddleware) SaveToken(t token.Token, c *gin.Context) {
 	c.Set(m.getTokenContextKey(t), t)
 }
 
-func (m *BilliardMiddleware) CancelToken(t token.Token) error {
+func (m *BilliardMiddleware) CancelToken(c *gin.Context, t token.Token) error {
+	c.Set(m.getTokenContextKey(t), nil)
 	return m.manager.Remove(t)
 }
 
