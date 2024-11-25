@@ -22,10 +22,10 @@ type GameRoom struct {
 	GameType   string `json:"game_type"`
 	GameStatus string `json:"game_status"`
 
-	OwnerId       int       `json:"owner_id"`
-	Players       []int     `json:"players"`
-	WinLoseStatus string    `json:"win_lose_status"`
-	CreateAt      time.Time `json:"create_at"`
+	OwnerId       int            `json:"owner_id"`
+	Players       []*room.Player `json:"players"`
+	WinLoseStatus string         `json:"win_lose_status"`
+	CreateAt      time.Time      `json:"create_at"`
 }
 
 func GameRoomEntityToDto(gr *room.Room) *GameRoom {
@@ -33,7 +33,7 @@ func GameRoomEntityToDto(gr *room.Room) *GameRoom {
 		RoomId:        gr.RoomId,
 		GameId:        gr.GameId,
 		OwnerId:       gr.OwnerId,
-		Players:       gr.PlayerIds(),
+		Players:       gr.Players,
 		GameStatus:    gr.GameStatus.String(),
 		WinLoseStatus: gr.WinLoseStatus.String(),
 		CreateAt:      gr.CreateAt,
@@ -66,11 +66,13 @@ type DeleteGameRoomRequest struct {
 }
 
 type EnterGameRoomRequest struct {
-	RoomId int `json:"room_id"`
+	VirtualName string `json:"virtual_name"`
+	RoomId      int    `json:"room_id"`
 }
 
 type LeaveGameRoomRequest struct {
-	RoomId int `json:"room_id"`
+	VirtualName string `json:"virtual_name"`
+	RoomId      int    `json:"room_id"`
 }
 
 type GetUserGameRoomsResp struct {

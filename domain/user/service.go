@@ -7,9 +7,11 @@ import (
 )
 
 type IUserService interface {
+	UserExists(ctx context.Context, userId int) (bool, error)
 	CreateUser(ctx context.Context, u *User) (*User, error)
 	DeleteUser(ctx context.Context, userId int) error
 	GetUserById(ctx context.Context, userId int) (*User, error)
+	GetUserByName(ctx context.Context, userName string) (*User, error)
 	GetUserWithRoom(ctx context.Context, userId int) (*User, error)
 	UpdateUser(ctx context.Context, user *User) (*User, error)
 	UpdateUserStatus(ctx context.Context, userId int, status Status) error

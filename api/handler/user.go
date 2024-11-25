@@ -123,7 +123,6 @@ func (u *UserHandler) registerHandler(ctx *gin.Context, req *dto.RegisterRequest
 	return &dto.RegisterResponse{UserId: user.UserId, Username: user.Name}, nil
 }
 
-// TODO: need get info in db
 func (u *UserHandler) getUserInfoHandler(ctx *gin.Context) (*dto.User, error) {
 	user, err := u.middleware.CurrentUser(ctx)
 	if exception.CheckException(err) {

@@ -209,16 +209,28 @@ func (s *BilliardServer) UpdateUserName(ctx context.Context, userId int, userNam
 		Name:   userName,
 	}
 
-	u, err := s.UserSrv.UpdateUser(ctx, u)
+	u, err := s.UserSrv.GetUserByName(ctx, userName)
+	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
+		plog.Errorc(ctx, "get user by name error: %v", err)
+		return err
+	}
+
+	if u != nil && u.UserId == userId {
+		return exception.ErrUpdateNameSameAsOld
+	} else if u != nil {
+		return exception.ErrUserNameAlreadyExists
+	}
+
+	updateUser := &user.User{
+		UserId: userId,
+		Name:   userName,
+	}
+	u, err = s.UserSrv.UpdateUser(ctx, updateUser)
 	if errors.Is(err, exception.ErrUserNotFound) {
 		return exception.ErrUserNotFound
 	} else if err != nil {
 		plog.Errorc(ctx, "update user name error: %v", err)
 		return err
-	}
-
-	if u.Name == userName {
-		return nil
 	}
 
 	auth, err := s.AuthSrv.GetUserAuthByType(ctx, userId, auth.AuthTypePassword)
@@ -334,7 +346,7 @@ func (s *BilliardServer) GetGameList(ctx context.Context) ([]*dto.Game, error) {
 }
 
 func (s *BilliardServer) GetUserGameRooms(ctx context.Context, userId int) ([]*dto.GameRoom, error) {
-	rs, err := s.RoomSrv.GetUserGameRooms(ctx, userId, true)
+	rs, err := s.RoomSrv.GetUserGameRooms(ctx, userId, false)
 	if err != nil {
 		plog.Errorc(ctx, "get user game rooms error: %v", err)
 		return nil, err
@@ -406,9 +418,21 @@ func (s *BilliardServer) UploadGameIcon(ctx context.Context, fh *multipart.FileH
 }
 
 func (s *BilliardServer) CreateRoom(ctx context.Context, userId, gameId int) (*dto.GameRoom, error) {
+	exists, err := s.UserSrv.UserExists(ctx, userId)
+	if err != nil || !exists {
+		plog.Errorc(ctx, "get user by id error: %v", err)
+		return nil, exception.ErrUserNotFound
+	}
+
 	gr, err := s.RoomSrv.CreateGameRoom(ctx, userId, gameId)
 	if err != nil {
 		plog.Errorc(ctx, "create game room error: %v", err)
+		return nil, err
+	}
+
+	err = s.RoomSrv.EnterGameRoom(ctx, "", userId, gr.RoomId)
+	if err != nil {
+		plog.Errorc(ctx, "enter game room error: %v", err)
 		return nil, err
 	}
 
@@ -442,25 +466,28 @@ func (s *BilliardServer) DeleteRoom(ctx context.Context, userId int, roomId int)
 	return nil
 }
 
-func (s *BilliardServer) EnterGameRoom(ctx context.Context, userId int, roomId int) error {
-	enterUser, err := s.RoomSrv.EnterGameRoom(ctx, userId, roomId)
+func (s *BilliardServer) EnterGameRoom(ctx context.Context, virtualName string, userId int, roomId int) error {
+	err := s.RoomSrv.EnterGameRoom(ctx, virtualName, userId, roomId)
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return err
 	}
 
-	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, enterUser))
+	// TODO: publish user enter room events
+	// s.EventBus.Publish(room.NewEnterRoomEvent(roomId, enterUser))
 
 	return nil
 }
 
-func (s *BilliardServer) LeaveGameRoom(ctx context.Context, userId int, roomId int) error {
-	if _, err := s.RoomSrv.QuitGameRoom(ctx, userId, roomId); err != nil {
+func (s *BilliardServer) LeaveGameRoom(ctx context.Context, virtualName string, userId int, roomId int) error {
+	err := s.RoomSrv.QuitGameRoom(ctx, virtualName, userId, roomId)
+	if err != nil {
 		plog.Errorc(ctx, "leave game room error: %v", err)
 		return err
 	}
 
-	s.EventBus.Publish(room.NewLeaveRoomEvent(userId, roomId))
+	// publish user leave room events
+	s.EventBus.Publish(room.NewLeaveRoomEvent(virtualName, userId, roomId))
 
 	return nil
 }
@@ -485,17 +512,6 @@ func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId i
 	s.SessionSrv.StartSession(sess)
 
 	return sess, nil
-}
-
-func (s *BilliardServer) PrepareGame(ctx context.Context, userId, roomId int) error {
-	err := s.RoomSrv.PrepareGame(ctx, userId, roomId)
-	if err != nil {
-		plog.Errorc(ctx, "prepare game error: %v", err)
-		return err
-	}
-
-	s.EventBus.Publish(room.NewPrepareEvent(userId, roomId))
-	return nil
 }
 
 func (s *BilliardServer) StartGame(ctx context.Context, userId, roomId int) error {

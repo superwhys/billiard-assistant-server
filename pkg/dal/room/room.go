@@ -25,14 +25,7 @@ func NewRoomRepo(db *gorm.DB) *RoomRepoImpl {
 }
 
 func (r *RoomRepoImpl) CreateRoom(ctx context.Context, gameId, userId int) (*room.Room, error) {
-	userDb := r.db.UserPo
 	roomDb := r.db.RoomPo
-	user, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).First()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrUserNotFound
-	} else if err != nil {
-		return nil, err
-	}
 
 	ro := &model.RoomPo{
 		GameID:        gameId,
@@ -41,13 +34,9 @@ func (r *RoomRepoImpl) CreateRoom(ctx context.Context, gameId, userId int) (*roo
 		WinLoseStatus: room.WinLoseUnknown,
 	}
 
-	err = roomDb.WithContext(ctx).Create(ro)
+	err := roomDb.WithContext(ctx).Create(ro)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := roomDb.Users.Model(ro).Append(user); err != nil {
-		return nil, errors.Wrap(err, "appendRelation")
 	}
 
 	return ro.ToEntity(), nil
@@ -76,43 +65,71 @@ func (r *RoomRepoImpl) DeleteRoom(ctx context.Context, roomId int) error {
 	return nil
 }
 
-func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, userId, roomId int, operation func(*model.RoomPo, *model.UserPo) (room.User, error)) (room.User, error) {
+type enterLeaveOperaion func(ctx context.Context, virtualUser string, userId, roomId int) error
+
+func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, virtualUser string, userId int, roomId int, operation enterLeaveOperaion) error {
 	userDb := r.db.UserPo
 	roomDb := r.db.RoomPo
 
-	user, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).First()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrUserNotFound
-	} else if err != nil {
-		return nil, err
+	if userId == 0 && virtualUser == "" {
+		return errors.New("oneof userId or virtualUser must be provided")
 	}
 
-	room, err := roomDb.WithContext(ctx).Where(roomDb.ID.Eq(roomId)).First()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrGameRoomNotFound
-	} else if err != nil {
-		return nil, err
+	userName := virtualUser
+	if userId != 0 {
+		user, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).First()
+		if errors.Is(err, exception.ErrUserNotFound) {
+			return err
+		} else if err != nil {
+			return err
+		}
+		userName = user.Name
 	}
 
-	return operation(room, user)
+	roomCount, err := roomDb.WithContext(ctx).Where(roomDb.ID.Eq(roomId)).Count()
+	if err != nil {
+		return err
+	}
+
+	if roomCount == 0 {
+		return exception.ErrGameRoomNotFound
+	}
+
+	return operation(ctx, userName, userId, roomId)
 }
 
-func (r *RoomRepoImpl) enterRoom(room *model.RoomPo, user *model.UserPo) (room.User, error) {
-	roomDb := r.db.RoomPo
-	return user.ToEntity(), roomDb.Users.Model(room).Append(user)
+func (r *RoomRepoImpl) enterRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
+	roomUserPo := r.db.RoomUserPo
+
+	roomUser := &model.RoomUserPo{
+		RoomID:          roomId,
+		UserID:          userId,
+		UserName:        virtualUser,
+		IsVirtualPlayer: userId == 0,
+	}
+	return roomUserPo.WithContext(ctx).Create(roomUser)
 }
 
-func (r *RoomRepoImpl) leaveRoom(room *model.RoomPo, user *model.UserPo) (room.User, error) {
-	roomDb := r.db.RoomPo
-	return user.ToEntity(), roomDb.Users.Model(room).Delete(user)
+func (r *RoomRepoImpl) leaveRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
+	roomUserPo := r.db.RoomUserPo
+
+	condition := []gen.Condition{}
+	if userId != 0 {
+		condition = append(condition, roomUserPo.UserID.Eq(userId))
+	} else {
+		condition = append(condition, roomUserPo.UserName.Eq(virtualUser))
+	}
+
+	_, err := roomUserPo.WithContext(ctx).Where(condition...).Delete()
+	return err
 }
 
-func (r *RoomRepoImpl) AddUserToRoom(ctx context.Context, userId, roomId int) (room.User, error) {
-	return r.updateUserRoom(ctx, userId, roomId, r.enterRoom)
+func (r *RoomRepoImpl) AddUserToRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
+	return r.updateUserRoom(ctx, virtualUser, userId, roomId, r.enterRoom)
 }
 
-func (r *RoomRepoImpl) RemoveUserFromRoom(ctx context.Context, userId, roomId int) (room.User, error) {
-	return r.updateUserRoom(ctx, userId, roomId, r.leaveRoom)
+func (r *RoomRepoImpl) RemoveUserFromRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
+	return r.updateUserRoom(ctx, virtualUser, userId, roomId, r.leaveRoom)
 }
 
 func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {
@@ -120,8 +137,7 @@ func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room,
 	roomUserDb := r.db.RoomUserPo
 
 	ro, err := roomDb.WithContext(ctx).
-		Preload(roomDb.Users).
-		Preload(roomDb.Game).
+		Preload(roomDb.Owner, roomDb.Game).
 		Where(roomDb.ID.Eq(roomId)).
 		First()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -137,17 +153,17 @@ func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room,
 		return nil, err
 	}
 
-	userPrepared := make(map[int]bool)
-	for _, ur := range userRooms {
-		userPrepared[ur.UserID] = ur.Prepared
+	roomEntity := ro.ToEntity()
+	for _, user := range userRooms {
+		roomEntity.Players = append(roomEntity.Players, &room.Player{
+			UserId:          user.UserID,
+			UserName:        user.UserName,
+			IsVirtualPlayer: user.IsVirtualPlayer,
+		})
 	}
+	roomEntity.Game = ro.Game.ToEntity()
 
-	room := ro.ToEntity()
-	for i, player := range room.Players {
-		room.Players[i].Prepared = userPrepared[player.GetUserId()]
-	}
-
-	return room, nil
+	return roomEntity, nil
 }
 
 func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64, error) {
@@ -164,45 +180,22 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 }
 
 func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
-	userDb := r.db.UserPo
-	roomDb := r.db.RoomPo
+	roomUserPo := r.db.RoomUserPo
 
-	condition := []gen.Condition{userDb.ID.Eq(userId)}
-	user, err := userDb.WithContext(ctx).
-		Preload(userDb.Rooms.Order(roomDb.CreatedAt.Desc())).
-		Preload(userDb.Rooms.Users).
-		Preload(userDb.Rooms.Game).
-		Where(condition...).
-		First()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrUserNotFound
-	} else if err != nil {
+	rus, err := roomUserPo.WithContext(ctx).
+		Preload(roomUserPo.Room).
+		Preload(roomUserPo.Room.Game).
+		Where(roomUserPo.UserID.Eq(userId)).
+		Find()
+
+	if err != nil {
 		return nil, err
 	}
 
-	ret := make([]*room.Room, 0, len(user.Rooms))
-	for _, room := range user.Rooms {
-		if justOwner && room.OwnerID != userId {
-			continue
-		}
-		ret = append(ret, room.ToEntity())
+	ret := make([]*room.Room, 0, len(rus))
+	for _, ru := range rus {
+		ret = append(ret, ru.Room.ToEntity())
 	}
 
 	return ret, nil
-}
-
-func (r *RoomRepoImpl) UpdatePlayerPrepared(ctx context.Context, userId, roomId int, prepared bool) error {
-	roomUserDb := r.db.RoomUserPo
-	result, err := roomUserDb.WithContext(ctx).Where(
-		roomUserDb.RoomID.Eq(roomId),
-		roomUserDb.UserID.Eq(userId),
-	).Update(roomUserDb.Prepared, prepared)
-	if err != nil {
-		return err
-	}
-
-	if result.RowsAffected == 0 {
-		return exception.ErrUserNotInRoom
-	}
-	return nil
 }

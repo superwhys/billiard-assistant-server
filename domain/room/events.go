@@ -25,26 +25,15 @@ func NewEnterRoomEvent(roomId int, user User) *events.EventMessage {
 }
 
 type LeaveRoomEvent struct {
-	UserId int
-	RoomId int
+	UserId      int
+	VirtualName string
+	RoomId      int
 }
 
-func NewLeaveRoomEvent(userId, roomId int) *events.EventMessage {
+func NewLeaveRoomEvent(virtualName string, userId, roomId int) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.PlayerLeft,
-		Payload:   &LeaveRoomEvent{UserId: userId, RoomId: roomId},
-	}
-}
-
-type PrepareEvent struct {
-	UserId int
-	RoomId int
-}
-
-func NewPrepareEvent(userId, roomId int) *events.EventMessage {
-	return &events.EventMessage{
-		EventType: events.PlayerPrepare,
-		Payload:   &PrepareEvent{UserId: userId, RoomId: roomId},
+		Payload:   &LeaveRoomEvent{VirtualName: virtualName, UserId: userId, RoomId: roomId},
 	}
 }
 

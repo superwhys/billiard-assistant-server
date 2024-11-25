@@ -18,8 +18,7 @@ type IRoomService interface {
 	UpdateGameRoomStatus(ctx context.Context, room *Room) error
 	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
-	EnterGameRoom(ctx context.Context, userId, roomId int) (User, error)
-	QuitGameRoom(ctx context.Context, userId, roomId int) (User, error)
-	PrepareGame(ctx context.Context, userId, roomId int) error
+	EnterGameRoom(ctx context.Context, virtualName string, userId, roomId int) error
+	QuitGameRoom(ctx context.Context, virtualName string, userId, roomId int) error
 	StartGame(ctx context.Context, userId, roomId int) (Game, error)
 }

@@ -26,11 +26,44 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 
 	tableName := _roomUserPo.roomUserPoDo.TableName()
 	_roomUserPo.ALL = field.NewAsterisk(tableName)
-	_roomUserPo.UserID = field.NewInt(tableName, "user_id")
+	_roomUserPo.ID = field.NewInt(tableName, "id")
 	_roomUserPo.RoomID = field.NewInt(tableName, "room_id")
-	_roomUserPo.Prepared = field.NewBool(tableName, "prepared")
+	_roomUserPo.UserID = field.NewInt(tableName, "user_id")
+	_roomUserPo.UserName = field.NewString(tableName, "user_name")
+	_roomUserPo.IsVirtualPlayer = field.NewBool(tableName, "is_virtual_player")
 	_roomUserPo.CreatedAt = field.NewTime(tableName, "created_at")
 	_roomUserPo.UpdatedAt = field.NewTime(tableName, "updated_at")
+	_roomUserPo.Room = roomUserPoBelongsToRoom{
+		db: db.Session(&gorm.Session{}),
+
+		RelationField: field.NewRelation("Room", "model.RoomPo"),
+		Game: struct {
+			field.RelationField
+		}{
+			RelationField: field.NewRelation("Room.Game", "model.GamePo"),
+		},
+		Owner: struct {
+			field.RelationField
+			UserAuthPos struct {
+				field.RelationField
+			}
+			Rooms struct {
+				field.RelationField
+			}
+		}{
+			RelationField: field.NewRelation("Room.Owner", "model.UserPo"),
+			UserAuthPos: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("Room.Owner.UserAuthPos", "model.UserAuthPo"),
+			},
+			Rooms: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("Room.Owner.Rooms", "model.RoomPo"),
+			},
+		},
+	}
 
 	_roomUserPo.fillFieldMap()
 
@@ -40,12 +73,15 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 type roomUserPo struct {
 	roomUserPoDo roomUserPoDo
 
-	ALL       field.Asterisk
-	UserID    field.Int
-	RoomID    field.Int
-	Prepared  field.Bool
-	CreatedAt field.Time
-	UpdatedAt field.Time
+	ALL             field.Asterisk
+	ID              field.Int
+	RoomID          field.Int
+	UserID          field.Int
+	UserName        field.String
+	IsVirtualPlayer field.Bool
+	CreatedAt       field.Time
+	UpdatedAt       field.Time
+	Room            roomUserPoBelongsToRoom
 
 	fieldMap map[string]field.Expr
 }
@@ -62,9 +98,11 @@ func (r roomUserPo) As(alias string) *roomUserPo {
 
 func (r *roomUserPo) updateTableName(table string) *roomUserPo {
 	r.ALL = field.NewAsterisk(table)
-	r.UserID = field.NewInt(table, "user_id")
+	r.ID = field.NewInt(table, "id")
 	r.RoomID = field.NewInt(table, "room_id")
-	r.Prepared = field.NewBool(table, "prepared")
+	r.UserID = field.NewInt(table, "user_id")
+	r.UserName = field.NewString(table, "user_name")
+	r.IsVirtualPlayer = field.NewBool(table, "is_virtual_player")
 	r.CreatedAt = field.NewTime(table, "created_at")
 	r.UpdatedAt = field.NewTime(table, "updated_at")
 
@@ -93,12 +131,15 @@ func (r *roomUserPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *roomUserPo) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 5)
-	r.fieldMap["user_id"] = r.UserID
+	r.fieldMap = make(map[string]field.Expr, 8)
+	r.fieldMap["id"] = r.ID
 	r.fieldMap["room_id"] = r.RoomID
-	r.fieldMap["prepared"] = r.Prepared
+	r.fieldMap["user_id"] = r.UserID
+	r.fieldMap["user_name"] = r.UserName
+	r.fieldMap["is_virtual_player"] = r.IsVirtualPlayer
 	r.fieldMap["created_at"] = r.CreatedAt
 	r.fieldMap["updated_at"] = r.UpdatedAt
+
 }
 
 func (r roomUserPo) clone(db *gorm.DB) roomUserPo {
@@ -109,6 +150,90 @@ func (r roomUserPo) clone(db *gorm.DB) roomUserPo {
 func (r roomUserPo) replaceDB(db *gorm.DB) roomUserPo {
 	r.roomUserPoDo.ReplaceDB(db)
 	return r
+}
+
+type roomUserPoBelongsToRoom struct {
+	db *gorm.DB
+
+	field.RelationField
+
+	Game struct {
+		field.RelationField
+	}
+	Owner struct {
+		field.RelationField
+		UserAuthPos struct {
+			field.RelationField
+		}
+		Rooms struct {
+			field.RelationField
+		}
+	}
+}
+
+func (a roomUserPoBelongsToRoom) Where(conds ...field.Expr) *roomUserPoBelongsToRoom {
+	if len(conds) == 0 {
+		return &a
+	}
+
+	exprs := make([]clause.Expression, 0, len(conds))
+	for _, cond := range conds {
+		exprs = append(exprs, cond.BeCond().(clause.Expression))
+	}
+	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
+	return &a
+}
+
+func (a roomUserPoBelongsToRoom) WithContext(ctx context.Context) *roomUserPoBelongsToRoom {
+	a.db = a.db.WithContext(ctx)
+	return &a
+}
+
+func (a roomUserPoBelongsToRoom) Session(session *gorm.Session) *roomUserPoBelongsToRoom {
+	a.db = a.db.Session(session)
+	return &a
+}
+
+func (a roomUserPoBelongsToRoom) Model(m *model.RoomUserPo) *roomUserPoBelongsToRoomTx {
+	return &roomUserPoBelongsToRoomTx{a.db.Model(m).Association(a.Name())}
+}
+
+type roomUserPoBelongsToRoomTx struct{ tx *gorm.Association }
+
+func (a roomUserPoBelongsToRoomTx) Find() (result *model.RoomPo, err error) {
+	return result, a.tx.Find(&result)
+}
+
+func (a roomUserPoBelongsToRoomTx) Append(values ...*model.RoomPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Append(targetValues...)
+}
+
+func (a roomUserPoBelongsToRoomTx) Replace(values ...*model.RoomPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Replace(targetValues...)
+}
+
+func (a roomUserPoBelongsToRoomTx) Delete(values ...*model.RoomPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Delete(targetValues...)
+}
+
+func (a roomUserPoBelongsToRoomTx) Clear() error {
+	return a.tx.Clear()
+}
+
+func (a roomUserPoBelongsToRoomTx) Count() int64 {
+	return a.tx.Count()
 }
 
 type roomUserPoDo struct{ gen.DO }

@@ -31,6 +31,7 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 	_userPo.Email = field.NewString(tableName, "email")
 	_userPo.Phone = field.NewString(tableName, "phone")
 	_userPo.Avatar = field.NewString(tableName, "avatar")
+	_userPo.Gender = field.NewInt(tableName, "gender")
 	_userPo.Status = field.NewInt(tableName, "status")
 	_userPo.Role = field.NewInt(tableName, "role")
 	_userPo.CreatedAt = field.NewTime(tableName, "created_at")
@@ -72,11 +73,6 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 				RelationField: field.NewRelation("Rooms.Owner.Rooms", "model.RoomPo"),
 			},
 		},
-		Users: struct {
-			field.RelationField
-		}{
-			RelationField: field.NewRelation("Rooms.Users", "model.UserPo"),
-		},
 	}
 
 	_userPo.fillFieldMap()
@@ -93,6 +89,7 @@ type userPo struct {
 	Email       field.String
 	Phone       field.String
 	Avatar      field.String
+	Gender      field.Int
 	Status      field.Int
 	Role        field.Int
 	CreatedAt   field.Time
@@ -122,6 +119,7 @@ func (u *userPo) updateTableName(table string) *userPo {
 	u.Email = field.NewString(table, "email")
 	u.Phone = field.NewString(table, "phone")
 	u.Avatar = field.NewString(table, "avatar")
+	u.Gender = field.NewInt(table, "gender")
 	u.Status = field.NewInt(table, "status")
 	u.Role = field.NewInt(table, "role")
 	u.CreatedAt = field.NewTime(table, "created_at")
@@ -151,12 +149,13 @@ func (u *userPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *userPo) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 12)
+	u.fieldMap = make(map[string]field.Expr, 13)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["name"] = u.Name
 	u.fieldMap["email"] = u.Email
 	u.fieldMap["phone"] = u.Phone
 	u.fieldMap["avatar"] = u.Avatar
+	u.fieldMap["gender"] = u.Gender
 	u.fieldMap["status"] = u.Status
 	u.fieldMap["role"] = u.Role
 	u.fieldMap["created_at"] = u.CreatedAt
@@ -262,9 +261,6 @@ type userPoManyToManyRooms struct {
 		Rooms struct {
 			field.RelationField
 		}
-	}
-	Users struct {
-		field.RelationField
 	}
 }
 

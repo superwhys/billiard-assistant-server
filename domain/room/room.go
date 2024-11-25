@@ -26,15 +26,16 @@ type Game interface {
 }
 
 type Player struct {
-	User
-	Prepared bool
+	UserId          int
+	UserName        string
+	IsVirtualPlayer bool
 }
 
 type Room struct {
 	RoomId        int
 	GameId        int
 	OwnerId       int
-	Players       []Player
+	Players       []*Player
 	Game          Game
 	GameStatus    Status
 	WinLoseStatus WinLoseStatus
@@ -45,21 +46,7 @@ func (r *Room) GetRoomId() int {
 	return r.RoomId
 }
 
-func (r *Room) PlayerIds() []int {
-	ids := make([]int, len(r.Players))
-	for i, p := range r.Players {
-		ids[i] = p.GetUserId()
-	}
-	return ids
-}
-
 func (r *Room) CanStart() bool {
-	for _, p := range r.Players {
-		if !p.Prepared {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -71,9 +58,17 @@ func (r *Room) IsOwner(userId int) bool {
 	return r.OwnerId == userId
 }
 
-func (r *Room) IsInRoom(userId int) bool {
+func (r *Room) IsInRoom(virtualName string, userId int) bool {
+	if virtualName == "" && userId == 0 {
+		return false
+	}
+
 	for _, p := range r.Players {
-		if p.GetUserId() == userId {
+		if p.IsVirtualPlayer && p.UserName == virtualName {
+			return true
+		}
+
+		if p.UserId == userId {
 			return true
 		}
 	}

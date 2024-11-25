@@ -33,6 +33,10 @@ func NewUserService(userRepo user.IUserRepo, authRepo auth.IAuthRepo, oss oss.IO
 	return &UserService{userRepo: userRepo, authRepo: authRepo, oss: oss}
 }
 
+func (us *UserService) UserExists(ctx context.Context, userId int) (bool, error) {
+	return us.userRepo.UserExists(ctx, userId)
+}
+
 func (us *UserService) CreateUser(ctx context.Context, u *user.User) (*user.User, error) {
 	existingUser, err := us.userRepo.GetUserByName(ctx, u.Name)
 	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
@@ -60,6 +64,10 @@ func (us *UserService) DeleteUser(ctx context.Context, userId int) error {
 
 func (us *UserService) GetUserById(ctx context.Context, userId int) (*user.User, error) {
 	return us.userRepo.GetUserById(ctx, userId)
+}
+
+func (us *UserService) GetUserByName(ctx context.Context, userName string) (*user.User, error) {
+	return us.userRepo.GetUserByName(ctx, userName)
 }
 
 func (us *UserService) GetUserWithRoom(ctx context.Context, userId int) (*user.User, error) {

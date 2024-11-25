@@ -66,26 +66,34 @@ func (r *RoomService) UpdateGameRoomStatus(ctx context.Context, gameRoom *room.R
 	return nil
 }
 
-func (r *RoomService) EnterGameRoom(ctx context.Context, userId, roomId int) (room.User, error) {
+func (r *RoomService) EnterGameRoom(ctx context.Context, virtualName string, userId, roomId int) error {
 	if err := r.locker.Lock(roomId); err != nil {
-		return nil, errors.Wrap(err, "lock room")
+		return errors.Wrap(err, "lock room")
 	}
 	defer r.locker.Unlock(roomId)
 
 	room, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getRoom: %d", roomId)
+		return errors.Wrapf(err, "getRoom: %d", roomId)
+	}
+
+	if room.Game == nil {
+		return exception.ErrGameNotFound
+	}
+
+	if room.IsInRoom(virtualName, userId) {
+		return exception.ErrAlreadyInRoom
 	}
 
 	if !room.CanEnter() {
-		return nil, exception.ErrGameRoomFull
+		return exception.ErrGameRoomFull
 	}
 
-	return r.roomRepo.AddUserToRoom(ctx, userId, roomId)
+	return r.roomRepo.AddUserToRoom(ctx, virtualName, userId, roomId)
 }
 
-func (r *RoomService) QuitGameRoom(ctx context.Context, userId, roomId int) (room.User, error) {
-	return r.roomRepo.RemoveUserFromRoom(ctx, userId, roomId)
+func (r *RoomService) QuitGameRoom(ctx context.Context, virtualName string, userId, roomId int) error {
+	return r.roomRepo.RemoveUserFromRoom(ctx, virtualName, userId, roomId)
 }
 
 func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
@@ -94,19 +102,6 @@ func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int, justOwne
 
 func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {
 	return r.roomRepo.GetRoomById(ctx, roomId)
-}
-
-func (r *RoomService) PrepareGame(ctx context.Context, userId, roomId int) error {
-	ro, err := r.roomRepo.GetRoomById(ctx, roomId)
-	if err != nil {
-		return errors.Wrapf(err, "getRoom: %d", roomId)
-	}
-
-	if !ro.IsInRoom(userId) {
-		return exception.ErrUserNotInRoom
-	}
-
-	return r.roomRepo.UpdatePlayerPrepared(ctx, userId, roomId, true)
 }
 
 func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (room.Game, error) {

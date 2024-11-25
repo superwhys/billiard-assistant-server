@@ -137,4 +137,5 @@ const (
 	RoleUnknown Role = iota
 	RoleUser
 	RoleAdmin
+	RolePro
 )

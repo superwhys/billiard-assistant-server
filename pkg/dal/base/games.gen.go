@@ -29,6 +29,8 @@ func newGamePo(db *gorm.DB, opts ...gen.DOOption) gamePo {
 	_gamePo.ID = field.NewInt(tableName, "id")
 	_gamePo.MaxPlayers = field.NewInt(tableName, "max_players")
 	_gamePo.GameType = field.NewInt(tableName, "game_type")
+	_gamePo.Icon = field.NewString(tableName, "icon")
+	_gamePo.IsActivated = field.NewBool(tableName, "is_activated")
 	_gamePo.Description = field.NewString(tableName, "description")
 	_gamePo.CreatedAt = field.NewTime(tableName, "created_at")
 	_gamePo.UpdatedAt = field.NewTime(tableName, "updated_at")
@@ -46,6 +48,8 @@ type gamePo struct {
 	ID          field.Int
 	MaxPlayers  field.Int
 	GameType    field.Int
+	Icon        field.String
+	IsActivated field.Bool
 	Description field.String
 	CreatedAt   field.Time
 	UpdatedAt   field.Time
@@ -69,6 +73,8 @@ func (g *gamePo) updateTableName(table string) *gamePo {
 	g.ID = field.NewInt(table, "id")
 	g.MaxPlayers = field.NewInt(table, "max_players")
 	g.GameType = field.NewInt(table, "game_type")
+	g.Icon = field.NewString(table, "icon")
+	g.IsActivated = field.NewBool(table, "is_activated")
 	g.Description = field.NewString(table, "description")
 	g.CreatedAt = field.NewTime(table, "created_at")
 	g.UpdatedAt = field.NewTime(table, "updated_at")
@@ -97,10 +103,12 @@ func (g *gamePo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (g *gamePo) fillFieldMap() {
-	g.fieldMap = make(map[string]field.Expr, 7)
+	g.fieldMap = make(map[string]field.Expr, 9)
 	g.fieldMap["id"] = g.ID
 	g.fieldMap["max_players"] = g.MaxPlayers
 	g.fieldMap["game_type"] = g.GameType
+	g.fieldMap["icon"] = g.Icon
+	g.fieldMap["is_activated"] = g.IsActivated
 	g.fieldMap["description"] = g.Description
 	g.fieldMap["created_at"] = g.CreatedAt
 	g.fieldMap["updated_at"] = g.UpdatedAt

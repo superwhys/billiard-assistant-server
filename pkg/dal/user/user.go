@@ -49,6 +49,15 @@ func (u *UserRepoImpl) UpdateUser(ctx context.Context, user *user.User) error {
 	return err
 }
 
+func (u *UserRepoImpl) UserExists(ctx context.Context, userId int) (bool, error) {
+	userDb := u.db.UserPo
+	count, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).Count()
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (u *UserRepoImpl) GetUserById(ctx context.Context, userId int) (*user.User, error) {
 	userDb := u.db.UserPo
 	usr, err := userDb.WithContext(ctx).

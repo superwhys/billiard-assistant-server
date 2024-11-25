@@ -20,10 +20,9 @@ type RoomApp interface {
 	CreateRoom(ctx context.Context, userId, gameId int) (*dto.GameRoom, error)
 	UpdateGameRoomStatus(ctx context.Context, userId int, gameRoom *dto.UpdateGameRoomRequest) error
 	DeleteRoom(ctx context.Context, userId, roomId int) error
-	EnterGameRoom(ctx context.Context, userId, roomId int) error
-	LeaveGameRoom(ctx context.Context, userId, roomId int) error
+	EnterGameRoom(ctx context.Context, virtualName string, userId, roomId int) error
+	LeaveGameRoom(ctx context.Context, virtualName string, userId, roomId int) error
 	// CreateRoomSession(ctx context.Context, userId, roomId int, conn *websocket.Conn) (*session.Session, error)
-	// PrepareGame(ctx context.Context, userId, roomId int) error
 	// StartGame(ctx context.Context, userId, roomId int) error
 }
 
@@ -50,7 +49,6 @@ func (r *RoomHandler) Init(router gin.IRouter) {
 	roomAuth.POST("leave", pgin.RequestWithErrorHandler(r.leaveGameRoom))
 	roomAuth.GET("list", pgin.ResponseHandler(r.getUserGameRoom))
 	// roomAuth.GET("ws/:roomId", r.websocketHandler)
-	// roomAuth.POST("prepare", pgin.RequestWithErrorHandler(r.prepareGame))
 	// roomAuth.POST("start", pgin.RequestWithErrorHandler(r.startGame))
 }
 
@@ -133,6 +131,8 @@ func (r *RoomHandler) deleteGameRoom(ctx *gin.Context, req *dto.DeleteGameRoomRe
 }
 
 func (r *RoomHandler) getRoomInfo(ctx *gin.Context, req *dto.GetRoomRequest) (*dto.GameRoom, error) {
+	// TODO: add room score info
+
 	gr, err := r.roomApp.GetGameRoom(ctx, req.RoomId)
 	if exception.CheckException(err) {
 		return nil, errors.Cause(err)
@@ -165,7 +165,7 @@ func (r *RoomHandler) enterGameRoom(ctx *gin.Context, req *dto.EnterGameRoomRequ
 		return err
 	}
 
-	err = r.roomApp.EnterGameRoom(ctx, userId, req.RoomId)
+	err = r.roomApp.EnterGameRoom(ctx, req.VirtualName, userId, req.RoomId)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
@@ -181,7 +181,7 @@ func (r *RoomHandler) leaveGameRoom(ctx *gin.Context, req *dto.LeaveGameRoomRequ
 		return err
 	}
 
-	err = r.roomApp.LeaveGameRoom(ctx, userId, req.RoomId)
+	err = r.roomApp.LeaveGameRoom(ctx, req.VirtualName, userId, req.RoomId)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
@@ -209,22 +209,6 @@ func (r *RoomHandler) getUserGameRoom(ctx *gin.Context) (*dto.GetUserGameRoomsRe
 
 	return &dto.GetUserGameRoomsResp{Rooms: rooms}, nil
 }
-
-// func (r *RoomHandler) prepareGame(ctx *gin.Context, req *dto.PrepareGameRequest) error {
-// 	userId, err := r.getCurrentUserId(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	err = r.roomApp.PrepareGame(ctx, userId, req.RoomId)
-// 	if exception.CheckException(err) {
-// 		return errors.Cause(err)
-// 	} else if err != nil {
-// 		return exception.ErrPrepareGame
-// 	}
-//
-// 	return nil
-// }
 
 // func (r *RoomHandler) startGame(ctx *gin.Context, req *dto.StartGameRequest) error {
 // 	userId, err := r.getCurrentUserId(ctx)
