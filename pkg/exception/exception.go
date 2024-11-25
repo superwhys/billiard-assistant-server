@@ -43,7 +43,7 @@ var (
 	ErrAlreadyInRoom           = NewBilliardException(400, "已经在房间中")
 	ErrGameRoomFull            = NewBilliardException(400, "房间已满人")
 	ErrLeaveGameRoom           = NewBilliardException(400, "离开游戏房间失败")
-	ErrRoomOwnerNotMatch       = NewBilliardException(403, "不是访问拥有者")
+	ErrRoomOwnerNotMatch       = NewBilliardException(403, "不是房间拥有者")
 
 	ErrGetGameList     = NewBilliardException(400, "获取游戏列表失败")
 	ErrGetGameRoomList = NewBilliardException(400, "获取房间列表失败")
