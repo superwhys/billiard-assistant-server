@@ -11,12 +11,9 @@ package server
 import (
 	"context"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
 )
 
 func (s *BilliardServer) setupEventsSubscription() {
@@ -29,17 +26,19 @@ func (s *BilliardServer) setupEventsSubscription() {
 
 func (s *BilliardServer) HandlePlayerEnterEvent(event *events.EventMessage) error {
 	// broadcast new player joined event
-	e := event.Payload.(*room.EnterRoomEvent)
-	u := e.User.(*user.User)
-	return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
-		EventType: event.EventType,
-		Data:      dto.UserEntityToDto(u),
-	})
+	// e := event.Payload.(*room.EnterRoomEvent)
+	// return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
+	// 	EventType: event.EventType,
+	// })
+	// TODO: Implement player enget logic
+	// broadcast new player joined event, etc.
+	panic("not implemented")
+
 }
 
 func (s *BilliardServer) HandlePlayerLeaveEvent(event *events.EventMessage) error {
 	// TODO: Implement player leave logic
-	// broadcast new player joined event, etc.
+	// broadcast player leave event, etc.
 	panic("not implemented")
 }
 

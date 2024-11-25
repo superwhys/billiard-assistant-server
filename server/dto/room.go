@@ -15,17 +15,17 @@ import (
 )
 
 type GameRoom struct {
-	RoomId int `json:"room_id"`
+	RoomId int `json:"room_id,omitempty"`
 
-	GameId     int    `json:"game_id"`
-	GameIcon   string `json:"game_icon"`
-	GameType   string `json:"game_type"`
-	GameStatus string `json:"game_status"`
+	GameId     int    `json:"game_id,omitempty"`
+	GameIcon   string `json:"game_icon,omitempty"`
+	GameType   string `json:"game_type,omitempty"`
+	GameStatus string `json:"game_status,omitempty"`
 
-	OwnerId       int            `json:"owner_id"`
-	Players       []*room.Player `json:"players"`
-	WinLoseStatus string         `json:"win_lose_status"`
-	CreateAt      time.Time      `json:"create_at"`
+	OwnerId       int                `json:"owner_id,omitempty"`
+	Players       []*room.RoomPlayer `json:"players,omitempty"`
+	WinLoseStatus string             `json:"win_lose_status,omitempty"`
+	CreateAt      time.Time          `json:"create_at,omitempty"`
 }
 
 func GameRoomEntityToDto(gr *room.Room) *GameRoom {

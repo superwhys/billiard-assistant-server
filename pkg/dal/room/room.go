@@ -155,7 +155,7 @@ func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room,
 
 	roomEntity := ro.ToEntity()
 	for _, user := range userRooms {
-		roomEntity.Players = append(roomEntity.Players, &room.Player{
+		roomEntity.Players = append(roomEntity.Players, &room.RoomPlayer{
 			UserId:          user.UserID,
 			UserName:        user.UserName,
 			IsVirtualPlayer: user.IsVirtualPlayer,
@@ -182,19 +182,48 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
 	roomUserPo := r.db.RoomUserPo
 
-	rus, err := roomUserPo.WithContext(ctx).
-		Preload(roomUserPo.Room).
-		Preload(roomUserPo.Room.Game).
+	userRooms, err := roomUserPo.WithContext(ctx).
 		Where(roomUserPo.UserID.Eq(userId)).
 		Find()
-
 	if err != nil {
 		return nil, err
 	}
 
-	ret := make([]*room.Room, 0, len(rus))
-	for _, ru := range rus {
-		ret = append(ret, ru.Room.ToEntity())
+	if len(userRooms) == 0 {
+		return []*room.Room{}, nil
+	}
+
+	roomIds := make([]int, 0, len(userRooms))
+	for _, ur := range userRooms {
+		roomIds = append(roomIds, ur.RoomID)
+	}
+
+	allRoomUsers, err := roomUserPo.WithContext(ctx).
+		Preload(roomUserPo.Room).
+		Preload(roomUserPo.Room.Game).
+		Where(roomUserPo.RoomID.In(roomIds...)).
+		Find()
+	if err != nil {
+		return nil, err
+	}
+
+	roomMap := make(map[int]*room.Room)
+	for _, ru := range allRoomUsers {
+		roomId := ru.RoomID
+		if _, exists := roomMap[roomId]; !exists {
+			roomMap[roomId] = ru.Room.ToEntity()
+		}
+
+		roomMap[roomId].Players = append(roomMap[roomId].Players, &room.RoomPlayer{
+			UserId:          ru.UserID,
+			UserName:        ru.UserName,
+			IsVirtualPlayer: ru.IsVirtualPlayer,
+		})
+	}
+
+	ret := make([]*room.Room, 0, len(roomMap))
+	for _, r := range roomMap {
+		ret = append(ret, r)
 	}
 
 	return ret, nil

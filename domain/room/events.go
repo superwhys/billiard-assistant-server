@@ -13,14 +13,15 @@ import (
 )
 
 type EnterRoomEvent struct {
-	RoomId int
-	User   User
+	UserId      int
+	VirtualName string
+	RoomId      int
 }
 
-func NewEnterRoomEvent(roomId int, user User) *events.EventMessage {
+func NewEnterRoomEvent(virtualName string, userId, roomId int) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.PlayerJoined,
-		Payload:   &EnterRoomEvent{RoomId: roomId, User: user},
+		Payload:   &EnterRoomEvent{VirtualName: virtualName, UserId: userId, RoomId: roomId},
 	}
 }
 

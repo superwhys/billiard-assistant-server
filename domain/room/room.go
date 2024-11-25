@@ -14,10 +14,6 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
-type User interface {
-	shared.BaseUser
-}
-
 type Game interface {
 	shared.BaseGame
 	GetMaxPlayers() int
@@ -25,21 +21,21 @@ type Game interface {
 	GetIcon() string
 }
 
-type Player struct {
-	UserId          int
-	UserName        string
-	IsVirtualPlayer bool
-}
-
 type Room struct {
 	RoomId        int
 	GameId        int
 	OwnerId       int
-	Players       []*Player
+	Players       []*RoomPlayer
 	Game          Game
 	GameStatus    Status
 	WinLoseStatus WinLoseStatus
 	CreateAt      time.Time
+}
+
+type RoomPlayer struct {
+	UserId          int    `json:"user_id,omitempty"`
+	UserName        string `json:"user_name,omitempty"`
+	IsVirtualPlayer bool   `json:"is_virtual_player,omitempty"`
 }
 
 func (r *Room) GetRoomId() int {
