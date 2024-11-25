@@ -32,6 +32,8 @@ type RoomPo struct {
 	OwnerID int
 	Owner   *UserPo `gorm:"foreignKey:OwnerID"`
 
+	Players []*UserPo `gorm:"many2many:room_users;foreignKey:ID;joinForeignKey:RoomID;References:ID;joinReferences:user_id"`
+
 	GameStatus    room.Status
 	WinLoseStatus room.WinLoseStatus
 

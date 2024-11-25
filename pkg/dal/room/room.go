@@ -2,7 +2,6 @@ package roomDal
 
 import (
 	"context"
-	"slices"
 
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -57,13 +56,22 @@ func (r *RoomRepoImpl) UpdateRoom(ctx context.Context, room *room.Room) error {
 }
 
 func (r *RoomRepoImpl) DeleteRoom(ctx context.Context, roomId int) error {
-	roomDb := r.db.RoomPo
-	_, err := roomDb.WithContext(ctx).Where(roomDb.ID.Eq(roomId)).Delete()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return exception.ErrGameRoomNotFound
-	}
+	return r.db.Transaction(func(tx *base.Query) error {
+		roomDb := tx.RoomPo
+		roomUserPo := tx.RoomUserPo
 
-	return nil
+		_, err := roomDb.WithContext(ctx).Where(roomDb.ID.Eq(roomId)).Delete()
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return exception.ErrGameRoomNotFound
+		}
+
+		_, err = roomUserPo.WithContext(ctx).Where(roomUserPo.RoomID.Eq(roomId)).Delete()
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		return nil
+	})
 }
 
 type enterLeaveOperaion func(ctx context.Context, virtualUser string, userId, roomId int) error
@@ -181,61 +189,25 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 }
 
 func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
-	roomUserPo := r.db.RoomUserPo
+	roomDb := r.db.RoomPo
+	userDb := r.db.UserPo
 
-	userRooms, err := roomUserPo.WithContext(ctx).
-		Where(roomUserPo.UserID.Eq(userId)).
-		Find()
+	user, err := userDb.WithContext(ctx).
+		Preload(userDb.Rooms.Order(roomDb.CreatedAt.Desc())).
+		Preload(userDb.Rooms.Players).
+		Preload(userDb.Rooms.Game).
+		Where(userDb.ID.Eq(userId)).
+		First()
+
 	if err != nil {
 		return nil, err
 	}
 
-	if len(userRooms) == 0 {
-		return []*room.Room{}, nil
+	var rooms []*room.Room
+
+	for _, room := range user.Rooms {
+		rooms = append(rooms, room.ToEntity())
 	}
 
-	roomIds := make([]int, 0, len(userRooms))
-	for _, ur := range userRooms {
-		roomIds = append(roomIds, ur.RoomID)
-	}
-
-	allRoomUsers, err := roomUserPo.WithContext(ctx).
-		Preload(roomUserPo.Room).
-		Preload(roomUserPo.Room.Game).
-		Where(roomUserPo.RoomID.In(roomIds...)).
-		Find()
-	if err != nil {
-		return nil, err
-	}
-
-	roomMap := make(map[int]*room.Room)
-	for _, ru := range allRoomUsers {
-		roomId := ru.RoomID
-		if _, exists := roomMap[roomId]; !exists {
-			roomMap[roomId] = ru.Room.ToEntity()
-			roomMap[roomId].Game = ru.Room.Game.ToEntity()
-		}
-
-		roomMap[roomId].Players = append(roomMap[roomId].Players, &room.RoomPlayer{
-			UserId:          ru.UserID,
-			UserName:        ru.UserName,
-			IsVirtualPlayer: ru.IsVirtualPlayer,
-		})
-	}
-
-	ret := make([]*room.Room, 0, len(roomMap))
-	for _, r := range roomMap {
-		ret = append(ret, r)
-	}
-
-	slices.SortStableFunc[[]*room.Room, *room.Room](ret, func(a, b *room.Room) int {
-		if a.CreateAt.Before(b.CreateAt) {
-			return 1
-		} else if a.CreateAt.After(b.CreateAt) {
-			return -1
-		}
-		return 0
-	})
-
-	return ret, nil
+	return rooms, nil
 }

@@ -73,6 +73,11 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 				RelationField: field.NewRelation("Rooms.Owner.Rooms", "model.RoomPo"),
 			},
 		},
+		Players: struct {
+			field.RelationField
+		}{
+			RelationField: field.NewRelation("Rooms.Players", "model.UserPo"),
+		},
 	}
 
 	_userPo.fillFieldMap()
@@ -261,6 +266,9 @@ type userPoManyToManyRooms struct {
 		Rooms struct {
 			field.RelationField
 		}
+	}
+	Players struct {
+		field.RelationField
 	}
 }
 
