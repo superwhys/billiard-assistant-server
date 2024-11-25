@@ -2,6 +2,7 @@ package roomDal
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -212,6 +213,7 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwn
 		roomId := ru.RoomID
 		if _, exists := roomMap[roomId]; !exists {
 			roomMap[roomId] = ru.Room.ToEntity()
+			roomMap[roomId].Game = ru.Room.Game.ToEntity()
 		}
 
 		roomMap[roomId].Players = append(roomMap[roomId].Players, &room.RoomPlayer{
@@ -225,6 +227,15 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwn
 	for _, r := range roomMap {
 		ret = append(ret, r)
 	}
+
+	slices.SortStableFunc[[]*room.Room, *room.Room](ret, func(a, b *room.Room) int {
+		if a.CreateAt.Before(b.CreateAt) {
+			return 1
+		} else if a.CreateAt.After(b.CreateAt) {
+			return -1
+		}
+		return 0
+	})
 
 	return ret, nil
 }
