@@ -6,6 +6,7 @@ import (
 	"github.com/go-puzzles/puzzles/predis"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/locker"
@@ -27,17 +28,17 @@ func NewRoomService(remoRepo room.IRoomRepo, redisClient *predis.RedisClient, ro
 	}
 }
 
-func (r *RoomService) CreateGameRoom(ctx context.Context, userId, gameId int) (*room.Room, error) {
-	roomCnt, err := r.roomRepo.GetOwnerRoomCount(ctx, userId)
+func (r *RoomService) CreateGameRoom(ctx context.Context, u *user.User, gameId int) (*room.Room, error) {
+	roomCnt, err := r.roomRepo.GetOwnerRoomCount(ctx, u.UserId)
 	if err != nil {
 		return nil, errors.Wrap(err, "getOwnerRoomCount")
 	}
 
-	if roomCnt+1 > r.roomConfig.UserMaxRoomCreateNumber {
+	if !u.Role.IsPro() && roomCnt+1 > r.roomConfig.UserMaxRoomCreateNumber {
 		return nil, exception.ErrRoomUserMaxCreateNumber
 	}
 
-	ro, err := r.roomRepo.CreateRoom(ctx, gameId, userId)
+	ro, err := r.roomRepo.CreateRoom(ctx, gameId, u.UserId)
 	if err != nil {
 		return nil, errors.Wrap(err, "createGameRoom")
 	}

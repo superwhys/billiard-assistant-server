@@ -418,13 +418,15 @@ func (s *BilliardServer) UploadGameIcon(ctx context.Context, fh *multipart.FileH
 }
 
 func (s *BilliardServer) CreateRoom(ctx context.Context, userId, gameId int) (*dto.GameRoom, error) {
-	exists, err := s.UserSrv.UserExists(ctx, userId)
-	if err != nil || !exists {
+	user, err := s.UserSrv.GetUserById(ctx, userId)
+	if errors.Is(err, exception.ErrUserNotFound) {
+		return nil, err
+	} else if err != nil {
 		plog.Errorc(ctx, "get user by id error: %v", err)
-		return nil, exception.ErrUserNotFound
+		return nil, err
 	}
 
-	gr, err := s.RoomSrv.CreateGameRoom(ctx, userId, gameId)
+	gr, err := s.RoomSrv.CreateGameRoom(ctx, user, gameId)
 	if err != nil {
 		plog.Errorc(ctx, "create game room error: %v", err)
 		return nil, err

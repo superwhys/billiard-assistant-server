@@ -10,10 +10,12 @@ package room
 
 import (
 	"context"
+
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
 type IRoomService interface {
-	CreateGameRoom(ctx context.Context, userId, gameId int) (*Room, error)
+	CreateGameRoom(ctx context.Context, u *user.User, gameId int) (*Room, error)
 	DeleteGameRoom(ctx context.Context, roomId, userId int) error
 	UpdateGameRoomStatus(ctx context.Context, room *Room) error
 	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)

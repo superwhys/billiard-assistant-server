@@ -139,3 +139,7 @@ const (
 	RoleAdmin
 	RolePro
 )
+
+func (r Role) IsPro() bool {
+	return r == RolePro
+}
