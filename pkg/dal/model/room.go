@@ -8,12 +8,14 @@ import (
 )
 
 type RoomUserPo struct {
-	ID     int `gorm:"primaryKey"`
+	ID int `gorm:"primaryKey"`
+
 	RoomID int
 	Room   *RoomPo `gorm:"foreignKey:RoomID"`
+	UserID int
+	User   *UserPo `gorm:"foreignKey:UserID"`
 
-	UserID          int
-	UserName        string
+	VirtualName     string
 	IsVirtualPlayer bool
 
 	CreatedAt time.Time
@@ -44,6 +46,22 @@ type RoomPo struct {
 
 func (r *RoomPo) TableName() string {
 	return "rooms"
+}
+
+func (r *RoomUserPo) ToEntity() *room.RoomPlayer {
+	var userName string
+	if r.IsVirtualPlayer {
+		userName = r.VirtualName
+	} else if r.User != nil {
+		userName = r.User.Name
+	}
+
+	return &room.RoomPlayer{
+		RoomId:          r.RoomID,
+		UserId:          r.UserID,
+		UserName:        userName,
+		IsVirtualPlayer: r.IsVirtualPlayer,
+	}
 }
 
 func (r *RoomPo) FromEntity(gr *room.Room) *RoomPo {

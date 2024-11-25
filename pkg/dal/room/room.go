@@ -3,6 +3,8 @@ package roomDal
 import (
 	"context"
 
+	"github.com/go-puzzles/puzzles/plog"
+	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
@@ -113,7 +115,7 @@ func (r *RoomRepoImpl) enterRoom(ctx context.Context, virtualUser string, userId
 	roomUser := &model.RoomUserPo{
 		RoomID:          roomId,
 		UserID:          userId,
-		UserName:        virtualUser,
+		VirtualName:     virtualUser,
 		IsVirtualPlayer: userId == 0,
 	}
 	return roomUserPo.WithContext(ctx).Create(roomUser)
@@ -126,7 +128,7 @@ func (r *RoomRepoImpl) leaveRoom(ctx context.Context, virtualUser string, userId
 	if userId != 0 {
 		condition = append(condition, roomUserPo.UserID.Eq(userId))
 	} else {
-		condition = append(condition, roomUserPo.UserName.Eq(virtualUser))
+		condition = append(condition, roomUserPo.VirtualName.Eq(virtualUser))
 	}
 
 	_, err := roomUserPo.WithContext(ctx).Where(condition...).Delete()
@@ -155,7 +157,9 @@ func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room,
 		return nil, err
 	}
 
-	userRooms, err := roomUserDb.WithContext(ctx).Where(roomUserDb.RoomID.Eq(roomId)).Find()
+	userRooms, err := roomUserDb.WithContext(ctx).
+		Preload(roomUserDb.User).
+		Where(roomUserDb.RoomID.Eq(roomId)).Find()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, exception.ErrGameRoomNotFound
 	} else if err != nil {
@@ -163,12 +167,8 @@ func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room,
 	}
 
 	roomEntity := ro.ToEntity()
-	for _, user := range userRooms {
-		roomEntity.Players = append(roomEntity.Players, &room.RoomPlayer{
-			UserId:          user.UserID,
-			UserName:        user.UserName,
-			IsVirtualPlayer: user.IsVirtualPlayer,
-		})
+	for _, ur := range userRooms {
+		roomEntity.Players = append(roomEntity.Players, ur.ToEntity())
 	}
 	roomEntity.Game = ro.Game.ToEntity()
 
@@ -189,6 +189,7 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 }
 
 func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
+	roomUserDb := r.db.RoomUserPo
 	roomDb := r.db.RoomPo
 	userDb := r.db.UserPo
 
@@ -203,10 +204,35 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwn
 		return nil, err
 	}
 
+	plog.Debugc(ctx, "%v", plog.Jsonify(user))
+
+	roomIds := putils.Map(user.Rooms, func(r *model.RoomPo) int {
+		return r.ID
+	})
+
+	roomUsers, err := roomUserDb.WithContext(ctx).
+		Preload(roomUserDb.User).
+		Where(roomUserDb.RoomID.In(roomIds...)).Find()
+	if err != nil {
+		return nil, err
+	}
+
+	plog.Debugc(ctx, "%v", plog.Jsonify(roomUsers))
+
+	roomUserEntities := putils.Map(roomUsers, func(ru *model.RoomUserPo) *room.RoomPlayer {
+		return ru.ToEntity()
+	})
+
+	roomUsersGroup := putils.GroupBy(roomUserEntities, func(rp *room.RoomPlayer) int {
+		return rp.RoomId
+	})
+
 	var rooms []*room.Room
 
 	for _, room := range user.Rooms {
-		rooms = append(rooms, room.ToEntity())
+		roomEntity := room.ToEntity()
+		roomEntity.Players = roomUsersGroup[room.ID]
+		rooms = append(rooms, roomEntity)
 	}
 
 	return rooms, nil

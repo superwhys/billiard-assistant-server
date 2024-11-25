@@ -33,6 +33,7 @@ type Room struct {
 }
 
 type RoomPlayer struct {
+	RoomId          int    `json:"room_id,omitempty"`
 	UserId          int    `json:"user_id,omitempty"`
 	UserName        string `json:"user_name,omitempty"`
 	IsVirtualPlayer bool   `json:"is_virtual_player,omitempty"`

@@ -29,7 +29,7 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 	_roomUserPo.ID = field.NewInt(tableName, "id")
 	_roomUserPo.RoomID = field.NewInt(tableName, "room_id")
 	_roomUserPo.UserID = field.NewInt(tableName, "user_id")
-	_roomUserPo.UserName = field.NewString(tableName, "user_name")
+	_roomUserPo.VirtualName = field.NewString(tableName, "virtual_name")
 	_roomUserPo.IsVirtualPlayer = field.NewBool(tableName, "is_virtual_player")
 	_roomUserPo.CreatedAt = field.NewTime(tableName, "created_at")
 	_roomUserPo.UpdatedAt = field.NewTime(tableName, "updated_at")
@@ -70,6 +70,12 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 		},
 	}
 
+	_roomUserPo.User = roomUserPoBelongsToUser{
+		db: db.Session(&gorm.Session{}),
+
+		RelationField: field.NewRelation("User", "model.UserPo"),
+	}
+
 	_roomUserPo.fillFieldMap()
 
 	return _roomUserPo
@@ -82,11 +88,13 @@ type roomUserPo struct {
 	ID              field.Int
 	RoomID          field.Int
 	UserID          field.Int
-	UserName        field.String
+	VirtualName     field.String
 	IsVirtualPlayer field.Bool
 	CreatedAt       field.Time
 	UpdatedAt       field.Time
 	Room            roomUserPoBelongsToRoom
+
+	User roomUserPoBelongsToUser
 
 	fieldMap map[string]field.Expr
 }
@@ -106,7 +114,7 @@ func (r *roomUserPo) updateTableName(table string) *roomUserPo {
 	r.ID = field.NewInt(table, "id")
 	r.RoomID = field.NewInt(table, "room_id")
 	r.UserID = field.NewInt(table, "user_id")
-	r.UserName = field.NewString(table, "user_name")
+	r.VirtualName = field.NewString(table, "virtual_name")
 	r.IsVirtualPlayer = field.NewBool(table, "is_virtual_player")
 	r.CreatedAt = field.NewTime(table, "created_at")
 	r.UpdatedAt = field.NewTime(table, "updated_at")
@@ -136,11 +144,11 @@ func (r *roomUserPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *roomUserPo) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 8)
+	r.fieldMap = make(map[string]field.Expr, 9)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["room_id"] = r.RoomID
 	r.fieldMap["user_id"] = r.UserID
-	r.fieldMap["user_name"] = r.UserName
+	r.fieldMap["virtual_name"] = r.VirtualName
 	r.fieldMap["is_virtual_player"] = r.IsVirtualPlayer
 	r.fieldMap["created_at"] = r.CreatedAt
 	r.fieldMap["updated_at"] = r.UpdatedAt
@@ -241,6 +249,77 @@ func (a roomUserPoBelongsToRoomTx) Clear() error {
 }
 
 func (a roomUserPoBelongsToRoomTx) Count() int64 {
+	return a.tx.Count()
+}
+
+type roomUserPoBelongsToUser struct {
+	db *gorm.DB
+
+	field.RelationField
+}
+
+func (a roomUserPoBelongsToUser) Where(conds ...field.Expr) *roomUserPoBelongsToUser {
+	if len(conds) == 0 {
+		return &a
+	}
+
+	exprs := make([]clause.Expression, 0, len(conds))
+	for _, cond := range conds {
+		exprs = append(exprs, cond.BeCond().(clause.Expression))
+	}
+	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
+	return &a
+}
+
+func (a roomUserPoBelongsToUser) WithContext(ctx context.Context) *roomUserPoBelongsToUser {
+	a.db = a.db.WithContext(ctx)
+	return &a
+}
+
+func (a roomUserPoBelongsToUser) Session(session *gorm.Session) *roomUserPoBelongsToUser {
+	a.db = a.db.Session(session)
+	return &a
+}
+
+func (a roomUserPoBelongsToUser) Model(m *model.RoomUserPo) *roomUserPoBelongsToUserTx {
+	return &roomUserPoBelongsToUserTx{a.db.Model(m).Association(a.Name())}
+}
+
+type roomUserPoBelongsToUserTx struct{ tx *gorm.Association }
+
+func (a roomUserPoBelongsToUserTx) Find() (result *model.UserPo, err error) {
+	return result, a.tx.Find(&result)
+}
+
+func (a roomUserPoBelongsToUserTx) Append(values ...*model.UserPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Append(targetValues...)
+}
+
+func (a roomUserPoBelongsToUserTx) Replace(values ...*model.UserPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Replace(targetValues...)
+}
+
+func (a roomUserPoBelongsToUserTx) Delete(values ...*model.UserPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Delete(targetValues...)
+}
+
+func (a roomUserPoBelongsToUserTx) Clear() error {
+	return a.tx.Clear()
+}
+
+func (a roomUserPoBelongsToUserTx) Count() int64 {
 	return a.tx.Count()
 }
 
