@@ -3,7 +3,6 @@ package roomDal
 import (
 	"context"
 
-	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -199,12 +198,9 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwn
 		Preload(userDb.Rooms.Game).
 		Where(userDb.ID.Eq(userId)).
 		First()
-
 	if err != nil {
 		return nil, err
 	}
-
-	plog.Debugc(ctx, "%v", plog.Jsonify(user))
 
 	roomIds := putils.Map(user.Rooms, func(r *model.RoomPo) int {
 		return r.ID
@@ -217,8 +213,6 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwn
 		return nil, err
 	}
 
-	plog.Debugc(ctx, "%v", plog.Jsonify(roomUsers))
-
 	roomUserEntities := putils.Map(roomUsers, func(ru *model.RoomUserPo) *room.RoomPlayer {
 		return ru.ToEntity()
 	})
@@ -228,7 +222,6 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwn
 	})
 
 	var rooms []*room.Room
-
 	for _, room := range user.Rooms {
 		roomEntity := room.ToEntity()
 		roomEntity.Players = roomUsersGroup[room.ID]
