@@ -46,7 +46,7 @@ func (r *Room) GetRoomId() int {
 }
 
 func (r *Room) CanStart() bool {
-	return true
+	return r.GameStatus == Preparing
 }
 
 func (r *Room) CanEnter() bool {

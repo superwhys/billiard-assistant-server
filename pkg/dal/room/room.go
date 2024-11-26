@@ -32,7 +32,7 @@ func (r *RoomRepoImpl) CreateRoom(ctx context.Context, gameId, userId int) (*roo
 	ro := &model.RoomPo{
 		GameID:        gameId,
 		OwnerID:       userId,
-		GameStatus:    room.Playing,
+		GameStatus:    room.Preparing,
 		WinLoseStatus: room.WinLoseUnknown,
 	}
 
