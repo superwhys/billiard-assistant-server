@@ -89,8 +89,8 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId, userId int, use
 		return errors.Wrapf(err, "getRoom: %d", roomId)
 	}
 
-	if room.Game == nil {
-		return exception.ErrGameNotFound
+	if room.IsEnd() {
+		return exception.ErrGameRoomEnd
 	}
 
 	if room.IsInRoom(userName, userId) {
@@ -105,6 +105,24 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId, userId int, use
 }
 
 func (r *RoomService) QuitGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
+	if err := r.locker.Lock(roomId); err != nil {
+		return errors.Wrap(err, "lock room")
+	}
+	defer r.locker.Unlock(roomId)
+
+	room, err := r.roomRepo.GetRoomById(ctx, roomId)
+	if err != nil {
+		return errors.Wrapf(err, "getRoom: %d", roomId)
+	}
+
+	if room.IsEnd() {
+		return exception.ErrGameRoomEnd
+	}
+
+	if !room.IsInRoom(userName, userId) {
+		return exception.ErrNotInRoom
+	}
+
 	return r.roomRepo.RemoveUserFromRoom(ctx, roomId, userId, userName, isVirtual)
 }
 

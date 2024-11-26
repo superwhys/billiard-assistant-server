@@ -57,6 +57,10 @@ func (r *Room) IsOwner(userId int) bool {
 	return r.OwnerId == userId
 }
 
+func (r *Room) IsEnd() bool {
+	return r.GameStatus == Finish
+}
+
 func (r *Room) IsInRoom(virtualName string, userId int) bool {
 	if virtualName == "" && userId == 0 {
 		return false
