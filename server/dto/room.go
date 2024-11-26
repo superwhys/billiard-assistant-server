@@ -15,7 +15,8 @@ import (
 )
 
 type GameRoom struct {
-	RoomId int `json:"room_id,omitempty"`
+	RoomId   int    `json:"room_id,omitempty"`
+	RoomCode string `json:"room_code,omitempty"`
 
 	GameId     int    `json:"game_id,omitempty"`
 	GameIcon   string `json:"game_icon,omitempty"`
@@ -31,6 +32,7 @@ type GameRoom struct {
 func GameRoomEntityToDto(gr *room.Room) *GameRoom {
 	gameRoom := &GameRoom{
 		RoomId:        gr.RoomId,
+		RoomCode:      gr.RoomCode,
 		GameId:        gr.GameId,
 		OwnerId:       gr.OwnerId,
 		Players:       gr.Players,
@@ -55,6 +57,10 @@ type GetRoomRequest struct {
 	RoomId int `uri:"roomId"`
 }
 
+type GetRoomByCodeRequest struct {
+	RoomCode string `uri:"roomCode"`
+}
+
 type UpdateGameRoomRequest struct {
 	RoomId        int                `json:"room_id"`
 	GameStatus    room.Status        `json:"game_status"`
@@ -66,13 +72,15 @@ type DeleteGameRoomRequest struct {
 }
 
 type EnterGameRoomRequest struct {
-	VirtualName string `json:"virtual_name"`
-	RoomId      int    `json:"room_id"`
+	RoomId    int    `json:"room_id"`
+	UserName  string `json:"user_name"`
+	IsVirtual bool   `json:"is_virtual"`
 }
 
 type LeaveGameRoomRequest struct {
-	VirtualName string `json:"virtual_name"`
-	RoomId      int    `json:"room_id"`
+	RoomId    int    `json:"room_id"`
+	UserName  string `json:"user_name"`
+	IsVirtual bool   `json:"is_virtual"`
 }
 
 type GetUserGameRoomsResp struct {

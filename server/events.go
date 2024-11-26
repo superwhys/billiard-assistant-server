@@ -10,7 +10,10 @@ package server
 
 import (
 	"context"
+	"errors"
 
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
@@ -26,27 +29,38 @@ func (s *BilliardServer) setupEventsSubscription() {
 
 func (s *BilliardServer) HandlePlayerEnterEvent(event *events.EventMessage) error {
 	// broadcast new player joined event
-	// e := event.Payload.(*room.EnterRoomEvent)
-	// return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
-	// 	EventType: event.EventType,
-	// })
-	// TODO: Implement player enget logic
-	// broadcast new player joined event, etc.
-	panic("not implemented")
-
+	e, ok := event.Payload.(*room.EnterRoomEvent)
+	if !ok {
+		return errors.New("invalid payload type for player joined event")
+	}
+	return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
+		EventType: event.EventType,
+		Data:      e,
+	})
 }
 
 func (s *BilliardServer) HandlePlayerLeaveEvent(event *events.EventMessage) error {
-	// TODO: Implement player leave logic
-	// broadcast player leave event, etc.
-	panic("not implemented")
+	e, ok := event.Payload.(*room.LeaveRoomEvent)
+	if !ok {
+		return errors.New("invalid payload type for player leave event")
+	}
+	// broadcast user leave event
+	return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
+		EventType: event.EventType,
+		Data:      e,
+	})
 }
 
 func (s *BilliardServer) HandleGameStartEvent(event *events.EventMessage) error {
-	// TODO: not implemented
-	// Broadcast all user gameStart message
-	// Initialize game state
-	panic("not implemented")
+	e, ok := event.Payload.(*room.GameStartEvent)
+	if !ok {
+		return errors.New("invalid payload type for game start event")
+	}
+
+	return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
+		EventType: event.EventType,
+		Data:      e,
+	})
 }
 
 func (s *BilliardServer) HandleSendPhoneSMS(event *events.EventMessage) error {

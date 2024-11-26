@@ -10,13 +10,14 @@ package session
 
 import (
 	"context"
-
-	"github.com/gorilla/websocket"
+	"net/http"
 )
 
+type SessionEventHandler func(ctx context.Context, msg *Message) error
+
 type ISessionService interface {
-	CreateSession(ctx context.Context, playerID, roomID int, conn *websocket.Conn) (*Session, error)
-	StartSession(*Session)
+	CreateSession(ctx context.Context, playerID, roomID int, w http.ResponseWriter, r *http.Request) (*Session, error)
+	StartSession(*Session, SessionEventHandler)
 	RemoveSession(sessionID string) error
 	GetSessionByID(sessionID string) (*Session, error)
 	BroadcastMessage(roomID int, message *Message) error

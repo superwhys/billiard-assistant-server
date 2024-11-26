@@ -14,11 +14,11 @@ import (
 	"io"
 	"math/rand"
 	"mime/multipart"
+	"net/http"
 	"time"
 
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/predis"
-	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
@@ -432,7 +432,7 @@ func (s *BilliardServer) CreateRoom(ctx context.Context, userId, gameId int) (*d
 		return nil, err
 	}
 
-	err = s.RoomSrv.EnterGameRoom(ctx, "", userId, gr.RoomId)
+	err = s.RoomSrv.EnterGameRoom(ctx, gr.RoomId, userId, user.Name, false)
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return nil, err
@@ -468,28 +468,27 @@ func (s *BilliardServer) DeleteRoom(ctx context.Context, userId int, roomId int)
 	return nil
 }
 
-func (s *BilliardServer) EnterGameRoom(ctx context.Context, virtualName string, userId int, roomId int) error {
-	err := s.RoomSrv.EnterGameRoom(ctx, virtualName, userId, roomId)
+func (s *BilliardServer) EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
+	err := s.RoomSrv.EnterGameRoom(ctx, roomId, userId, userName, isVirtual)
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return err
 	}
 
-	// TODO: publish user enter room events
-	// s.EventBus.Publish(room.NewEnterRoomEvent(roomId, enterUser))
+	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, userId, userName, isVirtual))
 
 	return nil
 }
 
-func (s *BilliardServer) LeaveGameRoom(ctx context.Context, virtualName string, userId int, roomId int) error {
-	err := s.RoomSrv.QuitGameRoom(ctx, virtualName, userId, roomId)
+func (s *BilliardServer) LeaveGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
+	err := s.RoomSrv.QuitGameRoom(ctx, roomId, userId, userName, isVirtual)
 	if err != nil {
 		plog.Errorc(ctx, "leave game room error: %v", err)
 		return err
 	}
 
 	// publish user leave room events
-	s.EventBus.Publish(room.NewLeaveRoomEvent(virtualName, userId, roomId))
+	s.EventBus.Publish(room.NewLeaveRoomEvent(roomId, userId, userName, isVirtual))
 
 	return nil
 }
@@ -504,16 +503,43 @@ func (s *BilliardServer) GetGameRoom(ctx context.Context, roomId int) (*dto.Game
 	return dto.GameRoomEntityToDto(r), nil
 }
 
-func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId int, conn *websocket.Conn) (*session.Session, error) {
-	sess, err := s.SessionSrv.CreateSession(ctx, userId, roomId, conn)
+func (s *BilliardServer) GetGameRoomByCode(ctx context.Context, roomCode string) (*dto.GameRoom, error) {
+	fmt.Println(roomCode)
+	r, err := s.RoomSrv.GetRoomByCode(ctx, roomCode)
+	if err != nil {
+		plog.Errorc(ctx, "get game room error: %v", err)
+		return nil, err
+	}
+
+	return dto.GameRoomEntityToDto(r), nil
+}
+
+func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId int, w http.ResponseWriter, r *http.Request) (*session.Session, error) {
+	_, err := s.RoomSrv.GetRoomById(ctx, roomId)
+	if errors.Is(err, exception.ErrGameRoomNotFound) {
+		return nil, err
+	} else if err != nil {
+		plog.Errorc(ctx, "get room error: %v", err)
+		return nil, err
+	}
+
+	sess, err := s.SessionSrv.CreateSession(ctx, userId, roomId, w, r)
 	if err != nil {
 		plog.Errorc(ctx, "register room session error: %v", err)
 		return nil, err
 	}
 
-	s.SessionSrv.StartSession(sess)
+	s.SessionSrv.StartSession(sess, s.handleSessionMessage)
 
 	return sess, nil
+}
+
+func (s *BilliardServer) handleSessionMessage(ctx context.Context, msg *session.Message) error {
+	s.EventBus.Publish(&events.EventMessage{
+		EventType: msg.EventType,
+		Payload:   msg.Data,
+	})
+	return nil
 }
 
 func (s *BilliardServer) StartGame(ctx context.Context, userId, roomId int) error {
@@ -523,11 +549,18 @@ func (s *BilliardServer) StartGame(ctx context.Context, userId, roomId int) erro
 		return err
 	}
 
-	// game init
-	gs, err := game.NewGameStrategy(currentGame.GetGameType())
-	payload := gs.SetupGame(currentGame.GetGameConfig())
+	s.EventBus.Publish(room.NewGameStartEvent(roomId, currentGame))
+	return nil
+}
 
-	s.EventBus.Publish(room.NewGameStartEvent(roomId, payload))
+func (s *BilliardServer) EndGame(ctx context.Context, userId, roomId int) error {
+	err := s.RoomSrv.EndGame(ctx, userId, roomId)
+	if err != nil {
+		plog.Errorc(ctx, "end game error: %v", err)
+		return err
+	}
+
+	s.EventBus.Publish(room.NewGameEndEvent(roomId))
 	return nil
 }
 

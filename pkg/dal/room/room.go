@@ -3,6 +3,7 @@ package roomDal
 import (
 	"context"
 
+	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -75,25 +76,14 @@ func (r *RoomRepoImpl) DeleteRoom(ctx context.Context, roomId int) error {
 	})
 }
 
-type enterLeaveOperaion func(ctx context.Context, virtualUser string, userId, roomId int) error
+type enterLeaveOperaion func(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 
-func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, virtualUser string, userId int, roomId int, operation enterLeaveOperaion) error {
+func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool, operation enterLeaveOperaion) error {
 	userDb := r.db.UserPo
 	roomDb := r.db.RoomPo
 
-	if userId == 0 && virtualUser == "" {
+	if userId == 0 && (isVirtual && userName == "") {
 		return errors.New("oneof userId or virtualUser must be provided")
-	}
-
-	userName := virtualUser
-	if userId != 0 {
-		user, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).First()
-		if errors.Is(err, exception.ErrUserNotFound) {
-			return err
-		} else if err != nil {
-			return err
-		}
-		userName = user.Name
 	}
 
 	roomCount, err := roomDb.WithContext(ctx).Where(roomDb.ID.Eq(roomId)).Count()
@@ -105,41 +95,51 @@ func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, virtualUser string, u
 		return exception.ErrGameRoomNotFound
 	}
 
-	return operation(ctx, userName, userId, roomId)
+	if userId != 0 {
+		userCnt, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).Count()
+		if err != nil || userCnt == 0 {
+			if err != nil {
+				plog.Errorc(ctx, "count userId count error: %v", err)
+			}
+			return exception.ErrUserNotFound
+		}
+	}
+
+	return operation(ctx, roomId, userId, userName, isVirtual)
 }
 
-func (r *RoomRepoImpl) enterRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
+func (r *RoomRepoImpl) enterRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
 	roomUserPo := r.db.RoomUserPo
 
 	roomUser := &model.RoomUserPo{
 		RoomID:          roomId,
 		UserID:          userId,
-		VirtualName:     virtualUser,
-		IsVirtualPlayer: userId == 0,
+		VirtualName:     userName,
+		IsVirtualPlayer: isVirtual,
 	}
 	return roomUserPo.WithContext(ctx).Create(roomUser)
 }
 
-func (r *RoomRepoImpl) leaveRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
+func (r *RoomRepoImpl) leaveRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
 	roomUserPo := r.db.RoomUserPo
 
 	condition := []gen.Condition{}
-	if userId != 0 {
+	if !isVirtual {
 		condition = append(condition, roomUserPo.UserID.Eq(userId))
 	} else {
-		condition = append(condition, roomUserPo.VirtualName.Eq(virtualUser))
+		condition = append(condition, roomUserPo.VirtualName.Eq(userName))
 	}
 
 	_, err := roomUserPo.WithContext(ctx).Where(condition...).Delete()
 	return err
 }
 
-func (r *RoomRepoImpl) AddUserToRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
-	return r.updateUserRoom(ctx, virtualUser, userId, roomId, r.enterRoom)
+func (r *RoomRepoImpl) AddUserToRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
+	return r.updateUserRoom(ctx, roomId, userId, userName, isVirtual, r.enterRoom)
 }
 
-func (r *RoomRepoImpl) RemoveUserFromRoom(ctx context.Context, virtualUser string, userId, roomId int) error {
-	return r.updateUserRoom(ctx, virtualUser, userId, roomId, r.leaveRoom)
+func (r *RoomRepoImpl) RemoveUserFromRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
+	return r.updateUserRoom(ctx, roomId, userId, userName, isVirtual, r.leaveRoom)
 }
 
 func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {

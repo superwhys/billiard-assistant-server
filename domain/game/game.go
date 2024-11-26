@@ -48,6 +48,7 @@ type IGameStrategy interface {
 	HandleAction()
 }
 
+// TODO: may be delete
 var strategyFactory = make(map[shared.BilliardGameType]IGameStrategy)
 
 func RegisterStrategy(gt shared.BilliardGameType, strategy IGameStrategy) {

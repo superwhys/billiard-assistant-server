@@ -13,39 +13,67 @@ import (
 )
 
 type EnterRoomEvent struct {
-	UserId      int
-	VirtualName string
-	RoomId      int
+	UserId    int
+	UserName  string
+	IsVirtual bool
+	RoomId    int
 }
 
-func NewEnterRoomEvent(virtualName string, userId, roomId int) *events.EventMessage {
+func NewEnterRoomEvent(roomId, userId int, userName string, isVirtual bool) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.PlayerJoined,
-		Payload:   &EnterRoomEvent{VirtualName: virtualName, UserId: userId, RoomId: roomId},
+		Payload: &EnterRoomEvent{
+			UserId:    userId,
+			UserName:  userName,
+			IsVirtual: isVirtual,
+			RoomId:    roomId,
+		},
 	}
 }
 
 type LeaveRoomEvent struct {
-	UserId      int
-	VirtualName string
-	RoomId      int
+	UserId    int
+	UserName  string
+	IsVirtual bool
+	RoomId    int
 }
 
-func NewLeaveRoomEvent(virtualName string, userId, roomId int) *events.EventMessage {
+func NewLeaveRoomEvent(roomId, userId int, userName string, isVirtual bool) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.PlayerLeft,
-		Payload:   &LeaveRoomEvent{VirtualName: virtualName, UserId: userId, RoomId: roomId},
+		Payload: &LeaveRoomEvent{
+			UserId:    userId,
+			UserName:  userName,
+			IsVirtual: isVirtual,
+			RoomId:    roomId,
+		},
 	}
 }
 
 type GameStartEvent struct {
-	roomId  int
-	payload any
+	RoomId int
+	Game   Game
 }
 
-func NewGameStartEvent(roomId int, payload any) *events.EventMessage {
+func NewGameStartEvent(roomId int, game Game) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.GameStart,
-		Payload:   &GameStartEvent{roomId, payload},
+		Payload: &GameStartEvent{
+			RoomId: roomId,
+			Game:   game,
+		},
+	}
+}
+
+type GameEndEvent struct {
+	RoomId int
+}
+
+func NewGameEndEvent(roomId int) *events.EventMessage {
+	return &events.EventMessage{
+		EventType: events.GameEnd,
+		Payload: &GameEndEvent{
+			RoomId: roomId,
+		},
 	}
 }

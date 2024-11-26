@@ -30,6 +30,8 @@ type Room struct {
 	GameStatus    Status
 	WinLoseStatus WinLoseStatus
 	CreateAt      time.Time
+
+	RoomCode string
 }
 
 type RoomPlayer struct {
@@ -75,6 +77,10 @@ func (r *Room) IsInRoom(virtualName string, userId int) bool {
 
 func (r *Room) StartGame() {
 	r.GameStatus = Playing
+}
+
+func (r *Room) EndGame() {
+	r.GameStatus = Finish
 }
 
 type WinLoseStatus int

@@ -27,7 +27,8 @@ func (ur *RoomUserPo) TableName() string {
 }
 
 type RoomPo struct {
-	ID     int `gorm:"primarykey"`
+	ID int `gorm:"primarykey"`
+
 	GameID int
 	Game   *GamePo `gorm:"foreignKey:GameID"`
 

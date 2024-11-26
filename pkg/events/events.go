@@ -24,6 +24,7 @@ const (
 	GameEnd
 	SendPhoneCode
 	SendEmailCode
+	NineBallRecordPush
 )
 
 type EventMessage struct {
