@@ -38,6 +38,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/password"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
+	sessionSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/session"
 	"gorm.io/gorm"
 
 	authDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/auth"
@@ -93,6 +94,7 @@ func NewBilliardServer(
 		AuthSrv:     authSrv.NewAuthService(authRepo),
 		GameSrv:     gameSrv.NewGameService(gameRepo, minioClient),
 		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis, conf.RoomConfig),
+		SessionSrv:  sessionSrv.NewSessionService(),
 		NoticeSrv:   noticeSrv.NewNoticeService(noticeRepo),
 		RecordSrv:   recordService,
 		emailSender: emailSender,
@@ -548,6 +550,10 @@ func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId i
 }
 
 func (s *BilliardServer) handleSessionMessage(ctx context.Context, msg *session.Message) error {
+	if msg == nil {
+		return errors.New("message is nil")
+	}
+
 	s.EventBus.Publish(&events.EventMessage{
 		EventType: msg.EventType,
 		Payload:   msg.Data,
@@ -562,7 +568,7 @@ func (s *BilliardServer) StartGame(ctx context.Context, userId, roomId int) erro
 		return err
 	}
 
-	s.EventBus.Publish(room.NewGameStartEvent(roomId, currentGame))
+	s.EventBus.Publish(room.NewGameStartEvent(roomId, userId, currentGame))
 	return nil
 }
 
@@ -573,7 +579,7 @@ func (s *BilliardServer) EndGame(ctx context.Context, userId, roomId int) error 
 		return err
 	}
 
-	s.EventBus.Publish(room.NewGameEndEvent(roomId))
+	s.EventBus.Publish(room.NewGameEndEvent(roomId, userId))
 	return nil
 }
 
@@ -703,32 +709,32 @@ func (s *BilliardServer) CheckEmailBind(ctx context.Context, email string) (bool
 	return s.checkAuthExists(ctx, auth.AuthTypeEmail, email)
 }
 
-func (s *BilliardServer) HandleRoomAction(ctx context.Context, roomId int, action json.RawMessage) error {
+func (s *BilliardServer) HandleRoomAction(ctx context.Context, roomId, userId int, rawAction json.RawMessage) error {
 	gameType, err := s.RoomSrv.GetRoomGameType(ctx, roomId)
 	if err != nil {
 		plog.Errorc(ctx, "get room game type error: %v", err)
 		return err
 	}
 
-	err = s.RecordSrv.HandleAction(ctx, gameType, action)
+	action, err := s.RecordSrv.HandleAction(ctx, gameType, rawAction)
 	if err != nil {
 		plog.Errorc(ctx, "handle room action error: %v", err)
 		return err
 	}
 
-	// TODO: publish a event
+	s.EventBus.Publish(record.NewActionEvent(roomId, userId, action))
 
 	return nil
 }
 
-func (s *BilliardServer) HandleRoomRecord(ctx context.Context, roomId int, record json.RawMessage) error {
+func (s *BilliardServer) HandleRoomRecord(ctx context.Context, roomId int, rawRecord json.RawMessage) error {
 	gameType, err := s.RoomSrv.GetRoomGameType(ctx, roomId)
 	if err != nil {
 		plog.Errorc(ctx, "get room game type error: %v", err)
 		return err
 	}
 
-	err = s.RecordSrv.HandleRecord(ctx, gameType, record)
+	_, err = s.RecordSrv.HandleRecord(ctx, gameType, rawRecord)
 	if err != nil {
 		plog.Errorc(ctx, "handle room record error: %v", err)
 		return err

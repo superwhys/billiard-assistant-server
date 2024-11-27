@@ -21,7 +21,7 @@ import (
 )
 
 type RecordApp interface {
-	HandleRoomAction(ctx context.Context, roomId int, action json.RawMessage) error
+	HandleRoomAction(ctx context.Context, roomId, userId int, action json.RawMessage) error
 	HandleRoomRecord(ctx context.Context, roomId int, record json.RawMessage) error
 	GetRoomActions(ctx context.Context, roomId int) (*dto.Action, error)
 	GetRoomRecoed(ctx context.Context, roomId int) (*dto.Record, error)
@@ -48,7 +48,12 @@ func (r *RecordHandler) Init(router gin.IRouter) {
 }
 
 func (r *RecordHandler) roomActionHandler(ctx *gin.Context, req *dto.RoomActionRequest) error {
-	err := r.recordApp.HandleRoomAction(ctx, req.RoomId, req.Action)
+	userId, err := r.middleware.CurrentUserId(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = r.recordApp.HandleRoomAction(ctx, req.RoomId, userId, req.Action)
 	if exception.CheckException(err) {
 		return err
 	} else if err != nil {

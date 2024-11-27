@@ -24,8 +24,31 @@ const (
 	GameEnd
 	SendPhoneCode
 	SendEmailCode
-	NineBallRecordPush
+	RecordAction
 )
+
+func (et EventType) String() string {
+	switch et {
+	case PlayerJoined:
+		return "PlayerJoined"
+	case PlayerLeft:
+		return "PlayerLeft"
+	case PlayerPrepare:
+		return "PlayerPrepare"
+	case GameStart:
+		return "GameStart"
+	case GameEnd:
+		return "GameEnd"
+	case SendPhoneCode:
+		return "SendPhoneCode"
+	case SendEmailCode:
+		return "SendEmailCode"
+	case RecordAction:
+		return "RecordAction"
+	default:
+		return "Unknown"
+	}
+}
 
 type EventMessage struct {
 	EventType EventType
@@ -71,7 +94,7 @@ func (eb *EventBus) Publish(event *EventMessage) {
 
 	subscribeFns, exists := eb.subscribers[event.EventType]
 	if !exists {
-		plog.Errorf("eventType %v no subscribers registered", event.EventType)
+		plog.Errorf("eventType %s no subscribers registered", event.EventType)
 		return
 	}
 

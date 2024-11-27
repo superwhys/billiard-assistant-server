@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/putils"
+	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -129,30 +130,40 @@ func (rs *RecordService) GetRoomActions(ctx context.Context, roomId int) ([]reco
 	return actions, nil
 }
 
-func (rs *RecordService) HandleRecord(ctx context.Context, gameType shared.BilliardGameType, rawRecord json.RawMessage) error {
+func (rs *RecordService) HandleRecord(ctx context.Context, gameType shared.BilliardGameType, rawRecord json.RawMessage) (record.RecordItem, error) {
 	gameStrategy, err := rs.getGameStrategy(gameType)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "getGameStrategy")
 	}
 
 	record, err := gameStrategy.UnmarshalRecord(rawRecord)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "unmarshalRecord")
 	}
 
-	return rs.recordRepo.UpdateRoomRecord(ctx, gameType, record)
+	err = rs.recordRepo.UpdateRoomRecord(ctx, gameType, record)
+	if err != nil {
+		return nil, errors.Wrap(err, "updateRoomRecord")
+	}
+
+	return record, nil
 }
 
-func (rs *RecordService) HandleAction(ctx context.Context, gameType shared.BilliardGameType, rawAction json.RawMessage) error {
+func (rs *RecordService) HandleAction(ctx context.Context, gameType shared.BilliardGameType, rawAction json.RawMessage) (record.Action, error) {
 	gameStrategy, err := rs.getGameStrategy(gameType)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "getGameStrategy")
 	}
 
 	action, err := gameStrategy.UnmarshalAction(rawAction)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "unmarshalAction")
 	}
 
-	return gameStrategy.HandleAction(ctx, action)
+	err = gameStrategy.HandleAction(ctx, action)
+	if err != nil {
+		return nil, errors.Wrap(err, "handleAction")
+	}
+
+	return action, nil
 }

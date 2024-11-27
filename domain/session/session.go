@@ -11,7 +11,8 @@ package session
 import (
 	"context"
 	"fmt"
-	
+
+	"github.com/go-puzzles/puzzles/plog"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
@@ -33,7 +34,7 @@ type Session struct {
 }
 
 func NewSession(ctx context.Context, roomId int, userId int, conn *websocket.Conn) *Session {
-	return &Session{
+	sess := &Session{
 		Ctx:    ctx,
 		ID:     uuid.New().String(),
 		RoomId: roomId,
@@ -41,10 +42,13 @@ func NewSession(ctx context.Context, roomId int, userId int, conn *websocket.Con
 		Conn:   conn,
 		done:   make(chan error),
 	}
+
+	sess.Ctx = plog.With(sess.Ctx, sess.String())
+	return sess
 }
 
 func (s *Session) String() string {
-	return fmt.Sprintf("room(%d) session(%s)", s.RoomId, s.ID)
+	return fmt.Sprintf("room(%d) user(%d) session(%s)", s.RoomId, s.UserId, s.ID)
 }
 
 func (s *Session) Wait() error {

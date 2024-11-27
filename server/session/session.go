@@ -27,6 +27,14 @@ type sessionService struct {
 	websocketUpgrader *websocket.Upgrader
 }
 
+func NewSessionService() *sessionService {
+	return &sessionService{
+		sessMap:           make(map[string]*session.Session),
+		roomSession:       make(map[int][]string),
+		websocketUpgrader: &websocket.Upgrader{},
+	}
+}
+
 func (s *sessionService) CreateSession(ctx context.Context, playerID int, roomID int, w http.ResponseWriter, r *http.Request) (*session.Session, error) {
 	ws, err := s.websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -55,8 +63,10 @@ func (s *sessionService) readMessageLoop(sess *session.Session) chan *session.Me
 		for {
 			var msg session.Message
 			err := sess.Conn.ReadJSON(&msg)
-			if err != nil {
-				plog.Infof("session(%s) read message failed: %v", sess, err)
+			if websocket.IsCloseError(err, websocket.CloseNoStatusReceived) {
+				return
+			} else if err != nil {
+				plog.Errorc(sess.Ctx, "read message failed: %v", err)
 				return
 			}
 
@@ -72,7 +82,12 @@ func (s *sessionService) StartSession(sess *session.Session, sessionHandler sess
 		select {
 		case <-sess.Ctx.Done():
 			break
-		case msg := <-s.readMessageLoop(sess):
+		case msg, ok := <-s.readMessageLoop(sess):
+			if !ok {
+				plog.Debugc(sess.Ctx, "connection closed")
+				return
+			}
+
 			plog.Debugc(sess.Ctx, "read message %v", msg)
 			if err := sessionHandler(sess.Ctx, msg); err != nil {
 				plog.Errorf("session(%s) handle message failed: %v", sess, err)
@@ -107,7 +122,7 @@ func (s *sessionService) GetSessionByID(sessionID string) (*session.Session, err
 	return sess, nil
 }
 
-func (s *sessionService) BroadcastMessage(roomID int, message *session.Message) error {
+func (s *sessionService) BroadcastMessage(roomID, publishUserId int, message *session.Message) error {
 	roomSess, exists := s.roomSession[roomID]
 	if !exists {
 		return errors.New("room not found")
@@ -117,6 +132,10 @@ func (s *sessionService) BroadcastMessage(roomID int, message *session.Message) 
 		sess, err := s.GetSessionByID(sessID)
 		if err != nil {
 			plog.Errorf("room(%v) session(%v) not found", roomID, sessID)
+			continue
+		}
+
+		if sess.UserId == publishUserId {
 			continue
 		}
 

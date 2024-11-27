@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
@@ -25,6 +26,19 @@ func (s *BilliardServer) setupEventsSubscription() {
 	s.EventBus.Subscribe(events.GameStart, s.HandleGameStartEvent)
 	s.EventBus.Subscribe(events.SendPhoneCode, s.HandleSendPhoneSMS)
 	s.EventBus.Subscribe(events.SendEmailCode, s.HandleSendEmailCode)
+	s.EventBus.Subscribe(events.RecordAction, s.HandleRecordAction)
+}
+
+func (s *BilliardServer) HandleRecordAction(event *events.EventMessage) error {
+	e, ok := event.Payload.(*record.ActionEvent)
+	if !ok {
+		return errors.New("invalid payload type for record action event")
+	}
+
+	return s.SessionSrv.BroadcastMessage(e.RoomId, e.UserId, &session.Message{
+		EventType: event.EventType,
+		Data:      e.Action,
+	})
 }
 
 func (s *BilliardServer) HandlePlayerEnterEvent(event *events.EventMessage) error {
@@ -33,7 +47,7 @@ func (s *BilliardServer) HandlePlayerEnterEvent(event *events.EventMessage) erro
 	if !ok {
 		return errors.New("invalid payload type for player joined event")
 	}
-	return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
+	return s.SessionSrv.BroadcastMessage(e.RoomId, e.UserId, &session.Message{
 		EventType: event.EventType,
 		Data:      e,
 	})
@@ -45,7 +59,7 @@ func (s *BilliardServer) HandlePlayerLeaveEvent(event *events.EventMessage) erro
 		return errors.New("invalid payload type for player leave event")
 	}
 	// broadcast user leave event
-	return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
+	return s.SessionSrv.BroadcastMessage(e.RoomId, e.UserId, &session.Message{
 		EventType: event.EventType,
 		Data:      e,
 	})
@@ -57,7 +71,7 @@ func (s *BilliardServer) HandleGameStartEvent(event *events.EventMessage) error 
 		return errors.New("invalid payload type for game start event")
 	}
 
-	return s.SessionSrv.BroadcastMessage(e.RoomId, &session.Message{
+	return s.SessionSrv.BroadcastMessage(e.RoomId, e.UserId, &session.Message{
 		EventType: event.EventType,
 		Data:      e,
 	})

@@ -52,14 +52,16 @@ func NewLeaveRoomEvent(roomId, userId int, userName string, isVirtual bool) *eve
 
 type GameStartEvent struct {
 	RoomId int
+	UserId int
 	Game   Game
 }
 
-func NewGameStartEvent(roomId int, game Game) *events.EventMessage {
+func NewGameStartEvent(roomId, userId int, game Game) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.GameStart,
 		Payload: &GameStartEvent{
 			RoomId: roomId,
+			UserId: userId,
 			Game:   game,
 		},
 	}
@@ -67,13 +69,15 @@ func NewGameStartEvent(roomId int, game Game) *events.EventMessage {
 
 type GameEndEvent struct {
 	RoomId int
+	UserId int
 }
 
-func NewGameEndEvent(roomId int) *events.EventMessage {
+func NewGameEndEvent(roomId, userId int) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.GameEnd,
 		Payload: &GameEndEvent{
 			RoomId: roomId,
+			UserId: userId,
 		},
 	}
 }

@@ -20,5 +20,5 @@ type ISessionService interface {
 	StartSession(*Session, SessionEventHandler)
 	RemoveSession(sessionID string) error
 	GetSessionByID(sessionID string) (*Session, error)
-	BroadcastMessage(roomID int, message *Message) error
+	BroadcastMessage(roomID, publishUserId int, message *Message) error
 }
