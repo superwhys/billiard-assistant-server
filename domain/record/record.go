@@ -8,21 +8,23 @@
 
 package record
 
-import "time"
+import (
+	"time"
+)
+
+type Action interface {
+	GetActionRoomId() (roomId int)
+	GetActionUser() (userId int)
+	GetActionTime() time.Time
+}
 
 type RecordItem interface {
-	UnmarshalFrom(jsonStr string) error
-	GetRecordTime() time.Time
-	GetRecordUser() (userId int)
+	GetRecordRoomId() (roomId int)
 }
 
 type Record struct {
 	ID            int
 	RoomId        int
-	Histories     []RecordItem
+	Histories     []Action
 	CurrentRecord RecordItem
-}
-
-type IRecordService interface {
-	HandleHistoryRecord(history RecordItem) error
 }

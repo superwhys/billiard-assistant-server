@@ -35,9 +35,9 @@ func (g *RoomCodeGenerator) Unlock(roomId int) error {
 	return g.redisClient.UnLock(g.getLockKey(roomId))
 }
 
-func (g *RoomCodeGenerator) GenerateCode(ctx context.Context, roomId int) (string, error) {
+func (g *RoomCodeGenerator) GenerateCode(ctx context.Context, roomId int) (int, error) {
 	if err := g.Lock(roomId); err != nil {
-		return "", errors.Wrap(err, "lock room failed")
+		return 0, errors.Wrap(err, "lock room failed")
 	}
 	defer g.Unlock(roomId)
 
@@ -48,7 +48,7 @@ func (g *RoomCodeGenerator) GenerateCode(ctx context.Context, roomId int) (strin
 
 	maxRetries := 10
 	for i := 0; i < maxRetries; i++ {
-		code := fmt.Sprintf("%06d", rand.Intn(1000000))
+		code := rand.Intn(1000000)
 		codeKey := g.getCodeKey(code)
 		roomKey := g.getRoomKey(roomId)
 
@@ -64,10 +64,10 @@ func (g *RoomCodeGenerator) GenerateCode(ctx context.Context, roomId int) (strin
 		return code, nil
 	}
 
-	return "", errors.New("无法生成唯一房间码，请稍后重试")
+	return 0, errors.New("无法生成唯一房间码，请稍后重试")
 }
 
-func (g *RoomCodeGenerator) GetRoomId(ctx context.Context, code string) (int, error) {
+func (g *RoomCodeGenerator) GetRoomId(ctx context.Context, code int) (int, error) {
 	key := g.getCodeKey(code)
 
 	var roomId int
@@ -79,13 +79,13 @@ func (g *RoomCodeGenerator) GetRoomId(ctx context.Context, code string) (int, er
 	return roomId, nil
 }
 
-func (g *RoomCodeGenerator) GetRoomCode(ctx context.Context, roomId int) (string, error) {
+func (g *RoomCodeGenerator) GetRoomCode(ctx context.Context, roomId int) (int, error) {
 	key := g.getRoomKey(roomId)
 
-	var code string
+	var code int
 	err := g.redisClient.Get(key, &code)
 	if err != nil {
-		return "", errors.Wrap(err, "获取房间码失败")
+		return 0, errors.Wrap(err, "获取房间码失败")
 	}
 
 	return code, nil
@@ -113,8 +113,8 @@ func (g *RoomCodeGenerator) DeleteCode(ctx context.Context, roomId int) error {
 	return g.redisClient.DoWithTransactionPipeline([]string{codeKey, roomKey}, commands...)
 }
 
-func (g *RoomCodeGenerator) getCodeKey(code string) string {
-	return fmt.Sprintf("%s:%s", roomCodePrefix, code)
+func (g *RoomCodeGenerator) getCodeKey(code int) string {
+	return fmt.Sprintf("%s:%d", roomCodePrefix, code)
 }
 
 func (g *RoomCodeGenerator) getRoomKey(roomId int) string {

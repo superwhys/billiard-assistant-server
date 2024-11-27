@@ -9,7 +9,6 @@
 package nineball
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -24,33 +23,55 @@ const (
 )
 
 type ScoreChange struct {
-	PlayerIndex int
-	PlayerName  string
-	ScoreDelta  int
-	ScoreType   ScoreType
-	StateDelta  int
+	PlayerIndex int       `json:"player_index"`
+	PlayerName  string    `json:"player_name"`
+	ScoreDelta  int       `json:"score_delta"`
+	ScoreType   ScoreType `json:"score_type"`
+	StateDelta  int       `json:"state_delta"`
 }
 
-type RecordItem struct {
-	Changes               []*ScoreChange
-	PreviousCurrentPlayer int
+type ActionItem struct {
+	Changes               []*ScoreChange `json:"changes"`
+	PreviousCurrentPlayer int            `json:"previous_current_player"`
 }
 
-type NineballRecord struct {
-	UserId     int
-	UserName   string
-	History    *RecordItem
-	ReportTime time.Time
+type NineballAction struct {
+	UserId     int         `json:"user_id"`
+	RoomId     int         `json:"room_id"`
+	UserName   string      `json:"user_name"`
+	History    *ActionItem `json:"history"`
+	ActionTime time.Time   `json:"action_time"`
 }
 
-func (nr *NineballRecord) UnmarshalFrom(jsonStr string) error {
-	return json.Unmarshal([]byte(jsonStr), nr)
+func (nr *NineballAction) GetActionRoomId() (roomId int) {
+	return nr.RoomId
 }
 
-func (nr *NineballRecord) GetRecordTime() time.Time {
-	return nr.ReportTime
-}
-
-func (nr *NineballRecord) GetRecordUser() (userId int) {
+func (nr *NineballAction) GetActionUser() (userId int) {
 	return nr.UserId
+}
+
+func (nr *NineballAction) GetActionTime() time.Time {
+	return nr.ActionTime
+}
+
+type ScoreStats struct {
+	Fouls      int `json:"fouls"`
+	Normal     int `json:"normal"`
+	BigGold    int `json:"big_gold"`
+	SmallGold  int `json:"small_gold"`
+	GoldenNine int `json:"golden_nine"`
+}
+
+type PlayerRecord struct {
+	RoomId      int         `json:"room_id"`
+	Name        string      `json:"name"`
+	Score       int         `json:"score"`
+	Stats       *ScoreStats `json:"stats"`
+	IsRoomOwner bool        `json:"is_room_owner"`
+	IsNew       bool        `json:"is_new"`
+}
+
+func (pr *PlayerRecord) GetRecordRoomId() (roomId int) {
+	return pr.RoomId
 }

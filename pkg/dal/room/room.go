@@ -7,6 +7,7 @@ import (
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
@@ -140,6 +141,29 @@ func (r *RoomRepoImpl) AddUserToRoom(ctx context.Context, roomId, userId int, us
 
 func (r *RoomRepoImpl) RemoveUserFromRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
 	return r.updateUserRoom(ctx, roomId, userId, userName, isVirtual, r.leaveRoom)
+}
+
+func (r *RoomRepoImpl) GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error) {
+	roomDb := r.db.RoomPo
+	gameDb := r.db.GamePo
+
+	resp := &struct {
+		GameID   int
+		GameType shared.BilliardGameType
+	}{}
+
+	err := roomDb.WithContext(ctx).
+		Select(roomDb.ID, gameDb.GameType).
+		Join(gameDb, gameDb.ID.EqCol(roomDb.GameID)).
+		Where(roomDb.ID.Eq(roomId)).
+		Scan(resp)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return shared.GameTypeUnkonwon, exception.ErrGameRoomNotFound
+	} else if err != nil {
+		return shared.GameTypeUnkonwon, err
+	}
+
+	return resp.GameType, nil
 }
 
 func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {

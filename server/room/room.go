@@ -8,6 +8,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
@@ -130,6 +131,10 @@ func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int, justOwne
 	return r.roomRepo.GetUserGameRooms(ctx, userId, justOwner)
 }
 
+func (r *RoomService) GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error) {
+	return r.roomRepo.GetRoomGameType(ctx, roomId)
+}
+
 func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {
 	room, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {
@@ -141,7 +146,7 @@ func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, 
 		return nil, errors.Wrap(err, "getRoomCode")
 	}
 
-	if roomCode != "" {
+	if roomCode != 0 {
 		room.RoomCode = roomCode
 		return room, nil
 	}
@@ -155,10 +160,10 @@ func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, 
 	return room, nil
 }
 
-func (r *RoomService) GetRoomByCode(ctx context.Context, roomCode string) (*room.Room, error) {
+func (r *RoomService) GetRoomByCode(ctx context.Context, roomCode int) (*room.Room, error) {
 	roomId, err := r.roomCodeGenerator.GetRoomId(ctx, roomCode)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getRoomId: %s", roomCode)
+		return nil, errors.Wrapf(err, "getRoomId: %d", roomCode)
 	}
 
 	room, err := r.roomRepo.GetRoomById(ctx, roomId)

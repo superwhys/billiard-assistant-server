@@ -19,7 +19,7 @@ import (
 type RoomApp interface {
 	GetUserGameRooms(ctx context.Context, userId int) ([]*dto.GameRoom, error)
 	GetGameRoom(ctx context.Context, roomId int) (*dto.GameRoom, error)
-	GetGameRoomByCode(ctx context.Context, roomCode string) (*dto.GameRoom, error)
+	GetGameRoomByCode(ctx context.Context, roomCode int) (*dto.GameRoom, error)
 	CreateRoom(ctx context.Context, userId, gameId int) (*dto.GameRoom, error)
 	UpdateGameRoomStatus(ctx context.Context, userId int, gameRoom *dto.UpdateGameRoomRequest) error
 	DeleteRoom(ctx context.Context, userId, roomId int) error

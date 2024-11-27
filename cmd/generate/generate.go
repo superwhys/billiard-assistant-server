@@ -21,16 +21,17 @@ func main() {
 		FieldNullable: true,
 		Mode:          gen.WithQueryInterface,
 	})
-	
+
 	// 直接使用模型
 	g.ApplyBasic(
 		&model.UserPo{},
 		&model.UserAuthPo{},
-		&model.GamePo{},
 		&model.RoomPo{},
+		&model.GamePo{},
 		&model.NoticePo{},
 		&model.RoomUserPo{},
+		&model.RecordPo{},
 	)
-	
+
 	g.Execute()
 }

@@ -10,12 +10,15 @@ package room
 
 import (
 	"context"
+
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type IRoomRepo interface {
 	CreateRoom(ctx context.Context, userId, gameId int) (*Room, error)
 	UpdateRoom(ctx context.Context, room *Room) error
 	DeleteRoom(ctx context.Context, roomId int) error
+	GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error)
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
 	GetOwnerRoomCount(ctx context.Context, userId int) (int64, error)
 	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)

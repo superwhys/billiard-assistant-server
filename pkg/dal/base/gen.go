@@ -20,6 +20,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		db:         db,
 		GamePo:     newGamePo(db, opts...),
 		NoticePo:   newNoticePo(db, opts...),
+		RecordPo:   newRecordPo(db, opts...),
 		RoomPo:     newRoomPo(db, opts...),
 		RoomUserPo: newRoomUserPo(db, opts...),
 		UserAuthPo: newUserAuthPo(db, opts...),
@@ -32,6 +33,7 @@ type Query struct {
 
 	GamePo     gamePo
 	NoticePo   noticePo
+	RecordPo   recordPo
 	RoomPo     roomPo
 	RoomUserPo roomUserPo
 	UserAuthPo userAuthPo
@@ -45,6 +47,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		db:         db,
 		GamePo:     q.GamePo.clone(db),
 		NoticePo:   q.NoticePo.clone(db),
+		RecordPo:   q.RecordPo.clone(db),
 		RoomPo:     q.RoomPo.clone(db),
 		RoomUserPo: q.RoomUserPo.clone(db),
 		UserAuthPo: q.UserAuthPo.clone(db),
@@ -65,6 +68,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		db:         db,
 		GamePo:     q.GamePo.replaceDB(db),
 		NoticePo:   q.NoticePo.replaceDB(db),
+		RecordPo:   q.RecordPo.replaceDB(db),
 		RoomPo:     q.RoomPo.replaceDB(db),
 		RoomUserPo: q.RoomUserPo.replaceDB(db),
 		UserAuthPo: q.UserAuthPo.replaceDB(db),
@@ -75,6 +79,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 type queryCtx struct {
 	GamePo     IGamePoDo
 	NoticePo   INoticePoDo
+	RecordPo   IRecordPoDo
 	RoomPo     IRoomPoDo
 	RoomUserPo IRoomUserPoDo
 	UserAuthPo IUserAuthPoDo
@@ -85,6 +90,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
 		GamePo:     q.GamePo.WithContext(ctx),
 		NoticePo:   q.NoticePo.WithContext(ctx),
+		RecordPo:   q.RecordPo.WithContext(ctx),
 		RoomPo:     q.RoomPo.WithContext(ctx),
 		RoomUserPo: q.RoomUserPo.WithContext(ctx),
 		UserAuthPo: q.UserAuthPo.WithContext(ctx),

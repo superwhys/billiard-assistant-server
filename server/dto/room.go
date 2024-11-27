@@ -15,8 +15,8 @@ import (
 )
 
 type GameRoom struct {
-	RoomId   int    `json:"room_id,omitempty"`
-	RoomCode string `json:"room_code,omitempty"`
+	RoomId   int `json:"room_id,omitempty"`
+	RoomCode int `json:"room_code,omitempty"`
 
 	GameId     int    `json:"game_id,omitempty"`
 	GameIcon   string `json:"game_icon,omitempty"`
@@ -58,7 +58,7 @@ type GetRoomRequest struct {
 }
 
 type GetRoomByCodeRequest struct {
-	RoomCode string `uri:"roomCode"`
+	RoomCode int `uri:"roomCode"`
 }
 
 type UpdateGameRoomRequest struct {

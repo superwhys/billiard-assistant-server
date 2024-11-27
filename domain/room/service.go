@@ -11,6 +11,7 @@ package room
 import (
 	"context"
 
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
@@ -19,8 +20,9 @@ type IRoomService interface {
 	DeleteGameRoom(ctx context.Context, roomId, userId int) error
 	UpdateGameRoomStatus(ctx context.Context, room *Room) error
 	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)
+	GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error)
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
-	GetRoomByCode(ctx context.Context, roomCode string) (*Room, error)
+	GetRoomByCode(ctx context.Context, roomCode int) (*Room, error)
 	EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	QuitGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	StartGame(ctx context.Context, userId, roomId int) (Game, error)

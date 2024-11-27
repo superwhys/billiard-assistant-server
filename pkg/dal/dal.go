@@ -13,5 +13,6 @@ func AllTables() []pgorm.SqlModel {
 		&model.GamePo{},
 		&model.NoticePo{},
 		&model.RoomUserPo{},
+		&model.RecordPo{},
 	}
 }

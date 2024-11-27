@@ -1,7 +1,9 @@
 package game
 
 import (
-	"fmt"
+	"context"
+	"encoding/json"
+	"time"
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
@@ -43,22 +45,21 @@ func (c *Config) GetMaxPlayers() int {
 	return c.MaxPlayers
 }
 
+type Action interface {
+	GetActionRoomId() (roomId int)
+	GetActionUser() (userId int)
+	GetActionTime() time.Time
+}
+
+type Record interface {
+	GetRecordRoomId() (roomId int)
+}
+
 type IGameStrategy interface {
+	GetGameType() shared.BilliardGameType
 	SetupGame(g shared.BaseGameConfig) []any
-	HandleAction()
-}
-
-// TODO: may be delete
-var strategyFactory = make(map[shared.BilliardGameType]IGameStrategy)
-
-func RegisterStrategy(gt shared.BilliardGameType, strategy IGameStrategy) {
-	strategyFactory[gt] = strategy
-}
-
-func NewGameStrategy(gameType shared.BilliardGameType) (IGameStrategy, error) {
-	strategy, ok := strategyFactory[gameType]
-	if !ok {
-		return nil, fmt.Errorf("No strategy registered for the given game type: %v", gameType)
-	}
-	return strategy, nil
+	UnmarshalAction(action json.RawMessage) (Action, error)
+	UnmarshalRecord(record json.RawMessage) (Record, error)
+	HandleAction(ctx context.Context, action Action) error
+	GetRoomActions(ctx context.Context, roomId int) ([]Action, error)
 }

@@ -10,6 +10,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -22,7 +23,9 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game/nineball"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
@@ -40,11 +43,13 @@ import (
 	authDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/auth"
 	gameDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/game"
 	noticeDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/notice"
+	recordDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/record"
 	roomDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/room"
 	userDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/user"
 	authSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/auth"
 	gameSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/game"
 	noticeSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/notice"
+	recordSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/record"
 	roomSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/room"
 	userSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/user"
 )
@@ -57,6 +62,7 @@ type BilliardServer struct {
 	RoomSrv     room.IRoomService
 	NoticeSrv   notice.INoticeService
 	SessionSrv  session.ISessionService
+	RecordSrv   record.IRecordService
 	EventBus    *events.EventBus
 	emailSender email.EmailSender
 }
@@ -73,6 +79,12 @@ func NewBilliardServer(
 	gameRepo := gameDal.NewGameRepo(db)
 	roomRepo := roomDal.NewRoomRepo(db)
 	noticeRepo := noticeDal.NewNoticeRepo(db)
+	recordRepo := recordDal.NewRecordRepo(db)
+
+	recordService := recordSrv.NewRecordService(recordRepo, roomRepo, redis,
+		recordSrv.WithGameStrategy(gameSrv.NewNineballService(redis)),
+		recordSrv.WithGameRecordTmp(shared.NineBall, &nineball.PlayerRecord{}),
+	)
 
 	s := &BilliardServer{
 		redisClient: redis,
@@ -82,6 +94,7 @@ func NewBilliardServer(
 		GameSrv:     gameSrv.NewGameService(gameRepo, minioClient),
 		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis, conf.RoomConfig),
 		NoticeSrv:   noticeSrv.NewNoticeService(noticeRepo),
+		RecordSrv:   recordService,
 		emailSender: emailSender,
 	}
 
@@ -503,7 +516,7 @@ func (s *BilliardServer) GetGameRoom(ctx context.Context, roomId int) (*dto.Game
 	return dto.GameRoomEntityToDto(r), nil
 }
 
-func (s *BilliardServer) GetGameRoomByCode(ctx context.Context, roomCode string) (*dto.GameRoom, error) {
+func (s *BilliardServer) GetGameRoomByCode(ctx context.Context, roomCode int) (*dto.GameRoom, error) {
 	fmt.Println(roomCode)
 	r, err := s.RoomSrv.GetRoomByCode(ctx, roomCode)
 	if err != nil {
@@ -688,4 +701,65 @@ func (s *BilliardServer) CheckPhoneBind(ctx context.Context, phone string) (bool
 
 func (s *BilliardServer) CheckEmailBind(ctx context.Context, email string) (bool, error) {
 	return s.checkAuthExists(ctx, auth.AuthTypeEmail, email)
+}
+
+func (s *BilliardServer) HandleRoomAction(ctx context.Context, roomId int, action json.RawMessage) error {
+	gameType, err := s.RoomSrv.GetRoomGameType(ctx, roomId)
+	if err != nil {
+		plog.Errorc(ctx, "get room game type error: %v", err)
+		return err
+	}
+
+	err = s.RecordSrv.HandleAction(ctx, gameType, action)
+	if err != nil {
+		plog.Errorc(ctx, "handle room action error: %v", err)
+		return err
+	}
+
+	// TODO: publish a event
+
+	return nil
+}
+
+func (s *BilliardServer) HandleRoomRecord(ctx context.Context, roomId int, record json.RawMessage) error {
+	gameType, err := s.RoomSrv.GetRoomGameType(ctx, roomId)
+	if err != nil {
+		plog.Errorc(ctx, "get room game type error: %v", err)
+		return err
+	}
+
+	err = s.RecordSrv.HandleRecord(ctx, gameType, record)
+	if err != nil {
+		plog.Errorc(ctx, "handle room record error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *BilliardServer) GetRoomActions(ctx context.Context, roomId int) (*dto.Action, error) {
+	action, err := s.RecordSrv.GetRoomActions(ctx, roomId)
+	if err != nil {
+		plog.Errorc(ctx, "get room actions error: %v", err)
+		return nil, err
+	}
+	return &dto.Action{
+		Actions: action,
+		RoomId:  roomId,
+	}, nil
+}
+
+func (s *BilliardServer) GetRoomRecoed(ctx context.Context, roomId int) (*dto.Record, error) {
+	gameType, err := s.RoomSrv.GetRoomGameType(ctx, roomId)
+	if err != nil {
+		plog.Errorc(ctx, "get room game type error: %v", err)
+		return nil, err
+	}
+
+	record, err := s.RecordSrv.GetCurrentRecord(ctx, roomId, gameType)
+	if err != nil {
+		plog.Errorc(ctx, "get room record error: %v", err)
+		return nil, err
+	}
+	return dto.RecordEntityToDto(record), nil
 }

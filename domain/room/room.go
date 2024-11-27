@@ -31,7 +31,7 @@ type Room struct {
 	WinLoseStatus WinLoseStatus
 	CreateAt      time.Time
 
-	RoomCode string
+	RoomCode int
 }
 
 type RoomPlayer struct {

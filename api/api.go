@@ -46,6 +46,7 @@ func SetupRouter(
 			handler.NewGameHandler(server, middleware),
 			handler.NewRoomHandler(server, middleware),
 			handler.NewNoticeHandler(server, middleware),
+			handler.NewRecordHandler(server, middleware),
 			minioClient,
 		),
 	)
