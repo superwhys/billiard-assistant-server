@@ -18,8 +18,9 @@ type RoomUserPo struct {
 	VirtualName     string
 	IsVirtualPlayer bool
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	HeartbeatAt time.Time
 }
 
 func (ur *RoomUserPo) TableName() string {
@@ -35,7 +36,7 @@ type RoomPo struct {
 	OwnerID int
 	Owner   *UserPo `gorm:"foreignKey:OwnerID"`
 
-	Players []*UserPo `gorm:"many2many:room_users;foreignKey:ID;joinForeignKey:RoomID;References:ID;joinReferences:user_id"`
+	RoomUsers []*RoomUserPo `gorm:"foreignKey:RoomID"`
 
 	GameStatus    room.Status
 	WinLoseStatus room.WinLoseStatus
@@ -62,6 +63,7 @@ func (r *RoomUserPo) ToEntity() *room.RoomPlayer {
 		UserId:          r.UserID,
 		UserName:        userName,
 		IsVirtualPlayer: r.IsVirtualPlayer,
+		HeartbeatAt:     r.HeartbeatAt,
 	}
 }
 

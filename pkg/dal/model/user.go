@@ -17,7 +17,7 @@ type UserPo struct {
 	Status user.Status
 	Role   user.Role
 
-	Rooms       []*RoomPo     `gorm:"many2many:room_users;foreignKey:ID;joinForeignKey:user_id;References:ID;joinReferences:room_id"`
+	RoomUsers   []*RoomUserPo `gorm:"foreignKey:UserID"`
 	UserAuthPos []*UserAuthPo `gorm:"constraint:OnDelete:CASCADE;"`
 
 	CreatedAt time.Time
@@ -50,7 +50,7 @@ func (u *UserPo) ToEntity() *user.User {
 	}
 
 	var rooms []user.Room
-	for _, room := range u.Rooms {
+	for _, room := range u.RoomUsers {
 		rooms = append(rooms, room.ToEntity())
 	}
 

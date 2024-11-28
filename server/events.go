@@ -10,23 +10,50 @@ package server
 
 import (
 	"context"
-	"errors"
 
+	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
 )
 
 func (s *BilliardServer) setupEventsSubscription() {
+	s.EventBus.Subscribe(events.ConnectHeartbeat, s.HandleHeartbeatEvent)
 	s.EventBus.Subscribe(events.PlayerJoined, s.HandlePlayerEnterEvent)
 	s.EventBus.Subscribe(events.PlayerLeft, s.HandlePlayerLeaveEvent)
 	s.EventBus.Subscribe(events.GameStart, s.HandleGameStartEvent)
 	s.EventBus.Subscribe(events.SendPhoneCode, s.HandleSendPhoneSMS)
 	s.EventBus.Subscribe(events.SendEmailCode, s.HandleSendEmailCode)
 	s.EventBus.Subscribe(events.RecordAction, s.HandleRecordAction)
+}
+
+func (s *BilliardServer) HandleHeartbeatEvent(events *events.EventMessage) error {
+	roomId := int(events.Payload.(float64))
+	userId := events.MessageOwner
+
+	err := s.RoomSrv.UpdateRoomUserHeartbeart(context.TODO(), roomId, userId)
+	if err != nil {
+		return errors.Wrap(err, "updateRoomUserHeartbeart")
+	}
+
+	room, err := s.RoomSrv.GetRoomById(context.TODO(), roomId)
+	if err != nil {
+		return errors.Wrap(err, "getRoomById")
+	}
+
+	sess, err := s.SessionSrv.GetSessionByUserRoom(roomId, userId)
+	if err != nil {
+		return errors.Wrap(err, "getSessionByUserRoom")
+	}
+
+	return sess.SendMessage(&session.Message{
+		EventType: events.EventType,
+		Data:      dto.GameRoomEntityToDto(room),
+	})
 }
 
 func (s *BilliardServer) HandleRecordAction(event *events.EventMessage) error {

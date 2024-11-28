@@ -12,7 +12,6 @@ type IUserService interface {
 	DeleteUser(ctx context.Context, userId int) error
 	GetUserById(ctx context.Context, userId int) (*User, error)
 	GetUserByName(ctx context.Context, userName string) (*User, error)
-	GetUserWithRoom(ctx context.Context, userId int) (*User, error)
 	UpdateUser(ctx context.Context, user *User) (*User, error)
 	UpdateUserStatus(ctx context.Context, userId int, status Status) error
 	UpdateUserRole(ctx context.Context, userId int, role Role) error

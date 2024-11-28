@@ -40,7 +40,7 @@ func (r *RoomService) CreateGameRoom(ctx context.Context, u *user.User, gameId i
 		return nil, errors.Wrap(err, "getOwnerRoomCount")
 	}
 
-	if roomCnt >= r.roomConfig.UserMaxRoomCreateNumber {
+	if !u.Role.IsPro() && roomCnt >= r.roomConfig.UserMaxRoomCreateNumber {
 		return nil, exception.ErrRoomUserMaxCreateNumber
 	}
 
@@ -79,6 +79,14 @@ func (r *RoomService) UpdateGameRoomStatus(ctx context.Context, gameRoom *room.R
 	return nil
 }
 
+func (r *RoomService) UpdateRoomUserHeartbeart(ctx context.Context, roomId, userId int) error {
+	if err := r.roomRepo.UpdateRoomUserHeartbeart(ctx, roomId, userId); err != nil {
+		return errors.Wrapf(err, "updateUserHeartbeart: %d, %d", roomId, userId)
+	}
+
+	return nil
+}
+
 func (r *RoomService) EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
 	if err := r.locker.Lock(roomId); err != nil {
 		return errors.Wrap(err, "lock room")
@@ -94,7 +102,7 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId, userId int, use
 		return exception.ErrGameRoomEnd
 	}
 
-	if room.IsInRoom(userName, userId) {
+	if room.IsInRoom(isVirtual, userName, userId) {
 		return exception.ErrAlreadyInRoom
 	}
 
@@ -120,7 +128,7 @@ func (r *RoomService) QuitGameRoom(ctx context.Context, roomId, userId int, user
 		return exception.ErrGameRoomEnd
 	}
 
-	if !room.IsInRoom(userName, userId) {
+	if !room.IsInRoom(isVirtual, userName, userId) {
 		return exception.ErrNotInRoom
 	}
 
@@ -128,7 +136,12 @@ func (r *RoomService) QuitGameRoom(ctx context.Context, roomId, userId int, user
 }
 
 func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
-	return r.roomRepo.GetUserGameRooms(ctx, userId, justOwner)
+	rooms, err := r.roomRepo.GetUserGameRooms(ctx, userId, justOwner)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getUserGameRooms: %d", userId)
+	}
+
+	return rooms, nil
 }
 
 func (r *RoomService) GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error) {
@@ -146,7 +159,7 @@ func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, 
 		return nil, errors.Wrap(err, "getRoomCode")
 	}
 
-	if roomCode != 0 {
+	if roomCode != "" {
 		room.RoomCode = roomCode
 		return room, nil
 	}
@@ -160,7 +173,7 @@ func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, 
 	return room, nil
 }
 
-func (r *RoomService) GetRoomByCode(ctx context.Context, roomCode int) (*room.Room, error) {
+func (r *RoomService) GetRoomByCode(ctx context.Context, roomCode string) (*room.Room, error) {
 	roomId, err := r.roomCodeGenerator.GetRoomId(ctx, roomCode)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getRoomId: %d", roomCode)

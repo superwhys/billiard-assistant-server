@@ -37,47 +37,72 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 	_userPo.CreatedAt = field.NewTime(tableName, "created_at")
 	_userPo.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_userPo.DeletedAt = field.NewField(tableName, "deleted_at")
+	_userPo.RoomUsers = userPoHasManyRoomUsers{
+		db: db.Session(&gorm.Session{}),
+
+		RelationField: field.NewRelation("RoomUsers", "model.RoomUserPo"),
+		Room: struct {
+			field.RelationField
+			Game struct {
+				field.RelationField
+			}
+			Owner struct {
+				field.RelationField
+				RoomUsers struct {
+					field.RelationField
+				}
+				UserAuthPos struct {
+					field.RelationField
+				}
+			}
+			RoomUsers struct {
+				field.RelationField
+			}
+		}{
+			RelationField: field.NewRelation("RoomUsers.Room", "model.RoomPo"),
+			Game: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("RoomUsers.Room.Game", "model.GamePo"),
+			},
+			Owner: struct {
+				field.RelationField
+				RoomUsers struct {
+					field.RelationField
+				}
+				UserAuthPos struct {
+					field.RelationField
+				}
+			}{
+				RelationField: field.NewRelation("RoomUsers.Room.Owner", "model.UserPo"),
+				RoomUsers: struct {
+					field.RelationField
+				}{
+					RelationField: field.NewRelation("RoomUsers.Room.Owner.RoomUsers", "model.RoomUserPo"),
+				},
+				UserAuthPos: struct {
+					field.RelationField
+				}{
+					RelationField: field.NewRelation("RoomUsers.Room.Owner.UserAuthPos", "model.UserAuthPo"),
+				},
+			},
+			RoomUsers: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("RoomUsers.Room.RoomUsers", "model.RoomUserPo"),
+			},
+		},
+		User: struct {
+			field.RelationField
+		}{
+			RelationField: field.NewRelation("RoomUsers.User", "model.UserPo"),
+		},
+	}
+
 	_userPo.UserAuthPos = userPoHasManyUserAuthPos{
 		db: db.Session(&gorm.Session{}),
 
 		RelationField: field.NewRelation("UserAuthPos", "model.UserAuthPo"),
-	}
-
-	_userPo.Rooms = userPoManyToManyRooms{
-		db: db.Session(&gorm.Session{}),
-
-		RelationField: field.NewRelation("Rooms", "model.RoomPo"),
-		Game: struct {
-			field.RelationField
-		}{
-			RelationField: field.NewRelation("Rooms.Game", "model.GamePo"),
-		},
-		Owner: struct {
-			field.RelationField
-			UserAuthPos struct {
-				field.RelationField
-			}
-			Rooms struct {
-				field.RelationField
-			}
-		}{
-			RelationField: field.NewRelation("Rooms.Owner", "model.UserPo"),
-			UserAuthPos: struct {
-				field.RelationField
-			}{
-				RelationField: field.NewRelation("Rooms.Owner.UserAuthPos", "model.UserAuthPo"),
-			},
-			Rooms: struct {
-				field.RelationField
-			}{
-				RelationField: field.NewRelation("Rooms.Owner.Rooms", "model.RoomPo"),
-			},
-		},
-		Players: struct {
-			field.RelationField
-		}{
-			RelationField: field.NewRelation("Rooms.Players", "model.UserPo"),
-		},
 	}
 
 	_userPo.fillFieldMap()
@@ -88,21 +113,21 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 type userPo struct {
 	userPoDo userPoDo
 
-	ALL         field.Asterisk
-	ID          field.Int
-	Name        field.String
-	Email       field.String
-	Phone       field.String
-	Avatar      field.String
-	Gender      field.Int
-	Status      field.Int
-	Role        field.Int
-	CreatedAt   field.Time
-	UpdatedAt   field.Time
-	DeletedAt   field.Field
-	UserAuthPos userPoHasManyUserAuthPos
+	ALL       field.Asterisk
+	ID        field.Int
+	Name      field.String
+	Email     field.String
+	Phone     field.String
+	Avatar    field.String
+	Gender    field.Int
+	Status    field.Int
+	Role      field.Int
+	CreatedAt field.Time
+	UpdatedAt field.Time
+	DeletedAt field.Field
+	RoomUsers userPoHasManyRoomUsers
 
-	Rooms userPoManyToManyRooms
+	UserAuthPos userPoHasManyUserAuthPos
 
 	fieldMap map[string]field.Expr
 }
@@ -179,6 +204,99 @@ func (u userPo) replaceDB(db *gorm.DB) userPo {
 	return u
 }
 
+type userPoHasManyRoomUsers struct {
+	db *gorm.DB
+
+	field.RelationField
+
+	Room struct {
+		field.RelationField
+		Game struct {
+			field.RelationField
+		}
+		Owner struct {
+			field.RelationField
+			RoomUsers struct {
+				field.RelationField
+			}
+			UserAuthPos struct {
+				field.RelationField
+			}
+		}
+		RoomUsers struct {
+			field.RelationField
+		}
+	}
+	User struct {
+		field.RelationField
+	}
+}
+
+func (a userPoHasManyRoomUsers) Where(conds ...field.Expr) *userPoHasManyRoomUsers {
+	if len(conds) == 0 {
+		return &a
+	}
+
+	exprs := make([]clause.Expression, 0, len(conds))
+	for _, cond := range conds {
+		exprs = append(exprs, cond.BeCond().(clause.Expression))
+	}
+	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
+	return &a
+}
+
+func (a userPoHasManyRoomUsers) WithContext(ctx context.Context) *userPoHasManyRoomUsers {
+	a.db = a.db.WithContext(ctx)
+	return &a
+}
+
+func (a userPoHasManyRoomUsers) Session(session *gorm.Session) *userPoHasManyRoomUsers {
+	a.db = a.db.Session(session)
+	return &a
+}
+
+func (a userPoHasManyRoomUsers) Model(m *model.UserPo) *userPoHasManyRoomUsersTx {
+	return &userPoHasManyRoomUsersTx{a.db.Model(m).Association(a.Name())}
+}
+
+type userPoHasManyRoomUsersTx struct{ tx *gorm.Association }
+
+func (a userPoHasManyRoomUsersTx) Find() (result []*model.RoomUserPo, err error) {
+	return result, a.tx.Find(&result)
+}
+
+func (a userPoHasManyRoomUsersTx) Append(values ...*model.RoomUserPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Append(targetValues...)
+}
+
+func (a userPoHasManyRoomUsersTx) Replace(values ...*model.RoomUserPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Replace(targetValues...)
+}
+
+func (a userPoHasManyRoomUsersTx) Delete(values ...*model.RoomUserPo) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Delete(targetValues...)
+}
+
+func (a userPoHasManyRoomUsersTx) Clear() error {
+	return a.tx.Clear()
+}
+
+func (a userPoHasManyRoomUsersTx) Count() int64 {
+	return a.tx.Count()
+}
+
 type userPoHasManyUserAuthPos struct {
 	db *gorm.DB
 
@@ -247,93 +365,6 @@ func (a userPoHasManyUserAuthPosTx) Clear() error {
 }
 
 func (a userPoHasManyUserAuthPosTx) Count() int64 {
-	return a.tx.Count()
-}
-
-type userPoManyToManyRooms struct {
-	db *gorm.DB
-
-	field.RelationField
-
-	Game struct {
-		field.RelationField
-	}
-	Owner struct {
-		field.RelationField
-		UserAuthPos struct {
-			field.RelationField
-		}
-		Rooms struct {
-			field.RelationField
-		}
-	}
-	Players struct {
-		field.RelationField
-	}
-}
-
-func (a userPoManyToManyRooms) Where(conds ...field.Expr) *userPoManyToManyRooms {
-	if len(conds) == 0 {
-		return &a
-	}
-
-	exprs := make([]clause.Expression, 0, len(conds))
-	for _, cond := range conds {
-		exprs = append(exprs, cond.BeCond().(clause.Expression))
-	}
-	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
-	return &a
-}
-
-func (a userPoManyToManyRooms) WithContext(ctx context.Context) *userPoManyToManyRooms {
-	a.db = a.db.WithContext(ctx)
-	return &a
-}
-
-func (a userPoManyToManyRooms) Session(session *gorm.Session) *userPoManyToManyRooms {
-	a.db = a.db.Session(session)
-	return &a
-}
-
-func (a userPoManyToManyRooms) Model(m *model.UserPo) *userPoManyToManyRoomsTx {
-	return &userPoManyToManyRoomsTx{a.db.Model(m).Association(a.Name())}
-}
-
-type userPoManyToManyRoomsTx struct{ tx *gorm.Association }
-
-func (a userPoManyToManyRoomsTx) Find() (result []*model.RoomPo, err error) {
-	return result, a.tx.Find(&result)
-}
-
-func (a userPoManyToManyRoomsTx) Append(values ...*model.RoomPo) (err error) {
-	targetValues := make([]interface{}, len(values))
-	for i, v := range values {
-		targetValues[i] = v
-	}
-	return a.tx.Append(targetValues...)
-}
-
-func (a userPoManyToManyRoomsTx) Replace(values ...*model.RoomPo) (err error) {
-	targetValues := make([]interface{}, len(values))
-	for i, v := range values {
-		targetValues[i] = v
-	}
-	return a.tx.Replace(targetValues...)
-}
-
-func (a userPoManyToManyRoomsTx) Delete(values ...*model.RoomPo) (err error) {
-	targetValues := make([]interface{}, len(values))
-	for i, v := range values {
-		targetValues[i] = v
-	}
-	return a.tx.Delete(targetValues...)
-}
-
-func (a userPoManyToManyRoomsTx) Clear() error {
-	return a.tx.Clear()
-}
-
-func (a userPoManyToManyRoomsTx) Count() int64 {
 	return a.tx.Count()
 }
 

@@ -31,14 +31,19 @@ type Room struct {
 	WinLoseStatus WinLoseStatus
 	CreateAt      time.Time
 
-	RoomCode int
+	RoomCode string
 }
 
 type RoomPlayer struct {
-	RoomId          int    `json:"room_id,omitempty"`
-	UserId          int    `json:"user_id,omitempty"`
-	UserName        string `json:"user_name,omitempty"`
-	IsVirtualPlayer bool   `json:"is_virtual_player,omitempty"`
+	RoomId          int       `json:"room_id,omitempty"`
+	UserId          int       `json:"user_id,omitempty"`
+	UserName        string    `json:"user_name,omitempty"`
+	IsVirtualPlayer bool      `json:"is_virtual_player,omitempty"`
+	HeartbeatAt     time.Time `json:"heartbeat_at,omitempty"`
+}
+
+func (rp *RoomPlayer) GetRoomId() int {
+	return rp.RoomId
 }
 
 func (r *Room) GetRoomId() int {
@@ -61,17 +66,17 @@ func (r *Room) IsEnd() bool {
 	return r.GameStatus == Finish
 }
 
-func (r *Room) IsInRoom(virtualName string, userId int) bool {
-	if virtualName == "" && userId == 0 {
-		return false
+func (r *Room) IsInRoom(isVirtual bool, userName string, userId int) bool {
+	if userName == "" && userId == 0 {
+		return true
 	}
 
 	for _, p := range r.Players {
-		if p.IsVirtualPlayer && p.UserName == virtualName {
+		if isVirtual && p.UserName == userName {
 			return true
 		}
 
-		if p.UserId == userId {
+		if !isVirtual && p.UserId == userId {
 			return true
 		}
 	}

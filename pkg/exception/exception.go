@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	ErrUserVerify            = NewBilliardException(400, "用户校验失败")
 	ErrUserNotFound          = NewBilliardException(404, "用户不存在")
 	ErrPasswordNotCorrect    = NewBilliardException(401, "密码不正确")
 	ErrUserAlreadyExists     = NewBilliardException(400, "用户已存在")

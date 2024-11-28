@@ -44,29 +44,51 @@ func newRecordPo(db *gorm.DB, opts ...gen.DOOption) recordPo {
 		},
 		Owner: struct {
 			field.RelationField
-			UserAuthPos struct {
+			RoomUsers struct {
 				field.RelationField
+				Room struct {
+					field.RelationField
+				}
+				User struct {
+					field.RelationField
+				}
 			}
-			Rooms struct {
+			UserAuthPos struct {
 				field.RelationField
 			}
 		}{
 			RelationField: field.NewRelation("Room.Owner", "model.UserPo"),
+			RoomUsers: struct {
+				field.RelationField
+				Room struct {
+					field.RelationField
+				}
+				User struct {
+					field.RelationField
+				}
+			}{
+				RelationField: field.NewRelation("Room.Owner.RoomUsers", "model.RoomUserPo"),
+				Room: struct {
+					field.RelationField
+				}{
+					RelationField: field.NewRelation("Room.Owner.RoomUsers.Room", "model.RoomPo"),
+				},
+				User: struct {
+					field.RelationField
+				}{
+					RelationField: field.NewRelation("Room.Owner.RoomUsers.User", "model.UserPo"),
+				},
+			},
 			UserAuthPos: struct {
 				field.RelationField
 			}{
 				RelationField: field.NewRelation("Room.Owner.UserAuthPos", "model.UserAuthPo"),
 			},
-			Rooms: struct {
-				field.RelationField
-			}{
-				RelationField: field.NewRelation("Room.Owner.Rooms", "model.RoomPo"),
-			},
 		},
-		Players: struct {
+		RoomUsers: struct {
 			field.RelationField
 		}{
-			RelationField: field.NewRelation("Room.Players", "model.UserPo"),
+			RelationField: field.NewRelation("Room.RoomUsers", "model.RoomUserPo"),
 		},
 	}
 
@@ -165,14 +187,20 @@ type recordPoBelongsToRoom struct {
 	}
 	Owner struct {
 		field.RelationField
+		RoomUsers struct {
+			field.RelationField
+			Room struct {
+				field.RelationField
+			}
+			User struct {
+				field.RelationField
+			}
+		}
 		UserAuthPos struct {
 			field.RelationField
 		}
-		Rooms struct {
-			field.RelationField
-		}
 	}
-	Players struct {
+	RoomUsers struct {
 		field.RelationField
 	}
 }

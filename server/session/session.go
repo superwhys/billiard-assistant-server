@@ -29,9 +29,13 @@ type sessionService struct {
 
 func NewSessionService() *sessionService {
 	return &sessionService{
-		sessMap:           make(map[string]*session.Session),
-		roomSession:       make(map[int][]string),
-		websocketUpgrader: &websocket.Upgrader{},
+		sessMap:     make(map[string]*session.Session),
+		roomSession: make(map[int][]string),
+		websocketUpgrader: &websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
 	}
 }
 
@@ -60,17 +64,9 @@ func (s *sessionService) readMessageLoop(sess *session.Session) chan *session.Me
 	go func() {
 		defer close(msgChan)
 
-		for {
-			var msg session.Message
-			err := sess.Conn.ReadJSON(&msg)
-			if websocket.IsCloseError(err, websocket.CloseNoStatusReceived) {
-				return
-			} else if err != nil {
-				plog.Errorc(sess.Ctx, "read message failed: %v", err)
-				return
-			}
-
-			msgChan <- &msg
+		for msg := range sess.IterReadMessage() {
+			msg.SetMessageOwner(sess.UserId)
+			msgChan <- msg
 		}
 	}()
 
@@ -78,19 +74,23 @@ func (s *sessionService) readMessageLoop(sess *session.Session) chan *session.Me
 }
 
 func (s *sessionService) StartSession(sess *session.Session, sessionHandler session.SessionEventHandler) {
+	defer s.RemoveSession(sess.ID)
+
+	messageLoop := s.readMessageLoop(sess)
 	for {
 		select {
 		case <-sess.Ctx.Done():
+			plog.Debugc(sess.Ctx, "session done")
 			break
-		case msg, ok := <-s.readMessageLoop(sess):
+		case msg, ok := <-messageLoop:
 			if !ok {
 				plog.Debugc(sess.Ctx, "connection closed")
 				return
 			}
 
-			plog.Debugc(sess.Ctx, "read message %v", msg)
-			if err := sessionHandler(sess.Ctx, msg); err != nil {
-				plog.Errorf("session(%s) handle message failed: %v", sess, err)
+			err := sessionHandler(sess.Ctx, msg)
+			if err != nil {
+				plog.Errorc(sess.Ctx, "handle message failed: %v", sess, err)
 				continue
 			}
 		}
@@ -122,11 +122,33 @@ func (s *sessionService) GetSessionByID(sessionID string) (*session.Session, err
 	return sess, nil
 }
 
+func (s *sessionService) GetSessionByUserRoom(roomId int, userId int) (*session.Session, error) {
+	roomSess, exists := s.roomSession[roomId]
+	if !exists {
+		return nil, errors.New("room sessions not found")
+	}
+
+	for _, sessId := range roomSess {
+		sess, err := s.GetSessionByID(sessId)
+		if err != nil {
+			plog.Errorf("room(%v) session(%v) not found", roomId, sessId)
+			continue
+		}
+		if sess.UserId == userId {
+			return sess, nil
+		}
+	}
+
+	return nil, errors.New("user not found in room")
+}
+
 func (s *sessionService) BroadcastMessage(roomID, publishUserId int, message *session.Message) error {
 	roomSess, exists := s.roomSession[roomID]
 	if !exists {
-		return errors.New("room not found")
+		return errors.New("room sessions not found")
 	}
+
+	plog.Debugf("broadcasting room(%v), players cnt: %v", roomID, len(roomSess))
 
 	for _, sessID := range roomSess {
 		sess, err := s.GetSessionByID(sessID)
@@ -139,11 +161,12 @@ func (s *sessionService) BroadcastMessage(roomID, publishUserId int, message *se
 			continue
 		}
 
-		err = sess.Conn.WriteJSON(message)
+		err = sess.SendMessage(message)
 		if err != nil {
 			plog.Errorf("session(%s) broadcast message failed: %v", sess, err)
 			continue
 		}
+		plog.Debugf("room(%v) session(%v) broadcast message: %v", roomID, sess, message)
 	}
 
 	return nil

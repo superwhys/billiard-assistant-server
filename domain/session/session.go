@@ -10,11 +10,14 @@ package session
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"iter"
 
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
 )
 
@@ -29,7 +32,7 @@ type Session struct {
 	ID     string
 	RoomId int
 	UserId int
-	Conn   *websocket.Conn
+	conn   *websocket.Conn
 	done   chan error
 }
 
@@ -39,7 +42,7 @@ func NewSession(ctx context.Context, roomId int, userId int, conn *websocket.Con
 		ID:     uuid.New().String(),
 		RoomId: roomId,
 		UserId: userId,
-		Conn:   conn,
+		conn:   conn,
 		done:   make(chan error),
 	}
 
@@ -51,16 +54,51 @@ func (s *Session) String() string {
 	return fmt.Sprintf("room(%d) user(%d) session(%s)", s.RoomId, s.UserId, s.ID)
 }
 
+func (s *Session) IterReadMessage() iter.Seq[*Message] {
+	return func(yield func(*Message) bool) {
+		for {
+			msg := new(Message)
+			err := s.conn.ReadJSON(&msg)
+			if err != nil {
+				plog.Errorc(s.Ctx, "read message failed: %v", err)
+				s.done <- err
+				return
+			}
+
+			if !yield(msg) {
+				break
+			}
+		}
+	}
+}
+
+func (s *Session) SendMessage(message *Message) error {
+	b, err := json.Marshal(message)
+	if err != nil {
+		return errors.Wrap(err, "marshalMessage")
+	}
+
+	return s.conn.WriteMessage(websocket.TextMessage, b)
+}
+
 func (s *Session) Wait() error {
 	return <-s.done
 }
 
 func (s *Session) Close() error {
-	defer close(s.done)
-	return s.Conn.Close()
+	return s.conn.Close()
 }
 
 type Message struct {
+	ownerId   int
 	EventType events.EventType `json:"type"`
 	Data      any              `json:"data"`
+}
+
+func (m *Message) GetMessageOwner() int {
+	return m.ownerId
+}
+
+func (m *Message) SetMessageOwner(ownerId int) {
+	m.ownerId = ownerId
 }

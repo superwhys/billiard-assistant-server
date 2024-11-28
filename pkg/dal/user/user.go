@@ -86,22 +86,6 @@ func (u *UserRepoImpl) GetUserByName(ctx context.Context, username string) (*use
 	return usr.ToEntity(), nil
 }
 
-func (u *UserRepoImpl) GetUserWithRoomById(ctx context.Context, userId int) (*user.User, error) {
-	userDb := u.db.UserPo
-	usr, err := userDb.WithContext(ctx).
-		Preload(userDb.Rooms).
-		Preload(userDb.Rooms.Game).
-		Where(userDb.ID.Eq(userId)).
-		First()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrUserNotFound
-	} else if err != nil {
-		return nil, err
-	}
-
-	return usr.ToEntity(), nil
-}
-
 // User status management
 func (u *UserRepoImpl) UpdateUserStatus(ctx context.Context, userId int, status user.Status) error {
 	userDb := u.db.UserPo

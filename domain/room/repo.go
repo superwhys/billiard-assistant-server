@@ -24,4 +24,5 @@ type IRoomRepo interface {
 	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)
 	AddUserToRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	RemoveUserFromRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
+	UpdateRoomUserHeartbeart(ctx context.Context, roomId, userId int) error
 }

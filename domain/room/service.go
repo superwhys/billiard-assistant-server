@@ -19,10 +19,11 @@ type IRoomService interface {
 	CreateGameRoom(ctx context.Context, u *user.User, gameId int) (*Room, error)
 	DeleteGameRoom(ctx context.Context, roomId, userId int) error
 	UpdateGameRoomStatus(ctx context.Context, room *Room) error
+	UpdateRoomUserHeartbeart(ctx context.Context, roomId, userId int) error
 	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)
 	GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error)
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
-	GetRoomByCode(ctx context.Context, roomCode int) (*Room, error)
+	GetRoomByCode(ctx context.Context, roomCode string) (*Room, error)
 	EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	QuitGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	StartGame(ctx context.Context, userId, roomId int) (Game, error)

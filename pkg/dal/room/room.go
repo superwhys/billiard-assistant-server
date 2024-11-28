@@ -2,6 +2,9 @@ package roomDal
 
 import (
 	"context"
+	"maps"
+	"slices"
+	"time"
 
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/putils"
@@ -115,8 +118,11 @@ func (r *RoomRepoImpl) enterRoom(ctx context.Context, roomId, userId int, userNa
 	roomUser := &model.RoomUserPo{
 		RoomID:          roomId,
 		UserID:          userId,
-		VirtualName:     userName,
 		IsVirtualPlayer: isVirtual,
+		HeartbeatAt:     time.Now(),
+	}
+	if isVirtual {
+		roomUser.VirtualName = userName
 	}
 	return roomUserPo.WithContext(ctx).Create(roomUser)
 }
@@ -212,45 +218,49 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 }
 
 func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
-	roomUserDb := r.db.RoomUserPo
 	roomDb := r.db.RoomPo
 	userDb := r.db.UserPo
 
 	user, err := userDb.WithContext(ctx).
-		Preload(userDb.Rooms.Order(roomDb.CreatedAt.Desc())).
-		Preload(userDb.Rooms.Players).
-		Preload(userDb.Rooms.Game).
+		Preload(userDb.RoomUsers.Room.Order(roomDb.CreatedAt.Desc())).
+		Preload(userDb.RoomUsers.Room.Game).
+		Preload(userDb.RoomUsers.User).
+		Preload(userDb.RoomUsers).
 		Where(userDb.ID.Eq(userId)).
 		First()
 	if err != nil {
 		return nil, err
 	}
 
-	roomIds := putils.Map(user.Rooms, func(r *model.RoomPo) int {
-		return r.ID
+	roomUserGroup := putils.GroupBy(user.RoomUsers, func(rup *model.RoomUserPo) int {
+		return rup.RoomID
 	})
 
-	roomUsers, err := roomUserDb.WithContext(ctx).
-		Preload(roomUserDb.User).
-		Where(roomUserDb.RoomID.In(roomIds...)).Find()
-	if err != nil {
-		return nil, err
+	respMap := make(map[int]*room.Room)
+	for roomId, roomUsers := range roomUserGroup {
+		r := roomUsers[0].Room.ToEntity()
+		for _, ru := range roomUsers {
+			r.Players = append(r.Players, ru.ToEntity())
+		}
+
+		respMap[roomId] = r
 	}
 
-	roomUserEntities := putils.Map(roomUsers, func(ru *model.RoomUserPo) *room.RoomPlayer {
-		return ru.ToEntity()
-	})
-
-	roomUsersGroup := putils.GroupBy(roomUserEntities, func(rp *room.RoomPlayer) int {
-		return rp.RoomId
-	})
-
-	var rooms []*room.Room
-	for _, room := range user.Rooms {
-		roomEntity := room.ToEntity()
-		roomEntity.Players = roomUsersGroup[room.ID]
-		rooms = append(rooms, roomEntity)
-	}
-
+	rooms := slices.Collect(maps.Values(respMap))
 	return rooms, nil
+}
+
+func (r *RoomRepoImpl) UpdateRoomUserHeartbeart(ctx context.Context, roomId, userId int) error {
+	roomUserDb := r.db.RoomUserPo
+
+	roomUser, err := roomUserDb.WithContext(ctx).
+		Where(roomUserDb.RoomID.Eq(roomId)).
+		Where(roomUserDb.UserID.Eq(userId)).
+		First()
+	if err != nil {
+		return err
+	}
+
+	roomUser.HeartbeatAt = time.Now()
+	return roomUserDb.WithContext(ctx).Save(roomUser)
 }

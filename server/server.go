@@ -38,7 +38,6 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/password"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
-	sessionSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/session"
 	"gorm.io/gorm"
 
 	authDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/auth"
@@ -52,6 +51,7 @@ import (
 	noticeSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/notice"
 	recordSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/record"
 	roomSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/room"
+	sessionSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/session"
 	userSrv "gitlab.hoven.com/billiard/billiard-assistant-server/server/user"
 )
 
@@ -518,7 +518,7 @@ func (s *BilliardServer) GetGameRoom(ctx context.Context, roomId int) (*dto.Game
 	return dto.GameRoomEntityToDto(r), nil
 }
 
-func (s *BilliardServer) GetGameRoomByCode(ctx context.Context, roomCode int) (*dto.GameRoom, error) {
+func (s *BilliardServer) GetGameRoomByCode(ctx context.Context, roomCode string) (*dto.GameRoom, error) {
 	fmt.Println(roomCode)
 	r, err := s.RoomSrv.GetRoomByCode(ctx, roomCode)
 	if err != nil {
@@ -544,8 +544,7 @@ func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId i
 		return nil, err
 	}
 
-	s.SessionSrv.StartSession(sess, s.handleSessionMessage)
-
+	go s.SessionSrv.StartSession(sess, s.handleSessionMessage)
 	return sess, nil
 }
 
@@ -555,8 +554,9 @@ func (s *BilliardServer) handleSessionMessage(ctx context.Context, msg *session.
 	}
 
 	s.EventBus.Publish(&events.EventMessage{
-		EventType: msg.EventType,
-		Payload:   msg.Data,
+		EventType:    msg.EventType,
+		MessageOwner: msg.GetMessageOwner(),
+		Payload:      msg.Data,
 	})
 	return nil
 }

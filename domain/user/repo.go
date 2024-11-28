@@ -12,7 +12,6 @@ type IUserRepo interface {
 	UserExists(ctx context.Context, userId int) (bool, error)
 	GetUserById(ctx context.Context, userId int) (*User, error)
 	GetUserByName(ctx context.Context, username string) (*User, error)
-	GetUserWithRoomById(ctx context.Context, userId int) (*User, error)
 
 	UpdateUserStatus(ctx context.Context, userId int, status Status) error
 	UpdateUserRole(ctx context.Context, userId int, role Role) error

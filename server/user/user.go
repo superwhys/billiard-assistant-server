@@ -70,10 +70,6 @@ func (us *UserService) GetUserByName(ctx context.Context, userName string) (*use
 	return us.userRepo.GetUserByName(ctx, userName)
 }
 
-func (us *UserService) GetUserWithRoom(ctx context.Context, userId int) (*user.User, error) {
-	return us.userRepo.GetUserWithRoomById(ctx, userId)
-}
-
 func (us *UserService) checkEqual(ou, nu *user.User) bool {
 	return ou.UserId == nu.UserId &&
 		ou.Name == nu.Name &&

@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
@@ -19,7 +20,7 @@ import (
 type RoomApp interface {
 	GetUserGameRooms(ctx context.Context, userId int) ([]*dto.GameRoom, error)
 	GetGameRoom(ctx context.Context, roomId int) (*dto.GameRoom, error)
-	GetGameRoomByCode(ctx context.Context, roomCode int) (*dto.GameRoom, error)
+	GetGameRoomByCode(ctx context.Context, roomCode string) (*dto.GameRoom, error)
 	CreateRoom(ctx context.Context, userId, gameId int) (*dto.GameRoom, error)
 	UpdateGameRoomStatus(ctx context.Context, userId int, gameRoom *dto.UpdateGameRoomRequest) error
 	DeleteRoom(ctx context.Context, userId, roomId int) error
@@ -87,13 +88,25 @@ func (r *RoomHandler) websocketHandler(ctx *gin.Context) {
 	}
 }
 
+func (r *RoomHandler) getCurrentUser(ctx *gin.Context) (*user.User, error) {
+	user, err := r.middleware.CurrentUser(ctx)
+	if exception.CheckException(err) {
+		return nil, errors.Cause(err)
+	} else if err != nil {
+		plog.Errorc(ctx, "getCurrentUser error: %v", err)
+		return nil, exception.ErrUserVerify
+	}
+
+	return user, nil
+}
+
 func (r *RoomHandler) getCurrentUserId(ctx *gin.Context) (int, error) {
 	userId, err := r.middleware.CurrentUserId(ctx)
 	if exception.CheckException(err) {
 		return 0, errors.Cause(err)
 	} else if err != nil {
 		plog.Errorc(ctx, "getCurrentUserId error: %v", err)
-		return 0, exception.ErrGetGameRoomList
+		return 0, exception.ErrUserVerify
 	}
 
 	return userId, nil
@@ -173,13 +186,22 @@ func (r *RoomHandler) updateGameRoomStatus(ctx *gin.Context, req *dto.UpdateGame
 	return nil
 }
 
+// enterGameRoom support both virtual user and real user
+// if a real user enter room, it just need to provide roomID
+// if a virtual user enter room, it need to set isVirtual to true and provide virtual user name
 func (r *RoomHandler) enterGameRoom(ctx *gin.Context, req *dto.EnterGameRoomRequest) error {
-	userId, err := r.getCurrentUserId(ctx)
+	plog.Debugc(ctx, "EnterGameRoom req: %v", req)
+	user, err := r.getCurrentUser(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = r.roomApp.EnterGameRoom(ctx, req.RoomId, userId, req.UserName, req.IsVirtual)
+	roomId, userId, userName, isVirtual := req.RoomId, user.UserId, user.Name, req.IsVirtual
+	if isVirtual {
+		userName = req.UserName
+	}
+
+	err = r.roomApp.EnterGameRoom(ctx, roomId, userId, userName, isVirtual)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
@@ -190,12 +212,17 @@ func (r *RoomHandler) enterGameRoom(ctx *gin.Context, req *dto.EnterGameRoomRequ
 }
 
 func (r *RoomHandler) leaveGameRoom(ctx *gin.Context, req *dto.LeaveGameRoomRequest) error {
-	userId, err := r.getCurrentUserId(ctx)
+	user, err := r.getCurrentUser(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = r.roomApp.LeaveGameRoom(ctx, req.RoomId, userId, req.UserName, req.IsVirtual)
+	roomId, userId, userName, isVirtual := req.RoomId, user.UserId, user.Name, req.IsVirtual
+	if isVirtual {
+		userName = req.UserName
+	}
+
+	err = r.roomApp.LeaveGameRoom(ctx, roomId, userId, userName, isVirtual)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {

@@ -4,10 +4,10 @@ go 1.23.3
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/go-puzzles/puzzles v1.1.15
+	github.com/go-puzzles/puzzles v1.1.16
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/websocket v1.5.3
+	github.com/gorilla/websocket v1.5.1
 	github.com/minio/minio-go/v7 v7.0.80
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0

@@ -12,19 +12,22 @@ import (
 	"time"
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type GameRoom struct {
-	RoomId   int `json:"room_id,omitempty"`
-	RoomCode int `json:"room_code,omitempty"`
+	RoomId   int    `json:"room_id,omitempty"`
+	RoomCode string `json:"room_code,omitempty"`
 
-	GameId     int    `json:"game_id,omitempty"`
-	GameIcon   string `json:"game_icon,omitempty"`
-	GameType   string `json:"game_type,omitempty"`
-	GameStatus string `json:"game_status,omitempty"`
+	GameId   int    `json:"game_id,omitempty"`
+	GameIcon string `json:"game_icon,omitempty"`
+
+	MaxPlayer  int                     `json:"max_player,omitempty"`
+	GameType   shared.BilliardGameType `json:"game_type,omitempty"`
+	GameStatus room.Status             `json:"game_status,omitempty"`
 
 	OwnerId       int                `json:"owner_id,omitempty"`
-	Players       []*room.RoomPlayer `json:"players,omitempty"`
+	Players       []*room.RoomPlayer `json:"players"`
 	WinLoseStatus string             `json:"win_lose_status,omitempty"`
 	CreateAt      time.Time          `json:"create_at,omitempty"`
 }
@@ -36,13 +39,14 @@ func GameRoomEntityToDto(gr *room.Room) *GameRoom {
 		GameId:        gr.GameId,
 		OwnerId:       gr.OwnerId,
 		Players:       gr.Players,
-		GameStatus:    gr.GameStatus.String(),
+		GameStatus:    gr.GameStatus,
 		WinLoseStatus: gr.WinLoseStatus.String(),
 		CreateAt:      gr.CreateAt,
 	}
 
 	if gr.Game != nil {
-		gameRoom.GameType = gr.Game.GetGameType().String()
+		gameRoom.MaxPlayer = gr.Game.GetMaxPlayers()
+		gameRoom.GameType = gr.Game.GetGameType()
 		gameRoom.GameIcon = gr.Game.GetIcon()
 	}
 
@@ -58,7 +62,7 @@ type GetRoomRequest struct {
 }
 
 type GetRoomByCodeRequest struct {
-	RoomCode int `uri:"roomCode"`
+	RoomCode string `uri:"roomCode"`
 }
 
 type UpdateGameRoomRequest struct {

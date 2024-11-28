@@ -33,6 +33,7 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 	_roomUserPo.IsVirtualPlayer = field.NewBool(tableName, "is_virtual_player")
 	_roomUserPo.CreatedAt = field.NewTime(tableName, "created_at")
 	_roomUserPo.UpdatedAt = field.NewTime(tableName, "updated_at")
+	_roomUserPo.HeartbeatAt = field.NewTime(tableName, "heartbeat_at")
 	_roomUserPo.Room = roomUserPoBelongsToRoom{
 		db: db.Session(&gorm.Session{}),
 
@@ -44,29 +45,51 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 		},
 		Owner: struct {
 			field.RelationField
-			UserAuthPos struct {
+			RoomUsers struct {
 				field.RelationField
+				Room struct {
+					field.RelationField
+				}
+				User struct {
+					field.RelationField
+				}
 			}
-			Rooms struct {
+			UserAuthPos struct {
 				field.RelationField
 			}
 		}{
 			RelationField: field.NewRelation("Room.Owner", "model.UserPo"),
+			RoomUsers: struct {
+				field.RelationField
+				Room struct {
+					field.RelationField
+				}
+				User struct {
+					field.RelationField
+				}
+			}{
+				RelationField: field.NewRelation("Room.Owner.RoomUsers", "model.RoomUserPo"),
+				Room: struct {
+					field.RelationField
+				}{
+					RelationField: field.NewRelation("Room.Owner.RoomUsers.Room", "model.RoomPo"),
+				},
+				User: struct {
+					field.RelationField
+				}{
+					RelationField: field.NewRelation("Room.Owner.RoomUsers.User", "model.UserPo"),
+				},
+			},
 			UserAuthPos: struct {
 				field.RelationField
 			}{
 				RelationField: field.NewRelation("Room.Owner.UserAuthPos", "model.UserAuthPo"),
 			},
-			Rooms: struct {
-				field.RelationField
-			}{
-				RelationField: field.NewRelation("Room.Owner.Rooms", "model.RoomPo"),
-			},
 		},
-		Players: struct {
+		RoomUsers: struct {
 			field.RelationField
 		}{
-			RelationField: field.NewRelation("Room.Players", "model.UserPo"),
+			RelationField: field.NewRelation("Room.RoomUsers", "model.RoomUserPo"),
 		},
 	}
 
@@ -92,6 +115,7 @@ type roomUserPo struct {
 	IsVirtualPlayer field.Bool
 	CreatedAt       field.Time
 	UpdatedAt       field.Time
+	HeartbeatAt     field.Time
 	Room            roomUserPoBelongsToRoom
 
 	User roomUserPoBelongsToUser
@@ -118,6 +142,7 @@ func (r *roomUserPo) updateTableName(table string) *roomUserPo {
 	r.IsVirtualPlayer = field.NewBool(table, "is_virtual_player")
 	r.CreatedAt = field.NewTime(table, "created_at")
 	r.UpdatedAt = field.NewTime(table, "updated_at")
+	r.HeartbeatAt = field.NewTime(table, "heartbeat_at")
 
 	r.fillFieldMap()
 
@@ -144,7 +169,7 @@ func (r *roomUserPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *roomUserPo) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 9)
+	r.fieldMap = make(map[string]field.Expr, 10)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["room_id"] = r.RoomID
 	r.fieldMap["user_id"] = r.UserID
@@ -152,6 +177,7 @@ func (r *roomUserPo) fillFieldMap() {
 	r.fieldMap["is_virtual_player"] = r.IsVirtualPlayer
 	r.fieldMap["created_at"] = r.CreatedAt
 	r.fieldMap["updated_at"] = r.UpdatedAt
+	r.fieldMap["heartbeat_at"] = r.HeartbeatAt
 
 }
 
@@ -175,14 +201,20 @@ type roomUserPoBelongsToRoom struct {
 	}
 	Owner struct {
 		field.RelationField
+		RoomUsers struct {
+			field.RelationField
+			Room struct {
+				field.RelationField
+			}
+			User struct {
+				field.RelationField
+			}
+		}
 		UserAuthPos struct {
 			field.RelationField
 		}
-		Rooms struct {
-			field.RelationField
-		}
 	}
-	Players struct {
+	RoomUsers struct {
 		field.RelationField
 	}
 }

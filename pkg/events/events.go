@@ -17,7 +17,9 @@ import (
 type EventType int
 
 const (
-	PlayerJoined EventType = iota
+	EventTypeUnknown EventType = iota
+	ConnectHeartbeat
+	PlayerJoined
 	PlayerLeft
 	PlayerPrepare
 	GameStart
@@ -29,6 +31,8 @@ const (
 
 func (et EventType) String() string {
 	switch et {
+	case ConnectHeartbeat:
+		return "ConnectHeartbeat"
 	case PlayerJoined:
 		return "PlayerJoined"
 	case PlayerLeft:
@@ -51,8 +55,9 @@ func (et EventType) String() string {
 }
 
 type EventMessage struct {
-	EventType EventType
-	Payload   any
+	EventType    EventType
+	MessageOwner int
+	Payload      any
 }
 
 type eventFunc func(event *EventMessage) error
