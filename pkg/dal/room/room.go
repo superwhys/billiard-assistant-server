@@ -2,6 +2,7 @@ package roomDal
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/go-puzzles/puzzles/plog"
@@ -285,6 +286,15 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int) ([]*roo
 		}
 		rooms = append(rooms, room)
 	}
+
+	slices.SortStableFunc(rooms, func(a, b *room.Room) int {
+		if a.CreateAt.Before(b.CreateAt) {
+			return 1
+		} else if a.CreateAt.After(b.CreateAt) {
+			return -1
+		}
+		return 0
+	})
 
 	return rooms, nil
 }
