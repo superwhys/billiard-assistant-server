@@ -9,17 +9,15 @@
 package record
 
 import (
-	"time"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type Action interface {
-	GetActionRoomId() (roomId int)
-	GetActionUser() (userId int)
-	GetActionTime() time.Time
+	shared.Action
 }
 
 type RecordItem interface {
-	GetRecordRoomId() (roomId int)
+	shared.RecordItem
 }
 
 type Record struct {

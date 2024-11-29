@@ -361,7 +361,7 @@ func (s *BilliardServer) GetGameList(ctx context.Context) ([]*dto.Game, error) {
 }
 
 func (s *BilliardServer) GetUserGameRooms(ctx context.Context, userId int) ([]*dto.GameRoom, error) {
-	rs, err := s.RoomSrv.GetUserGameRooms(ctx, userId, false)
+	rs, err := s.RoomSrv.GetUserGameRooms(ctx, userId)
 	if err != nil {
 		plog.Errorc(ctx, "get user game rooms error: %v", err)
 		return nil, err
@@ -515,15 +515,33 @@ func (s *BilliardServer) GetGameRoom(ctx context.Context, roomId int) (*dto.Game
 		return nil, err
 	}
 
+	record, err := s.RecordSrv.GetCurrentRecord(ctx, roomId, shared.BilliardGameType(r.Game.GetGameType()))
+	if err != nil && !errors.Is(err, exception.ErrRoomRecordNotFound) {
+		plog.Errorc(ctx, "get current record error: %v", err)
+		return nil, err
+	}
+
+	if record != nil {
+		r.Record = record
+	}
+
 	return dto.GameRoomEntityToDto(r), nil
 }
 
 func (s *BilliardServer) GetGameRoomByCode(ctx context.Context, roomCode string) (*dto.GameRoom, error) {
-	fmt.Println(roomCode)
 	r, err := s.RoomSrv.GetRoomByCode(ctx, roomCode)
 	if err != nil {
 		plog.Errorc(ctx, "get game room error: %v", err)
 		return nil, err
+	}
+
+	reocrd, err := s.RecordSrv.GetCurrentRecord(ctx, r.GetRoomId(), shared.BilliardGameType(r.Game.GetGameType()))
+	if err != nil && !errors.Is(err, exception.ErrRoomRecordNotFound) {
+		plog.Errorc(ctx, "get current record error: %v", err)
+		return nil, err
+	}
+	if reocrd != nil {
+		r.Record = reocrd
 	}
 
 	return dto.GameRoomEntityToDto(r), nil

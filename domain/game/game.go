@@ -16,26 +16,6 @@ type Game struct {
 	GameConfig *Config
 }
 
-func (c *Game) GetGameId() int {
-	return c.GameId
-}
-
-func (c *Game) GetGameConfig() shared.BaseGameConfig {
-	return c.GameConfig
-}
-
-func (c *Game) GetMaxPlayers() int {
-	return c.GameConfig.MaxPlayers
-}
-
-func (c *Game) GetGameType() shared.BilliardGameType {
-	return c.GameType
-}
-
-func (c *Game) GetIcon() string {
-	return c.Icon
-}
-
 type Config struct {
 	MaxPlayers int
 	Desc       string

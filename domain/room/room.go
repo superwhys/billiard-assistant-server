@@ -14,40 +14,26 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
-type Game interface {
-	shared.BaseGame
-	GetMaxPlayers() int
-	GetGameType() shared.BilliardGameType
-	GetIcon() string
-}
-
 type Room struct {
 	RoomId        int
+	RoomCode      string
 	GameId        int
 	OwnerId       int
-	Players       []*RoomPlayer
-	Game          Game
+	Players       []shared.RoomPlayer
+	Owner         shared.BaseUser
+	Game          shared.BaseGame
+	Record        shared.BaseRecord
 	GameStatus    Status
 	WinLoseStatus WinLoseStatus
 	CreateAt      time.Time
-
-	RoomCode string
 }
 
 type RoomPlayer struct {
-	RoomId          int       `json:"room_id,omitempty"`
-	UserId          int       `json:"user_id,omitempty"`
-	UserName        string    `json:"user_name,omitempty"`
-	IsVirtualPlayer bool      `json:"is_virtual_player,omitempty"`
-	HeartbeatAt     time.Time `json:"heartbeat_at,omitempty"`
-}
-
-func (rp *RoomPlayer) GetRoomId() int {
-	return rp.RoomId
-}
-
-func (r *Room) GetRoomId() int {
-	return r.RoomId
+	RoomId          int
+	UserId          int
+	UserName        string
+	IsVirtualPlayer bool
+	HeartbeatAt     time.Time
 }
 
 func (r *Room) CanStart() bool {
@@ -72,11 +58,11 @@ func (r *Room) IsInRoom(isVirtual bool, userName string, userId int) bool {
 	}
 
 	for _, p := range r.Players {
-		if isVirtual && p.UserName == userName {
+		if isVirtual && p.GetUserName() == userName {
 			return true
 		}
 
-		if !isVirtual && p.UserId == userId {
+		if !isVirtual && p.GetUserId() == userId {
 			return true
 		}
 	}

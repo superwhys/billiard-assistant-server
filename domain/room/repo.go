@@ -20,8 +20,10 @@ type IRoomRepo interface {
 	DeleteRoom(ctx context.Context, roomId int) error
 	GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error)
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
+	GetRoomByRoomCode(ctx context.Context, roomCode string) (*Room, error)
+	CheckRoomCodeExists(ctx context.Context, roomCode string) (bool, error)
 	GetOwnerRoomCount(ctx context.Context, userId int) (int64, error)
-	GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*Room, error)
+	GetUserGameRooms(ctx context.Context, userId int) ([]*Room, error)
 	AddUserToRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	RemoveUserFromRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	UpdateRoomUserHeartbeart(ctx context.Context, roomId, userId int) error

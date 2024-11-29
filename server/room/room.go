@@ -2,10 +2,8 @@ package roomSrv
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-puzzles/puzzles/predis"
-	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
@@ -13,24 +11,21 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/locker"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/roomcode"
 )
 
 var _ room.IRoomService = (*RoomService)(nil)
 
 type RoomService struct {
-	roomRepo          room.IRoomRepo
-	locker            *locker.Locker
-	roomConfig        *models.RoomConfig
-	roomCodeGenerator *roomcode.RoomCodeGenerator
+	roomRepo   room.IRoomRepo
+	locker     *locker.Locker
+	roomConfig *models.RoomConfig
 }
 
 func NewRoomService(remoRepo room.IRoomRepo, redisClient *predis.RedisClient, roomConfig *models.RoomConfig) *RoomService {
 	return &RoomService{
-		roomRepo:          remoRepo,
-		roomConfig:        roomConfig,
-		locker:            locker.NewLocker(redisClient, locker.WithPrefix("billiard:room")),
-		roomCodeGenerator: roomcode.NewRoomCodeGenerator(redisClient, time.Hour*24*3),
+		roomRepo:   remoRepo,
+		roomConfig: roomConfig,
+		locker:     locker.NewLocker(redisClient, locker.WithPrefix("billiard:room")),
 	}
 }
 
@@ -49,13 +44,11 @@ func (r *RoomService) CreateGameRoom(ctx context.Context, u *user.User, gameId i
 		return nil, errors.Wrap(err, "createRoom")
 	}
 
-	roomCode, err := r.roomCodeGenerator.GenerateCode(ctx, room.RoomId)
-	if err != nil {
-		return nil, errors.Wrap(err, "generateRoomCode")
-	}
-	room.RoomCode = roomCode
-
 	return room, nil
+}
+
+func (r *RoomService) CheckRoomCodeExists(ctx context.Context, roomCode string) (bool, error) {
+	return r.roomRepo.CheckRoomCodeExists(ctx, roomCode)
 }
 
 func (r *RoomService) DeleteGameRoom(ctx context.Context, roomId, userId int) error {
@@ -135,8 +128,8 @@ func (r *RoomService) QuitGameRoom(ctx context.Context, roomId, userId int, user
 	return r.roomRepo.RemoveUserFromRoom(ctx, roomId, userId, userName, isVirtual)
 }
 
-func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
-	rooms, err := r.roomRepo.GetUserGameRooms(ctx, userId, justOwner)
+func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int) ([]*room.Room, error) {
+	rooms, err := r.roomRepo.GetUserGameRooms(ctx, userId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getUserGameRooms: %d", userId)
 	}
@@ -154,41 +147,19 @@ func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, 
 		return nil, errors.Wrapf(err, "getRoom: %d", roomId)
 	}
 
-	roomCode, err := r.roomCodeGenerator.GetRoomCode(ctx, roomId)
-	if err != nil && !errors.Is(err, redis.ErrNil) {
-		return nil, errors.Wrap(err, "getRoomCode")
-	}
-
-	if roomCode != "" {
-		room.RoomCode = roomCode
-		return room, nil
-	}
-
-	roomCode, err = r.roomCodeGenerator.GenerateCode(ctx, roomId)
-	if err != nil {
-		return nil, errors.Wrap(err, "generateRoomCode")
-	}
-
-	room.RoomCode = roomCode
 	return room, nil
 }
 
 func (r *RoomService) GetRoomByCode(ctx context.Context, roomCode string) (*room.Room, error) {
-	roomId, err := r.roomCodeGenerator.GetRoomId(ctx, roomCode)
+	room, err := r.roomRepo.GetRoomByRoomCode(ctx, roomCode)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getRoomId: %d", roomCode)
+		return nil, errors.Wrapf(err, "getRoom: %d", roomCode)
 	}
 
-	room, err := r.roomRepo.GetRoomById(ctx, roomId)
-	if err != nil {
-		return nil, errors.Wrapf(err, "getRoom: %d", roomId)
-	}
-
-	room.RoomCode = roomCode
 	return room, nil
 }
 
-func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (room.Game, error) {
+func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (shared.BaseGame, error) {
 	if err := r.locker.Lock(roomId); err != nil {
 		return nil, errors.Wrap(err, "lock room")
 	}
@@ -233,11 +204,6 @@ func (r *RoomService) EndGame(ctx context.Context, userId, roomId int) error {
 	ro.EndGame()
 	if err := r.roomRepo.UpdateRoom(ctx, ro); err != nil {
 		return errors.Wrap(err, "update room status")
-	}
-
-	err = r.roomCodeGenerator.DeleteCode(ctx, roomId)
-	if err != nil {
-		return errors.Wrap(err, "delete roomCode")
 	}
 
 	return nil

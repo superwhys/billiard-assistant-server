@@ -12,39 +12,37 @@ import (
 	"errors"
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
 type User struct {
-	UserId    int    `json:"user_id"`
-	Name      string `json:"name"`
-	Email     string `json:"email,omitempty"`
-	Phone     string `json:"phone,omitempty"`
-	Avatar    string `json:"avatar,omitempty"`
-	Gender    string `json:"gender,omitempty"`
-	Status    int    `json:"status,omitempty"`
-	Role      int    `json:"role,omitempty"`
-	AuthTypes []int  `json:"auth_types,omitempty"`
-	IsAdmin   bool   `json:"is_admin,omitempty"`
+	UserId  int    `json:"user_id"`
+	Name    string `json:"name"`
+	Email   string `json:"email,omitempty"`
+	Phone   string `json:"phone,omitempty"`
+	Avatar  string `json:"avatar,omitempty"`
+	Gender  string `json:"gender,omitempty"`
+	Status  int    `json:"status,omitempty"`
+	Role    int    `json:"role,omitempty"`
+	IsAdmin bool   `json:"is_admin,omitempty"`
 }
 
-func UserEntityToDto(u *user.User) *User {
-	var authTypes []int
-
-	user := &User{
-		UserId:    u.UserId,
-		Name:      u.Name,
-		Status:    int(u.Status),
-		Role:      int(u.Role),
-		Gender:    u.Gender.String(),
-		AuthTypes: authTypes,
-		IsAdmin:   u.IsAdmin(),
+func UserEntityToDto(u shared.BaseUser) *User {
+	if u == nil {
+		return nil
 	}
 
-	if u.UserInfo != nil {
-		user.Email = u.UserInfo.Email
-		user.Phone = u.UserInfo.Phone
-		user.Avatar = u.UserInfo.Avatar
+	user := &User{
+		UserId:  u.GetUserId(),
+		Name:    u.GetName(),
+		Email:   u.GetEmail(),
+		Phone:   u.GetPhone(),
+		Avatar:  u.GetAvatar(),
+		Status:  u.GetStatus(),
+		Role:    u.GetRole(),
+		Gender:  u.GetGender(),
+		IsAdmin: u.IsAdmin(),
 	}
 
 	return user

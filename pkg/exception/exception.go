@@ -69,10 +69,11 @@ var (
 	ErrSendEmailCode = NewBilliardException(400, "发送邮箱验证码失败")
 	ErrVerifyCode    = NewBilliardException(400, "验证码错误或已过期")
 
-	ErrHandleRecord  = NewBilliardException(400, "处理更新分数统计失败")
-	ErrHandleAction  = NewBilliardException(400, "处理更新历史记录失败")
-	ErrGetRoomRecord = NewBilliardException(400, "获取房间分数统计失败")
-	ErrGetRoomAction = NewBilliardException(400, "获取房间历史操作记录失败")
+	ErrHandleRecord       = NewBilliardException(400, "处理更新分数统计失败")
+	ErrHandleAction       = NewBilliardException(400, "处理更新历史记录失败")
+	ErrGetRoomRecord      = NewBilliardException(400, "获取房间分数统计失败")
+	ErrGetRoomAction      = NewBilliardException(400, "获取房间历史操作记录失败")
+	ErrRoomRecordNotFound = NewBilliardException(400, "房间记录不存在")
 )
 
 type BilliardException struct {

@@ -18,6 +18,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -40,7 +41,9 @@ func NewRecordRepo(db *gorm.DB) *RecordRepoImpl {
 func (r *RecordRepoImpl) GetRecordByRoomId(ctx context.Context, roomId int, recordTmpl reflect.Type) (*record.Record, error) {
 	recordPo := r.db.RecordPo
 	resp, err := recordPo.WithContext(ctx).Where(recordPo.RoomID.Eq(roomId)).First()
-	if err != nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, exception.ErrRoomRecordNotFound
+	} else if err != nil {
 		return nil, err
 	}
 

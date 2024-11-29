@@ -12,12 +12,25 @@ import (
 	"encoding/json"
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type Record struct {
 	RoomId        int               `json:"room_id"`
-	Histories     []record.Action   `json:"histories"`
-	CurrentRecord record.RecordItem `json:"current_record"`
+	Histories     []shared.Action   `json:"histories"`
+	CurrentRecord shared.RecordItem `json:"current_record"`
+}
+
+func RecordEntityToDto(r shared.BaseRecord) *Record {
+	if r == nil {
+		return nil
+	}
+
+	return &Record{
+		RoomId:        r.GetRoomId(),
+		Histories:     r.GetActions(),
+		CurrentRecord: r.GetCurrentRecord(),
+	}
 }
 
 type Action struct {
@@ -37,12 +50,4 @@ type RoomActionRequest struct {
 type RoomRecordRequest struct {
 	RoomUriRequest
 	Record json.RawMessage `json:"record"`
-}
-
-func RecordEntityToDto(r *record.Record) *Record {
-	return &Record{
-		RoomId:        r.RoomId,
-		Histories:     r.Histories,
-		CurrentRecord: r.CurrentRecord,
-	}
 }

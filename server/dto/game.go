@@ -8,9 +8,7 @@
 
 package dto
 
-import (
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
-)
+import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 
 type Game struct {
 	GameId     int    `json:"game_id"`
@@ -21,17 +19,18 @@ type Game struct {
 	Desc       string `json:"desc"`
 }
 
-func GameEntityToDto(g *game.Game) *Game {
-	game := &Game{
-		GameId:     g.GameId,
-		GameType:   int(g.GameType),
-		Icon:       g.Icon,
-		IsActivate: g.IsActivate,
+func GameEntityToDto(g shared.BaseGame) *Game {
+	if g == nil {
+		return nil
 	}
 
-	if g.GameConfig != nil {
-		game.MaxPlayers = g.GameConfig.MaxPlayers
-		game.Desc = g.GameConfig.Desc
+	game := &Game{
+		GameId:     g.GetGameId(),
+		GameType:   g.GetGameType(),
+		Icon:       g.GetIcon(),
+		IsActivate: g.GetIsActivate(),
+		MaxPlayers: g.GetMaxPlayers(),
+		Desc:       g.GetDesc(),
 	}
 
 	return game

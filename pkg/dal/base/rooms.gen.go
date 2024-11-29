@@ -27,6 +27,7 @@ func newRoomPo(db *gorm.DB, opts ...gen.DOOption) roomPo {
 	tableName := _roomPo.roomPoDo.TableName()
 	_roomPo.ALL = field.NewAsterisk(tableName)
 	_roomPo.ID = field.NewInt(tableName, "id")
+	_roomPo.RoomCode = field.NewString(tableName, "room_code")
 	_roomPo.GameID = field.NewInt(tableName, "game_id")
 	_roomPo.OwnerID = field.NewInt(tableName, "owner_id")
 	_roomPo.GameStatus = field.NewInt(tableName, "game_status")
@@ -118,6 +119,7 @@ type roomPo struct {
 
 	ALL           field.Asterisk
 	ID            field.Int
+	RoomCode      field.String
 	GameID        field.Int
 	OwnerID       field.Int
 	GameStatus    field.Int
@@ -147,6 +149,7 @@ func (r roomPo) As(alias string) *roomPo {
 func (r *roomPo) updateTableName(table string) *roomPo {
 	r.ALL = field.NewAsterisk(table)
 	r.ID = field.NewInt(table, "id")
+	r.RoomCode = field.NewString(table, "room_code")
 	r.GameID = field.NewInt(table, "game_id")
 	r.OwnerID = field.NewInt(table, "owner_id")
 	r.GameStatus = field.NewInt(table, "game_status")
@@ -178,8 +181,9 @@ func (r *roomPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *roomPo) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 11)
+	r.fieldMap = make(map[string]field.Expr, 12)
 	r.fieldMap["id"] = r.ID
+	r.fieldMap["room_code"] = r.RoomCode
 	r.fieldMap["game_id"] = r.GameID
 	r.fieldMap["owner_id"] = r.OwnerID
 	r.fieldMap["game_status"] = r.GameStatus

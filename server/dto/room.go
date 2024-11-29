@@ -15,40 +15,62 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
-type GameRoom struct {
-	RoomId   int    `json:"room_id,omitempty"`
-	RoomCode string `json:"room_code,omitempty"`
-
-	GameId   int    `json:"game_id,omitempty"`
-	GameIcon string `json:"game_icon,omitempty"`
-
-	MaxPlayer  int                     `json:"max_player,omitempty"`
-	GameType   shared.BilliardGameType `json:"game_type,omitempty"`
-	GameStatus room.Status             `json:"game_status,omitempty"`
-
-	OwnerId       int                `json:"owner_id,omitempty"`
-	Players       []*room.RoomPlayer `json:"players"`
-	WinLoseStatus string             `json:"win_lose_status,omitempty"`
-	CreateAt      time.Time          `json:"create_at,omitempty"`
+type RoomPlayer struct {
+	RoomId          int       `json:"room_id,omitempty"`
+	UserId          int       `json:"user_id,omitempty"`
+	UserName        string    `json:"user_name,omitempty"`
+	IsVirtualPlayer bool      `json:"is_virtual_player,omitempty"`
+	HeartbeatAt     time.Time `json:"heartbeat_at,omitempty"`
 }
 
-func GameRoomEntityToDto(gr *room.Room) *GameRoom {
-	gameRoom := &GameRoom{
-		RoomId:        gr.RoomId,
-		RoomCode:      gr.RoomCode,
-		GameId:        gr.GameId,
-		OwnerId:       gr.OwnerId,
-		Players:       gr.Players,
-		GameStatus:    gr.GameStatus,
-		WinLoseStatus: gr.WinLoseStatus.String(),
-		CreateAt:      gr.CreateAt,
+type GameRoom struct {
+	RoomId        int           `json:"room_id,omitempty"`
+	RoomCode      string        `json:"room_code,omitempty"`
+	Game          *Game         `json:"game,omitempty"`
+	Owner         *User         `json:"owner,omitempty"`
+	Players       []*RoomPlayer `json:"players"`
+	Record        *Record       `json:"record,omitempty"`
+	GameStatus    int           `json:"game_status,omitempty"`
+	WinLoseStatus string        `json:"win_lose_status,omitempty"`
+	CreateAt      time.Time     `json:"create_at,omitempty"`
+}
+
+func GameRoomEntityToDto(gr shared.BaseRoom) *GameRoom {
+	if gr == nil {
+		return nil
 	}
 
-	if gr.Game != nil {
-		gameRoom.MaxPlayer = gr.Game.GetMaxPlayers()
-		gameRoom.GameType = gr.Game.GetGameType()
-		gameRoom.GameIcon = gr.Game.GetIcon()
+	gameRoom := &GameRoom{
+		RoomId:        gr.GetRoomId(),
+		RoomCode:      gr.GetRoomCode(),
+		GameStatus:    gr.GetGameStatus(),
+		WinLoseStatus: gr.GetWinLoseStatus(),
+		CreateAt:      gr.GetCreateAt(),
 	}
+
+	if gr.GetGame() != nil {
+		gameRoom.Game = GameEntityToDto(gr.GetGame())
+	}
+
+	if gr.GetOwner() != nil {
+		gameRoom.Owner = UserEntityToDto(gr.GetOwner())
+	}
+
+	if gr.GetRecord() != nil {
+		gameRoom.Record = RecordEntityToDto(gr.GetRecord())
+	}
+
+	var players []*RoomPlayer
+	for _, p := range gr.GetRoomPlayers() {
+		players = append(players, &RoomPlayer{
+			RoomId:          p.GetRoomId(),
+			UserId:          p.GetUserId(),
+			UserName:        p.GetUserName(),
+			IsVirtualPlayer: p.GetIsVirtual(),
+			HeartbeatAt:     p.GetHeartbeatAt(),
+		})
+	}
+	gameRoom.Players = players
 
 	return gameRoom
 }

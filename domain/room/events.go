@@ -9,6 +9,7 @@
 package room
 
 import (
+	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
 )
 
@@ -53,10 +54,10 @@ func NewLeaveRoomEvent(roomId, userId int, userName string, isVirtual bool) *eve
 type GameStartEvent struct {
 	RoomId int
 	UserId int
-	Game   Game
+	Game   shared.BaseGame
 }
 
-func NewGameStartEvent(roomId, userId int, game Game) *events.EventMessage {
+func NewGameStartEvent(roomId, userId int, game shared.BaseGame) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.GameStart,
 		Payload: &GameStartEvent{

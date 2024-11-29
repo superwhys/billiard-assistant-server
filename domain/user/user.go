@@ -5,10 +5,10 @@ type Room interface {
 }
 
 type BaseInfo struct {
-	Email    string
-	Phone    string
-	Avatar   string
-	Password string
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Avatar   string `json:"avatar"`
+	Password string `json:"password"`
 }
 
 func (b *BaseInfo) HasUpdate(other *BaseInfo) bool {
@@ -28,15 +28,15 @@ func (b *BaseInfo) HasUpdate(other *BaseInfo) bool {
 }
 
 type User struct {
-	UserId   int
-	Name     string
-	Gender   Gender
-	UserInfo *BaseInfo
+	UserId   int       `json:"user_id"`
+	Name     string    `json:"name"`
+	Gender   Gender    `json:"gender"`
+	UserInfo *BaseInfo `json:"user_info"`
 
-	Status Status
-	Role   Role
+	Status Status `json:"status"`
+	Role   Role   `json:"role"`
 
-	Rooms []Room
+	Rooms []Room `json:"rooms"`
 }
 
 // HasUpdate is used to determine whether certain options have been updated
@@ -67,26 +67,6 @@ func (u *User) HasUpdate(other *User) bool {
 	}
 
 	return false
-}
-
-func (u *User) GetUserId() int {
-	return u.UserId
-}
-
-func (u *User) GetName() string {
-	return u.Name
-}
-
-func (u *User) GetAvatar() string {
-	if u.UserInfo == nil {
-		return ""
-	}
-
-	return u.UserInfo.Avatar
-}
-
-func (u *User) IsAdmin() bool {
-	return u.Role == RoleAdmin
 }
 
 type Gender int

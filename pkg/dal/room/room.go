@@ -40,6 +40,19 @@ func (r *RoomRepoImpl) CreateRoom(ctx context.Context, gameId, userId int) (*roo
 		WinLoseStatus: room.WinLoseUnknown,
 	}
 
+	maxRetries := 10
+	for i := 0; i < maxRetries; i++ {
+		code := putils.RandString(7)
+		if exists, _ := r.CheckRoomCodeExists(ctx, code); !exists {
+			ro.RoomCode = code
+			break
+		}
+	}
+
+	if ro.RoomCode == "" {
+		return nil, errors.New("failed to generate unique room code")
+	}
+
 	err := roomDb.WithContext(ctx).Create(ro)
 	if err != nil {
 		return nil, err
@@ -51,7 +64,12 @@ func (r *RoomRepoImpl) CreateRoom(ctx context.Context, gameId, userId int) (*roo
 func (r *RoomRepoImpl) UpdateRoom(ctx context.Context, room *room.Room) error {
 	roomDb := r.db.RoomPo
 
-	roomPo := new(model.RoomPo).FromEntity(room)
+	roomPo := &model.RoomPo{
+		ID:            room.RoomId,
+		RoomCode:      room.RoomCode,
+		GameStatus:    room.GameStatus,
+		WinLoseStatus: room.WinLoseStatus,
+	}
 	_, err := roomDb.WithContext(ctx).Where(roomDb.ID.Eq(room.RoomId)).Updates(roomPo)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return exception.ErrGameRoomNotFound
@@ -172,13 +190,17 @@ func (r *RoomRepoImpl) GetRoomGameType(ctx context.Context, roomId int) (shared.
 	return resp.GameType, nil
 }
 
-func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {
+func (r *RoomRepoImpl) getRoom(ctx context.Context, condition ...gen.Condition) (*room.Room, error) {
 	roomDb := r.db.RoomPo
 	roomUserDb := r.db.RoomUserPo
 
 	ro, err := roomDb.WithContext(ctx).
-		Preload(roomDb.Owner, roomDb.Game).
-		Where(roomDb.ID.Eq(roomId)).
+		Preload(roomDb.RoomUsers.Order(roomUserDb.CreatedAt.Asc())).
+		Preload(roomDb.RoomUsers.User).
+		Preload(roomDb.Owner).
+		Preload(roomDb.Game).
+		Preload(roomDb.RoomUsers).
+		Where(condition...).
 		First()
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, exception.ErrGameRoomNotFound
@@ -186,22 +208,30 @@ func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room,
 		return nil, err
 	}
 
-	userRooms, err := roomUserDb.WithContext(ctx).
-		Preload(roomUserDb.User).
-		Where(roomUserDb.RoomID.Eq(roomId)).Find()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrGameRoomNotFound
-	} else if err != nil {
-		return nil, err
+	return ro.ToEntity(), nil
+}
+
+func (r *RoomRepoImpl) GetRoomById(ctx context.Context, roomId int) (*room.Room, error) {
+	roomDb := r.db.RoomPo
+	return r.getRoom(ctx, roomDb.ID.Eq(roomId))
+}
+
+func (r *RoomRepoImpl) GetRoomByRoomCode(ctx context.Context, roomCode string) (*room.Room, error) {
+	roomDb := r.db.RoomPo
+	return r.getRoom(ctx, roomDb.RoomCode.Eq(roomCode))
+}
+
+func (r *RoomRepoImpl) CheckRoomCodeExists(ctx context.Context, roomCode string) (bool, error) {
+	roomDb := r.db.RoomPo
+
+	count, err := roomDb.WithContext(ctx).
+		Where(roomDb.RoomCode.Eq(roomCode)).
+		Count()
+	if err != nil {
+		return false, err
 	}
 
-	roomEntity := ro.ToEntity()
-	for _, ur := range userRooms {
-		roomEntity.Players = append(roomEntity.Players, ur.ToEntity())
-	}
-	roomEntity.Game = ro.Game.ToEntity()
-
-	return roomEntity, nil
+	return count > 0, nil
 }
 
 func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64, error) {
@@ -217,15 +247,15 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 	return count, nil
 }
 
-func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwner bool) ([]*room.Room, error) {
-	roomDb := r.db.RoomPo
+func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int) ([]*room.Room, error) {
 	userDb := r.db.UserPo
 
 	user, err := userDb.WithContext(ctx).
-		Preload(userDb.RoomUsers.Room.Order(roomDb.CreatedAt.Desc())).
-		Preload(userDb.RoomUsers.Room.Game).
-		Preload(userDb.RoomUsers.User).
 		Preload(userDb.RoomUsers).
+		Preload(userDb.RoomUsers.User).
+		Preload(userDb.RoomUsers.Room).
+		Preload(userDb.RoomUsers.Room.Game).
+		Preload(userDb.RoomUsers.Room.Owner).
 		Where(userDb.ID.Eq(userId)).
 		First()
 	if err != nil {
@@ -247,6 +277,18 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int, justOwn
 	}
 
 	rooms := slices.Collect(maps.Values(respMap))
+	slices.SortStableFunc(rooms, func(a, b *room.Room) int {
+		if a.CreateAt.Equal(b.CreateAt) {
+			return 0
+		}
+
+		if a.CreateAt.Before(b.CreateAt) {
+			return 1
+		}
+
+		return -1
+
+	})
 	return rooms, nil
 }
 
