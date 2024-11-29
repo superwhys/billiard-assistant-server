@@ -63,6 +63,6 @@ type RecordItem interface {
 type BaseRecord interface {
 	GetRecordId() int
 	GetRoomId() int
-	GetCurrentRecord() RecordItem
+	GetCurrentRecord() []RecordItem
 	GetActions() []Action
 }

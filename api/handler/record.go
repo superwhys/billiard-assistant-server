@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
+	"github.com/go-puzzles/puzzles/plog"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
@@ -63,7 +64,8 @@ func (r *RecordHandler) roomActionHandler(ctx *gin.Context, req *dto.RoomActionR
 }
 
 func (r *RecordHandler) roomRecordHandler(ctx *gin.Context, req *dto.RoomRecordRequest) error {
-	err := r.recordApp.HandleRoomRecord(ctx, req.RoomId, req.Record)
+	plog.Debugc(ctx, "%v", string(req.Records))
+	err := r.recordApp.HandleRoomRecord(ctx, req.RoomId, req.Records)
 	if exception.CheckException(err) {
 		return err
 	} else if err != nil {

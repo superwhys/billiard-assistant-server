@@ -752,7 +752,7 @@ func (s *BilliardServer) HandleRoomRecord(ctx context.Context, roomId int, rawRe
 		return err
 	}
 
-	_, err = s.RecordSrv.HandleRecord(ctx, gameType, rawRecord)
+	_, err = s.RecordSrv.HandleRecord(ctx, roomId, gameType, rawRecord)
 	if err != nil {
 		plog.Errorc(ctx, "handle room record error: %v", err)
 		return err

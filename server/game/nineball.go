@@ -54,14 +54,18 @@ func (ns *NineballService) UnmarshalAction(rawAction json.RawMessage) (game.Acti
 	return na, nil
 }
 
-func (ns *NineballService) UnmarshalRecord(rawRecord json.RawMessage) (game.Record, error) {
-	pr := new(nineball.PlayerRecord)
-	err := json.Unmarshal(rawRecord, pr)
+func (ns *NineballService) UnmarshalRecord(rawRecord json.RawMessage) ([]game.Record, error) {
+	var pr []*nineball.PlayerRecord
+	err := json.Unmarshal(rawRecord, &pr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unmarshal raw record to PlayerRecord")
 	}
 
-	return pr, nil
+	prs := putils.Convert(pr, func(r *nineball.PlayerRecord) game.Record {
+		return r
+	})
+
+	return prs, nil
 }
 
 func (ns *NineballService) HandleAction(ctx context.Context, action game.Action) error {

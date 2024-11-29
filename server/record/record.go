@@ -130,23 +130,27 @@ func (rs *RecordService) GetRoomActions(ctx context.Context, roomId int) ([]reco
 	return actions, nil
 }
 
-func (rs *RecordService) HandleRecord(ctx context.Context, gameType shared.BilliardGameType, rawRecord json.RawMessage) (record.RecordItem, error) {
+func (rs *RecordService) HandleRecord(ctx context.Context, roomId int, gameType shared.BilliardGameType, rawRecord json.RawMessage) ([]record.RecordItem, error) {
 	gameStrategy, err := rs.getGameStrategy(gameType)
 	if err != nil {
 		return nil, errors.Wrap(err, "getGameStrategy")
 	}
 
-	record, err := gameStrategy.UnmarshalRecord(rawRecord)
+	records, err := gameStrategy.UnmarshalRecord(rawRecord)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshalRecord")
 	}
 
-	err = rs.recordRepo.UpdateRoomRecord(ctx, gameType, record)
+	convertRecords := putils.Convert(records, func(r game.Record) record.RecordItem {
+		return r
+	})
+
+	err = rs.recordRepo.UpdateRoomRecord(ctx, roomId, gameType, convertRecords)
 	if err != nil {
 		return nil, errors.Wrap(err, "updateRoomRecord")
 	}
 
-	return record, nil
+	return convertRecords, nil
 }
 
 func (rs *RecordService) HandleAction(ctx context.Context, gameType shared.BilliardGameType, rawAction json.RawMessage) (record.Action, error) {

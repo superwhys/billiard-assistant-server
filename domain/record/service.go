@@ -16,7 +16,7 @@ import (
 )
 
 type IRecordService interface {
-	HandleRecord(ctx context.Context, gameType shared.BilliardGameType, rawRecord json.RawMessage) (RecordItem, error)
+	HandleRecord(ctx context.Context, roomId int, gameType shared.BilliardGameType, rawRecord json.RawMessage) ([]RecordItem, error)
 	HandleAction(ctx context.Context, gameType shared.BilliardGameType, rawAction json.RawMessage) (Action, error)
 	GetCurrentRecord(ctx context.Context, roomId int, gameType shared.BilliardGameType) (*Record, error)
 	GetRoomActions(ctx context.Context, roomId int) ([]Action, error)

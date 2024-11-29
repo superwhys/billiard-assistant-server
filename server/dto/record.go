@@ -16,9 +16,9 @@ import (
 )
 
 type Record struct {
-	RoomId        int               `json:"room_id"`
-	Histories     []shared.Action   `json:"histories"`
-	CurrentRecord shared.RecordItem `json:"current_record"`
+	RoomId        int                 `json:"room_id"`
+	Histories     []shared.Action     `json:"histories"`
+	CurrentRecord []shared.RecordItem `json:"current_records"`
 }
 
 func RecordEntityToDto(r shared.BaseRecord) *Record {
@@ -49,5 +49,5 @@ type RoomActionRequest struct {
 
 type RoomRecordRequest struct {
 	RoomUriRequest
-	Record json.RawMessage `json:"record"`
+	Records json.RawMessage `json:"records"`
 }

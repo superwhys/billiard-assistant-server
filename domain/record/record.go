@@ -24,5 +24,5 @@ type Record struct {
 	ID            int
 	RoomId        int
 	Histories     []Action
-	CurrentRecord RecordItem
+	CurrentRecord []RecordItem
 }

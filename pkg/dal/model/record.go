@@ -42,16 +42,27 @@ func (r *RecordPo) ToEntity(t reflect.Type) *record.Record {
 	if r == nil {
 		return nil
 	}
+	ptrType := reflect.PointerTo(t)
+	sliceType := reflect.SliceOf(ptrType)
+	sliceValue := reflect.New(sliceType).Interface()
 
-	cr := reflect.New(t).Interface()
-
-	if err := json.Unmarshal(r.Data, cr); err != nil {
-		plog.Errorf("json.Unmarshal recordItem(%v) error: %v", t.Name, err)
+	if err := json.Unmarshal(r.Data, sliceValue); err != nil {
+		plog.Errorf("json.Unmarshal recordItem slice(%v) error: %v", t.Name(), err)
+		return nil
 	}
 
-	return &record.Record{
+	slice := reflect.ValueOf(sliceValue).Elem()
+
+	records := &record.Record{
 		ID:            r.ID,
 		RoomId:        r.RoomID,
-		CurrentRecord: cr.(record.RecordItem),
+		CurrentRecord: make([]record.RecordItem, slice.Len()),
 	}
+
+	for i := 0; i < slice.Len(); i++ {
+		item := slice.Index(i).Interface().(record.RecordItem)
+		records.CurrentRecord[i] = item
+	}
+
+	return records
 }

@@ -17,5 +17,5 @@ import (
 
 type IRecordRepo interface {
 	GetRecordByRoomId(ctx context.Context, roomId int, recordTmpl reflect.Type) (*Record, error)
-	UpdateRoomRecord(ctx context.Context, gameType shared.BilliardGameType, record RecordItem) error
+	UpdateRoomRecord(ctx context.Context, roomId int, gameType shared.BilliardGameType, record []RecordItem) error
 }

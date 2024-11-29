@@ -23,11 +23,14 @@ func (r *Record) GetRoomId() int {
 	return r.RoomId
 }
 
-func (r *Record) GetCurrentRecord() shared.RecordItem {
+func (r *Record) GetCurrentRecord() []shared.RecordItem {
 	if r.CurrentRecord == nil {
 		return nil
 	}
-	return r.CurrentRecord
+
+	return putils.Convert(r.CurrentRecord, func(r RecordItem) shared.RecordItem {
+		return r
+	})
 }
 
 func (r *Record) GetActions() []shared.Action {

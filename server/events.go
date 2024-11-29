@@ -26,6 +26,7 @@ func (s *BilliardServer) setupEventsSubscription() {
 	s.EventBus.Subscribe(events.PlayerJoined, s.HandlePlayerEnterEvent)
 	s.EventBus.Subscribe(events.PlayerLeft, s.HandlePlayerLeaveEvent)
 	s.EventBus.Subscribe(events.GameStart, s.HandleGameStartEvent)
+	s.EventBus.Subscribe(events.GameEnd, s.HandleGameEndEvent)
 	s.EventBus.Subscribe(events.SendPhoneCode, s.HandleSendPhoneSMS)
 	s.EventBus.Subscribe(events.SendEmailCode, s.HandleSendEmailCode)
 	s.EventBus.Subscribe(events.RecordAction, s.HandleRecordAction)
@@ -96,6 +97,18 @@ func (s *BilliardServer) HandleGameStartEvent(event *events.EventMessage) error 
 	e, ok := event.Payload.(*room.GameStartEvent)
 	if !ok {
 		return errors.New("invalid payload type for game start event")
+	}
+
+	return s.SessionSrv.BroadcastMessage(e.RoomId, e.UserId, &session.Message{
+		EventType: event.EventType,
+		Data:      e,
+	})
+}
+
+func (s *BilliardServer) HandleGameEndEvent(event *events.EventMessage) error {
+	e, ok := event.Payload.(*room.GameEndEvent)
+	if !ok {
+		return errors.New("invalid payload type for game end event")
 	}
 
 	return s.SessionSrv.BroadcastMessage(e.RoomId, e.UserId, &session.Message{

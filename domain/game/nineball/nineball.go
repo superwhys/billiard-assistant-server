@@ -56,11 +56,11 @@ func (nr *NineballAction) GetActionTime() time.Time {
 }
 
 type ScoreStats struct {
-	Fouls      int `json:"fouls"`
-	Normal     int `json:"normal"`
-	BigGold    int `json:"big_gold"`
-	SmallGold  int `json:"small_gold"`
-	GoldenNine int `json:"golden_nine"`
+	Fouls      int `json:"foulCount"`
+	Normal     int `json:"normalCount"`
+	BigGold    int `json:"bigGoldCount"`
+	SmallGold  int `json:"smallGoldCount"`
+	GoldenNine int `json:"goldenNineCount"`
 }
 
 type PlayerRecord struct {
@@ -68,8 +68,10 @@ type PlayerRecord struct {
 	Name        string      `json:"name"`
 	Score       int         `json:"score"`
 	Stats       *ScoreStats `json:"stats"`
-	IsRoomOwner bool        `json:"is_room_owner"`
-	IsNew       bool        `json:"is_new"`
+	IsRoomOwner bool        `json:"isRoomOwner"`
+	IsNew       bool        `json:"isNew"`
+	IsOnline    bool        `json:"isOnline"`
+	IsVirtual   bool        `json:"isVirtual"`
 }
 
 func (pr *PlayerRecord) GetRecordRoomId() (roomId int) {

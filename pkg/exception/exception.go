@@ -56,11 +56,10 @@ var (
 	ErrGetSystemNotice = NewBilliardException(400, "获取系统通知失败")
 	ErrAddNotice       = NewBilliardException(400, "添加通知失败")
 
-	ErrUserNotInRoom  = NewBilliardException(400, "用户不在房间内")
-	ErrNotRoomOwner   = NewBilliardException(400, "不是房主")
-	ErrPlayerNotReady = NewBilliardException(400, "有玩家未准备")
-	ErrPrepareGame    = NewBilliardException(400, "准备游戏失败")
-	ErrStartGame      = NewBilliardException(400, "开始游戏失败")
+	ErrUserNotInRoom = NewBilliardException(400, "用户不在房间内")
+	ErrNotRoomOwner  = NewBilliardException(400, "不是房主")
+	ErrPrepareGame   = NewBilliardException(400, "准备游戏失败")
+	ErrStartGame     = NewBilliardException(400, "开始游戏失败")
 
 	ErrBindPhone = NewBilliardException(400, "绑定手机号失败")
 	ErrBindEmail = NewBilliardException(400, "绑定邮箱失败")

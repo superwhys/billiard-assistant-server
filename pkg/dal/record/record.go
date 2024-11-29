@@ -50,7 +50,7 @@ func (r *RecordRepoImpl) GetRecordByRoomId(ctx context.Context, roomId int, reco
 	return resp.ToEntity(recordTmpl), nil
 }
 
-func (r *RecordRepoImpl) UpdateRoomRecord(ctx context.Context, gameType shared.BilliardGameType, record record.RecordItem) error {
+func (r *RecordRepoImpl) UpdateRoomRecord(ctx context.Context, roomId int, gameType shared.BilliardGameType, record []record.RecordItem) error {
 	recordPo := r.db.RecordPo
 
 	recordB, err := json.Marshal(record)
@@ -64,7 +64,7 @@ func (r *RecordRepoImpl) UpdateRoomRecord(ctx context.Context, gameType shared.B
 			DoUpdates: clause.AssignmentColumns([]string{"data"}),
 		},
 	).Create(&model.RecordPo{
-		RoomID:   record.GetRecordRoomId(),
+		RoomID:   roomId,
 		Data:     datatypes.JSON(recordB),
 		GameType: gameType,
 	})

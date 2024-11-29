@@ -39,7 +39,7 @@ type IGameStrategy interface {
 	GetGameType() shared.BilliardGameType
 	SetupGame(g shared.BaseGameConfig) []any
 	UnmarshalAction(action json.RawMessage) (Action, error)
-	UnmarshalRecord(record json.RawMessage) (Record, error)
+	UnmarshalRecord(record json.RawMessage) ([]Record, error)
 	HandleAction(ctx context.Context, action Action) error
 	GetRoomActions(ctx context.Context, roomId int) ([]Action, error)
 }

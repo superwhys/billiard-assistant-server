@@ -153,7 +153,7 @@ func (r *RoomService) GetRoomById(ctx context.Context, roomId int) (*room.Room, 
 func (r *RoomService) GetRoomByCode(ctx context.Context, roomCode string) (*room.Room, error) {
 	room, err := r.roomRepo.GetRoomByRoomCode(ctx, roomCode)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getRoom: %d", roomCode)
+		return nil, errors.Wrapf(err, "getRoom: %s", roomCode)
 	}
 
 	return room, nil
@@ -170,12 +170,12 @@ func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (shared
 		return nil, errors.Wrapf(err, "getRoom: %d", roomId)
 	}
 
-	if ro.IsOwner(userId) {
+	if !ro.IsOwner(userId) {
 		return nil, exception.ErrNotRoomOwner
 	}
 
 	if !ro.CanStart() {
-		return nil, exception.ErrPlayerNotReady
+		return nil, exception.ErrStartGame
 	}
 
 	ro.StartGame()
