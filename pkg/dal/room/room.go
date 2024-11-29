@@ -262,6 +262,7 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int) ([]*roo
 
 	roomUsers, err := roomUserDb.WithContext(ctx).
 		Preload(roomUserDb.Room).
+		Preload(roomUserDb.User).
 		Preload(roomUserDb.Room.Game).
 		Preload(roomUserDb.Room.Owner).
 		Where(roomUserDb.RoomID.In(roomIds...)).
@@ -275,6 +276,7 @@ func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int) ([]*roo
 	})
 
 	var rooms []*room.Room
+
 	for roomId, roomGroup := range roomGroups {
 		room := roomGroup[0].Room.ToEntity()
 		room.RoomId = roomId
