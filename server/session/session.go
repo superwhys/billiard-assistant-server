@@ -85,7 +85,7 @@ func (s *sessionService) StartSession(sess *session.Session, sessionHandler sess
 		case msg, ok := <-messageLoop:
 			if !ok {
 				plog.Debugc(sess.Ctx, "connection closed")
-				return
+				break
 			}
 
 			err := sessionHandler(sess.Ctx, msg)

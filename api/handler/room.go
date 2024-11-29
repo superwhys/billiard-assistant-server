@@ -10,7 +10,6 @@ import (
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
@@ -26,7 +25,7 @@ type RoomApp interface {
 	DeleteRoom(ctx context.Context, userId, roomId int) error
 	EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 	LeaveGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
-	CreateRoomSession(ctx context.Context, userId, roomId int, w http.ResponseWriter, r *http.Request) (*session.Session, error)
+	CreateRoomSession(ctx context.Context, userId, roomId int, w http.ResponseWriter, r *http.Request) error
 	StartGame(ctx context.Context, userId, roomId int) error
 	EndGame(ctx context.Context, userId, roomId int) error
 }
@@ -75,15 +74,10 @@ func (r *RoomHandler) websocketHandler(ctx *gin.Context) {
 		return
 	}
 
-	sess, err := r.roomApp.CreateRoomSession(ctx, userId, int(roomId), ctx.Writer, ctx.Request)
+	err = r.roomApp.CreateRoomSession(ctx, userId, int(roomId), ctx.Writer, ctx.Request)
 	if err != nil {
 		plog.Errorc(ctx, "register room session error: %v", err)
-		return
-	}
-	defer sess.Close()
-
-	if err := sess.Wait(); err != nil {
-		plog.Errorc(ctx, "session error: %v", err)
+		pgin.ErrorRet(400, err)
 		return
 	}
 }

@@ -547,23 +547,27 @@ func (s *BilliardServer) GetGameRoomByCode(ctx context.Context, roomCode string)
 	return dto.GameRoomEntityToDto(r), nil
 }
 
-func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId int, w http.ResponseWriter, r *http.Request) (*session.Session, error) {
+func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId int, w http.ResponseWriter, r *http.Request) error {
 	_, err := s.RoomSrv.GetRoomById(ctx, roomId)
 	if errors.Is(err, exception.ErrGameRoomNotFound) {
-		return nil, err
+		return err
 	} else if err != nil {
 		plog.Errorc(ctx, "get room error: %v", err)
-		return nil, err
+		return err
 	}
 
 	sess, err := s.SessionSrv.CreateSession(ctx, userId, roomId, w, r)
 	if err != nil {
 		plog.Errorc(ctx, "register room session error: %v", err)
-		return nil, err
+		return err
 	}
+	defer func() {
+		s.SessionSrv.RemoveSession(sess.ID)
+		sess.Close()
+	}()
 
 	go s.SessionSrv.StartSession(sess, s.handleSessionMessage)
-	return sess, nil
+	return sess.Wait()
 }
 
 func (s *BilliardServer) handleSessionMessage(ctx context.Context, msg *session.Message) error {
