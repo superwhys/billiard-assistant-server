@@ -131,7 +131,7 @@ func (s *sessionService) GetSessionByUserRoom(roomId int, userId int) (*session.
 	for _, sessId := range roomSess {
 		sess, err := s.GetSessionByID(sessId)
 		if err != nil {
-			plog.Errorf("room(%v) session(%v) not found", roomId, sessId)
+			plog.Errorf("room(%v) user(%v) session(%v) not found", roomId, userId, sessId)
 			continue
 		}
 		if sess.UserId == userId {
