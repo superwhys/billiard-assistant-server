@@ -2,8 +2,6 @@ package roomDal
 
 import (
 	"context"
-	"maps"
-	"slices"
 	"time"
 
 	"github.com/go-puzzles/puzzles/plog"
@@ -249,46 +247,43 @@ func (r *RoomRepoImpl) GetOwnerRoomCount(ctx context.Context, userId int) (int64
 
 func (r *RoomRepoImpl) GetUserGameRooms(ctx context.Context, userId int) ([]*room.Room, error) {
 	userDb := r.db.UserPo
+	roomUserDb := r.db.RoomUserPo
 
-	user, err := userDb.WithContext(ctx).
-		Preload(userDb.RoomUsers).
-		Preload(userDb.RoomUsers.User).
-		Preload(userDb.RoomUsers.Room).
-		Preload(userDb.RoomUsers.Room.Game).
-		Preload(userDb.RoomUsers.Room.Owner).
-		Where(userDb.ID.Eq(userId)).
-		First()
+	user, err := userDb.WithContext(ctx).Preload(userDb.RoomUsers).Where(userDb.ID.Eq(userId)).First()
 	if err != nil {
 		return nil, err
 	}
 
-	roomUserGroup := putils.GroupBy(user.RoomUsers, func(rup *model.RoomUserPo) int {
-		return rup.RoomID
+	roomIds := putils.Map(user.RoomUsers, func(ru *model.RoomUserPo) int {
+		return ru.RoomID
 	})
 
-	respMap := make(map[int]*room.Room)
-	for roomId, roomUsers := range roomUserGroup {
-		r := roomUsers[0].Room.ToEntity()
-		for _, ru := range roomUsers {
-			r.Players = append(r.Players, ru.ToEntity())
-		}
+	roomIds = putils.Dedup(roomIds)
 
-		respMap[roomId] = r
+	roomUsers, err := roomUserDb.WithContext(ctx).
+		Preload(roomUserDb.Room).
+		Preload(roomUserDb.Room.Game).
+		Preload(roomUserDb.Room.Owner).
+		Where(roomUserDb.RoomID.In(roomIds...)).
+		Find()
+	if err != nil {
+		return nil, err
 	}
 
-	rooms := slices.Collect(maps.Values(respMap))
-	slices.SortStableFunc(rooms, func(a, b *room.Room) int {
-		if a.CreateAt.Equal(b.CreateAt) {
-			return 0
-		}
-
-		if a.CreateAt.Before(b.CreateAt) {
-			return 1
-		}
-
-		return -1
-
+	roomGroups := putils.GroupBy(roomUsers, func(ru *model.RoomUserPo) int {
+		return ru.RoomID
 	})
+
+	var rooms []*room.Room
+	for roomId, roomGroup := range roomGroups {
+		room := roomGroup[0].Room.ToEntity()
+		room.RoomId = roomId
+		for _, ru := range roomGroup {
+			room.Players = append(room.Players, ru.ToEntity())
+		}
+		rooms = append(rooms, room)
+	}
+
 	return rooms, nil
 }
 
