@@ -13,6 +13,9 @@ import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 var _ shared.BaseUser = (*User)(nil)
 
 func (u *User) GetUserId() int {
+	if u == nil {
+		return 0
+	}
 	return u.UserId
 }
 

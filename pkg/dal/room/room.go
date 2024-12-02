@@ -5,7 +5,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -100,7 +99,6 @@ func (r *RoomRepoImpl) DeleteRoom(ctx context.Context, roomId int) error {
 type enterLeaveOperaion func(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
 
 func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool, operation enterLeaveOperaion) error {
-	userDb := r.db.UserPo
 	roomDb := r.db.RoomPo
 
 	if userId == 0 && (isVirtual && userName == "") {
@@ -114,16 +112,6 @@ func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, roomId, userId int, u
 
 	if roomCount == 0 {
 		return exception.ErrGameRoomNotFound
-	}
-
-	if userId != 0 {
-		userCnt, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).Count()
-		if err != nil || userCnt == 0 {
-			if err != nil {
-				plog.Errorc(ctx, "count userId count error: %v", err)
-			}
-			return exception.ErrUserNotFound
-		}
 	}
 
 	return operation(ctx, roomId, userId, userName, isVirtual)
@@ -144,26 +132,26 @@ func (r *RoomRepoImpl) enterRoom(ctx context.Context, roomId, userId int, userNa
 	return roomUserPo.WithContext(ctx).Create(roomUser)
 }
 
-func (r *RoomRepoImpl) leaveRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
+func (r *RoomRepoImpl) leaveRoom(ctx context.Context, roomId, userId int, removeUser string, isVirtual bool) error {
 	roomUserPo := r.db.RoomUserPo
 
 	condition := []gen.Condition{}
 	if !isVirtual {
 		condition = append(condition, roomUserPo.UserID.Eq(userId))
 	} else {
-		condition = append(condition, roomUserPo.VirtualName.Eq(userName))
+		condition = append(condition, roomUserPo.VirtualName.Eq(removeUser))
 	}
 
 	_, err := roomUserPo.WithContext(ctx).Where(condition...).Delete()
 	return err
 }
 
-func (r *RoomRepoImpl) AddUserToRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
-	return r.updateUserRoom(ctx, roomId, userId, userName, isVirtual, r.enterRoom)
+func (r *RoomRepoImpl) AddUserToRoom(ctx context.Context, roomId, userId int, addUser string, isVirtual bool) error {
+	return r.updateUserRoom(ctx, roomId, userId, addUser, isVirtual, r.enterRoom)
 }
 
-func (r *RoomRepoImpl) RemoveUserFromRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
-	return r.updateUserRoom(ctx, roomId, userId, userName, isVirtual, r.leaveRoom)
+func (r *RoomRepoImpl) RemoveUserFromRoom(ctx context.Context, roomId, userId int, removeUser string, isVirtual bool) error {
+	return r.updateUserRoom(ctx, roomId, userId, removeUser, isVirtual, r.leaveRoom)
 }
 
 func (r *RoomRepoImpl) GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error) {

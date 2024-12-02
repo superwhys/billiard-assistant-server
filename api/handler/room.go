@@ -23,8 +23,8 @@ type RoomApp interface {
 	CreateRoom(ctx context.Context, userId, gameId int) (*dto.GameRoom, error)
 	UpdateGameRoomStatus(ctx context.Context, userId int, gameRoom *dto.UpdateGameRoomRequest) error
 	DeleteRoom(ctx context.Context, userId, roomId int) error
-	EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
-	LeaveGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
+	EnterGameRoom(ctx context.Context, roomId int, enterUser string, isVirtual bool) error
+	LeaveGameRoom(ctx context.Context, roomId int, leaveUser string, isVirtual bool) error
 	CreateRoomSession(ctx context.Context, userId, roomId int, w http.ResponseWriter, r *http.Request) error
 	StartGame(ctx context.Context, userId, roomId int) error
 	EndGame(ctx context.Context, userId, roomId int) error
@@ -184,18 +184,13 @@ func (r *RoomHandler) updateGameRoomStatus(ctx *gin.Context, req *dto.UpdateGame
 // if a real user enter room, it just need to provide roomID
 // if a virtual user enter room, it need to set isVirtual to true and provide virtual user name
 func (r *RoomHandler) enterGameRoom(ctx *gin.Context, req *dto.EnterGameRoomRequest) error {
-	plog.Debugc(ctx, "EnterGameRoom req: %v", req)
-	user, err := r.getCurrentUser(ctx)
-	if err != nil {
-		return err
+	if req.UserName == "" {
+		return exception.ErrEnterGameRoomNeedUserName
 	}
 
-	roomId, userId, userName, isVirtual := req.RoomId, user.UserId, user.Name, req.IsVirtual
-	if isVirtual {
-		userName = req.UserName
-	}
+	roomId, enterUser, isVirtual := req.RoomId, req.UserName, req.IsVirtual
 
-	err = r.roomApp.EnterGameRoom(ctx, roomId, userId, userName, isVirtual)
+	err := r.roomApp.EnterGameRoom(ctx, roomId, enterUser, isVirtual)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
@@ -206,17 +201,13 @@ func (r *RoomHandler) enterGameRoom(ctx *gin.Context, req *dto.EnterGameRoomRequ
 }
 
 func (r *RoomHandler) leaveGameRoom(ctx *gin.Context, req *dto.LeaveGameRoomRequest) error {
-	user, err := r.getCurrentUser(ctx)
-	if err != nil {
-		return err
+	if req.UserName == "" {
+		return exception.ErrLeaveGameRoomNeedUserName
 	}
 
-	roomId, userId, userName, isVirtual := req.RoomId, user.UserId, user.Name, req.IsVirtual
-	if isVirtual {
-		userName = req.UserName
-	}
+	roomId, leaveUser, isVirtual := req.RoomId, req.UserName, req.IsVirtual
 
-	err = r.roomApp.LeaveGameRoom(ctx, roomId, userId, userName, isVirtual)
+	err := r.roomApp.LeaveGameRoom(ctx, roomId, leaveUser, isVirtual)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {

@@ -218,6 +218,8 @@ func (s *BilliardServer) Register(ctx context.Context, req *dto.RegisterRequest)
 	return dto.UserEntityToDto(u), nil
 }
 
+// UpdateUserName
+// FIX: maybe need to use locker to avoid concurrency problem caused by update a same name
 func (s *BilliardServer) UpdateUserName(ctx context.Context, userId int, userName string) error {
 	u := &user.User{
 		UserId: userId,
@@ -447,7 +449,7 @@ func (s *BilliardServer) CreateRoom(ctx context.Context, userId, gameId int) (*d
 		return nil, err
 	}
 
-	err = s.RoomSrv.EnterGameRoom(ctx, gr.RoomId, userId, user.Name, false)
+	err = s.RoomSrv.EnterGameRoom(ctx, gr.RoomId, user, false)
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return nil, err
@@ -483,27 +485,43 @@ func (s *BilliardServer) DeleteRoom(ctx context.Context, userId int, roomId int)
 	return nil
 }
 
-func (s *BilliardServer) EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
-	err := s.RoomSrv.EnterGameRoom(ctx, roomId, userId, userName, isVirtual)
+func (s *BilliardServer) EnterGameRoom(ctx context.Context, roomId int, enterUser string, isVirtual bool) (err error) {
+	var enterRealUser shared.BaseUser
+	if !isVirtual {
+		enterRealUser, err = s.UserSrv.GetUserByName(ctx, enterUser)
+		if err != nil {
+			plog.Errorc(ctx, "get user by name error: %v", err)
+			return err
+		}
+	}
+	err = s.RoomSrv.EnterGameRoom(ctx, roomId, enterRealUser, isVirtual)
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return err
 	}
 
-	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, userId, userName, isVirtual))
+	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, enterRealUser.GetUserId(), enterUser, isVirtual))
 
 	return nil
 }
 
-func (s *BilliardServer) LeaveGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error {
-	err := s.RoomSrv.QuitGameRoom(ctx, roomId, userId, userName, isVirtual)
+func (s *BilliardServer) LeaveGameRoom(ctx context.Context, roomId int, leaveUser string, isVirtual bool) (err error) {
+	var leaveRealUser shared.BaseUser
+	if !isVirtual {
+		leaveRealUser, err = s.UserSrv.GetUserByName(ctx, leaveUser)
+		if err != nil {
+			plog.Errorc(ctx, "get user by name error: %v", err)
+			return err
+		}
+	}
+	err = s.RoomSrv.QuitGameRoom(ctx, roomId, leaveRealUser, isVirtual)
 	if err != nil {
 		plog.Errorc(ctx, "leave game room error: %v", err)
 		return err
 	}
 
 	// publish user leave room events
-	s.EventBus.Publish(room.NewLeaveRoomEvent(roomId, userId, userName, isVirtual))
+	s.EventBus.Publish(room.NewLeaveRoomEvent(roomId, leaveRealUser.GetUserId(), leaveUser, isVirtual))
 
 	return nil
 }

@@ -24,8 +24,8 @@ type IRoomService interface {
 	GetRoomGameType(ctx context.Context, roomId int) (shared.BilliardGameType, error)
 	GetRoomById(ctx context.Context, roomId int) (*Room, error)
 	GetRoomByCode(ctx context.Context, roomCode string) (*Room, error)
-	EnterGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
-	QuitGameRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool) error
+	EnterGameRoom(ctx context.Context, roomId int, enterUser shared.BaseUser, isVirtual bool) error
+	QuitGameRoom(ctx context.Context, roomId int, quitUser shared.BaseUser, isVirtual bool) error
 	StartGame(ctx context.Context, userId, roomId int) (shared.BaseGame, error)
 	EndGame(ctx context.Context, userId, roomId int) error
 }
