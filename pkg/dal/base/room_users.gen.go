@@ -29,7 +29,7 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 	_roomUserPo.ID = field.NewInt(tableName, "id")
 	_roomUserPo.RoomID = field.NewInt(tableName, "room_id")
 	_roomUserPo.UserID = field.NewInt(tableName, "user_id")
-	_roomUserPo.VirtualName = field.NewString(tableName, "virtual_name")
+	_roomUserPo.UserName = field.NewString(tableName, "user_name")
 	_roomUserPo.IsVirtualPlayer = field.NewBool(tableName, "is_virtual_player")
 	_roomUserPo.CreatedAt = field.NewTime(tableName, "created_at")
 	_roomUserPo.UpdatedAt = field.NewTime(tableName, "updated_at")
@@ -111,7 +111,7 @@ type roomUserPo struct {
 	ID              field.Int
 	RoomID          field.Int
 	UserID          field.Int
-	VirtualName     field.String
+	UserName        field.String
 	IsVirtualPlayer field.Bool
 	CreatedAt       field.Time
 	UpdatedAt       field.Time
@@ -138,7 +138,7 @@ func (r *roomUserPo) updateTableName(table string) *roomUserPo {
 	r.ID = field.NewInt(table, "id")
 	r.RoomID = field.NewInt(table, "room_id")
 	r.UserID = field.NewInt(table, "user_id")
-	r.VirtualName = field.NewString(table, "virtual_name")
+	r.UserName = field.NewString(table, "user_name")
 	r.IsVirtualPlayer = field.NewBool(table, "is_virtual_player")
 	r.CreatedAt = field.NewTime(table, "created_at")
 	r.UpdatedAt = field.NewTime(table, "updated_at")
@@ -173,7 +173,7 @@ func (r *roomUserPo) fillFieldMap() {
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["room_id"] = r.RoomID
 	r.fieldMap["user_id"] = r.UserID
-	r.fieldMap["virtual_name"] = r.VirtualName
+	r.fieldMap["user_name"] = r.UserName
 	r.fieldMap["is_virtual_player"] = r.IsVirtualPlayer
 	r.fieldMap["created_at"] = r.CreatedAt
 	r.fieldMap["updated_at"] = r.UpdatedAt

@@ -16,7 +16,7 @@ type RoomUserPo struct {
 	UserID int
 	User   *UserPo `gorm:"foreignKey:UserID"`
 
-	VirtualName     string
+	UserName        string
 	IsVirtualPlayer bool
 
 	CreatedAt   time.Time
@@ -54,17 +54,10 @@ func (r *RoomPo) TableName() string {
 }
 
 func (r *RoomUserPo) ToEntity() *room.RoomPlayer {
-	var userName string
-	if r.IsVirtualPlayer {
-		userName = r.VirtualName
-	} else if r.User != nil {
-		userName = r.User.Name
-	}
-
 	return &room.RoomPlayer{
 		RoomId:          r.RoomID,
 		UserId:          r.UserID,
-		UserName:        userName,
+		UserName:        r.UserName,
 		IsVirtualPlayer: r.IsVirtualPlayer,
 		HeartbeatAt:     r.HeartbeatAt,
 	}

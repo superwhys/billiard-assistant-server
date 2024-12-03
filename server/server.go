@@ -145,7 +145,7 @@ func (s *BilliardServer) WechatLogin(ctx context.Context, code string) (*dto.Use
 	// first login, create a new user and userAuth
 	if ua == nil {
 		newUser := &user.User{
-			Name:   fmt.Sprintf("微信用户%s", wxSessionKey.OpenID),
+			Name:   fmt.Sprintf("微信用户%v", time.Now().UnixMilli()),
 			Status: user.StatusActive,
 		}
 		loginUser, err = s.UserSrv.CreateUser(ctx, newUser)
@@ -449,7 +449,7 @@ func (s *BilliardServer) CreateRoom(ctx context.Context, userId, gameId int) (*d
 		return nil, err
 	}
 
-	err = s.RoomSrv.EnterGameRoom(ctx, gr.RoomId, user, false)
+	err = s.RoomSrv.EnterGameRoom(ctx, gr.RoomId, user, "")
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return nil, err
@@ -485,43 +485,54 @@ func (s *BilliardServer) DeleteRoom(ctx context.Context, userId int, roomId int)
 	return nil
 }
 
-func (s *BilliardServer) EnterGameRoom(ctx context.Context, roomId int, enterUser string, isVirtual bool) (err error) {
-	var enterRealUser shared.BaseUser
-	if !isVirtual {
-		enterRealUser, err = s.UserSrv.GetUserByName(ctx, enterUser)
-		if err != nil {
-			plog.Errorc(ctx, "get user by name error: %v", err)
-			return err
-		}
+func (s *BilliardServer) EnterGameRoom(ctx context.Context, roomId, currentUid int, virtualUser string) (err error) {
+	var currentUser shared.BaseUser
+	currentUser, err = s.UserSrv.GetUserById(ctx, currentUid)
+	if err != nil {
+		plog.Errorc(ctx, "get user by name error: %v", err)
+		return err
 	}
-	err = s.RoomSrv.EnterGameRoom(ctx, roomId, enterRealUser, isVirtual)
+	err = s.RoomSrv.EnterGameRoom(ctx, roomId, currentUser, virtualUser)
 	if err != nil {
 		plog.Errorc(ctx, "enter game room error: %v", err)
 		return err
 	}
 
-	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, enterRealUser.GetUserId(), enterUser, isVirtual))
+	isVirtual := virtualUser != ""
+
+	userName := currentUser.GetName()
+	if isVirtual {
+		userName = virtualUser
+	}
+
+	s.EventBus.Publish(room.NewEnterRoomEvent(roomId, currentUser.GetUserId(), userName, isVirtual))
 
 	return nil
 }
 
-func (s *BilliardServer) LeaveGameRoom(ctx context.Context, roomId int, leaveUser string, isVirtual bool) (err error) {
-	var leaveRealUser shared.BaseUser
-	if !isVirtual {
-		leaveRealUser, err = s.UserSrv.GetUserByName(ctx, leaveUser)
-		if err != nil {
-			plog.Errorc(ctx, "get user by name error: %v", err)
-			return err
-		}
+func (s *BilliardServer) LeaveGameRoom(ctx context.Context, roomId, currentUid int, virtualUser string) (err error) {
+	var currentUser shared.BaseUser
+	currentUser, err = s.UserSrv.GetUserById(ctx, currentUid)
+	if err != nil {
+		plog.Errorc(ctx, "get user by name error: %v", err)
+		return err
 	}
-	err = s.RoomSrv.QuitGameRoom(ctx, roomId, leaveRealUser, isVirtual)
+
+	err = s.RoomSrv.QuitGameRoom(ctx, roomId, currentUser, virtualUser)
 	if err != nil {
 		plog.Errorc(ctx, "leave game room error: %v", err)
 		return err
 	}
 
+	isVirtual := virtualUser != ""
+
+	userName := currentUser.GetName()
+	if isVirtual {
+		userName = virtualUser
+	}
+
 	// publish user leave room events
-	s.EventBus.Publish(room.NewLeaveRoomEvent(roomId, leaveRealUser.GetUserId(), leaveUser, isVirtual))
+	s.EventBus.Publish(room.NewLeaveRoomEvent(roomId, currentUser.GetUserId(), userName, isVirtual))
 
 	return nil
 }

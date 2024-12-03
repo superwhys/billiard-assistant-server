@@ -101,10 +101,6 @@ type enterLeaveOperaion func(ctx context.Context, roomId, userId int, userName s
 func (r *RoomRepoImpl) updateUserRoom(ctx context.Context, roomId, userId int, userName string, isVirtual bool, operation enterLeaveOperaion) error {
 	roomDb := r.db.RoomPo
 
-	if userId == 0 && (isVirtual && userName == "") {
-		return errors.New("oneof userId or virtualUser must be provided")
-	}
-
 	roomCount, err := roomDb.WithContext(ctx).Where(roomDb.ID.Eq(roomId)).Count()
 	if err != nil {
 		return err
@@ -123,12 +119,11 @@ func (r *RoomRepoImpl) enterRoom(ctx context.Context, roomId, userId int, userNa
 	roomUser := &model.RoomUserPo{
 		RoomID:          roomId,
 		UserID:          userId,
+		UserName:        userName,
 		IsVirtualPlayer: isVirtual,
 		HeartbeatAt:     time.Now(),
 	}
-	if isVirtual {
-		roomUser.VirtualName = userName
-	}
+
 	return roomUserPo.WithContext(ctx).Create(roomUser)
 }
 
@@ -139,7 +134,7 @@ func (r *RoomRepoImpl) leaveRoom(ctx context.Context, roomId, userId int, remove
 	if !isVirtual {
 		condition = append(condition, roomUserPo.UserID.Eq(userId))
 	} else {
-		condition = append(condition, roomUserPo.VirtualName.Eq(removeUser))
+		condition = append(condition, roomUserPo.UserName.Eq(removeUser))
 	}
 
 	_, err := roomUserPo.WithContext(ctx).Where(condition...).Delete()

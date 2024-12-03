@@ -52,17 +52,17 @@ func (r *Room) IsEnd() bool {
 	return r.GameStatus == Finish
 }
 
-func (r *Room) IsInRoom(isVirtual bool, userName string, userId int) bool {
-	if userName == "" && userId == 0 {
+func (r *Room) IsInRoom(currentUserId int, virtualUser string) bool {
+	if currentUserId == 0 && virtualUser == "" {
 		return true
 	}
 
 	for _, p := range r.Players {
-		if isVirtual && p.GetUserName() == userName {
+		if virtualUser != "" && p.GetUserName() == virtualUser {
 			return true
 		}
 
-		if !isVirtual && p.GetUserId() == userId {
+		if virtualUser == "" && p.GetUserId() == currentUserId {
 			return true
 		}
 	}

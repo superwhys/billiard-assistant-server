@@ -80,7 +80,7 @@ func (r *RoomService) UpdateRoomUserHeartbeart(ctx context.Context, roomId, user
 	return nil
 }
 
-func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, enterUser shared.BaseUser, isVirtual bool) error {
+func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error {
 	if err := r.locker.Lock(roomId); err != nil {
 		return errors.Wrap(err, "lock room")
 	}
@@ -91,16 +91,16 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, enterUser s
 		return errors.Wrapf(err, "getRoom: %d", roomId)
 	}
 
-	// not allow to add a virtual player while not roomOwner
-	if !room.IsOwner(enterUser.GetUserId()) && isVirtual {
-		return exception.ErrNotRoomOwner
-	}
-
 	if room.IsEnd() {
 		return exception.ErrGameRoomEnd
 	}
 
-	if room.IsInRoom(isVirtual, enterUser.GetName(), enterUser.GetUserId()) {
+	// not allow to add a virtual player while not roomOwner
+	if virtualUser != "" && !room.IsOwner(currentUser.GetUserId()) {
+		return exception.ErrNotRoomOwner
+	}
+
+	if room.IsInRoom(currentUser.GetUserId(), virtualUser) {
 		return exception.ErrAlreadyInRoom
 	}
 
@@ -108,34 +108,46 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, enterUser s
 		return exception.ErrGameRoomFull
 	}
 
-	return r.roomRepo.AddUserToRoom(ctx, roomId, enterUser.GetUserId(), enterUser.GetName(), isVirtual)
+	addUser := currentUser.GetName()
+	if virtualUser != "" {
+		addUser = virtualUser
+	}
+
+	return r.roomRepo.AddUserToRoom(ctx, roomId, currentUser.GetUserId(), addUser, virtualUser != "")
 }
 
-func (r *RoomService) QuitGameRoom(ctx context.Context, roomId int, quitUser shared.BaseUser, isVirtual bool) error {
+func (r *RoomService) QuitGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error {
 	if err := r.locker.Lock(roomId); err != nil {
 		return errors.Wrap(err, "lock room")
 	}
 	defer r.locker.Unlock(roomId)
+
+	isVirtual := virtualUser != ""
 
 	room, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {
 		return errors.Wrapf(err, "getRoom: %d", roomId)
 	}
 
-	// not allow to quit a virtual player while not roomOwner
-	if !room.IsOwner(quitUser.GetUserId()) && isVirtual {
-		return exception.ErrNotRoomOwner
-	}
-
 	if room.IsEnd() {
 		return exception.ErrGameRoomEnd
 	}
 
-	if !room.IsInRoom(isVirtual, quitUser.GetName(), quitUser.GetUserId()) {
+	// not allow to quit virtual player while not roomOwner
+	if isVirtual && !room.IsOwner(currentUser.GetUserId()) {
+		return exception.ErrNotRoomOwner
+	}
+
+	if !room.IsInRoom(currentUser.GetUserId(), virtualUser) {
 		return exception.ErrNotInRoom
 	}
 
-	return r.roomRepo.RemoveUserFromRoom(ctx, roomId, quitUser.GetUserId(), quitUser.GetName(), isVirtual)
+	leaveUser := currentUser.GetName()
+	if isVirtual {
+		leaveUser = virtualUser
+	}
+
+	return r.roomRepo.RemoveUserFromRoom(ctx, roomId, currentUser.GetUserId(), leaveUser, isVirtual)
 }
 
 func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int) ([]*room.Room, error) {

@@ -98,15 +98,13 @@ type DeleteGameRoomRequest struct {
 }
 
 type EnterGameRoomRequest struct {
-	RoomId    int    `json:"room_id"`
-	UserName  string `json:"user_name"`
-	IsVirtual bool   `json:"is_virtual"`
+	RoomId      int    `json:"room_id"`
+	VirtualUser string `json:"virtual_user"`
 }
 
 type LeaveGameRoomRequest struct {
-	RoomId    int    `json:"room_id"`
-	UserName  string `json:"user_name"`
-	IsVirtual bool   `json:"is_virtual"`
+	RoomId      int    `json:"room_id"`
+	VirtualUser string `json:"virtual_user"`
 }
 
 type GetUserGameRoomsResp struct {
