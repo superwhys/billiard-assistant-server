@@ -13,6 +13,7 @@ import (
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gorm.io/datatypes"
 )
 
 type RoomPlayer struct {
@@ -24,15 +25,16 @@ type RoomPlayer struct {
 }
 
 type GameRoom struct {
-	RoomId        int           `json:"room_id,omitempty"`
-	RoomCode      string        `json:"room_code,omitempty"`
-	Game          *Game         `json:"game,omitempty"`
-	Owner         *User         `json:"owner,omitempty"`
-	Players       []*RoomPlayer `json:"players"`
-	Record        *Record       `json:"record,omitempty"`
-	GameStatus    int           `json:"game_status,omitempty"`
-	WinLoseStatus string        `json:"win_lose_status,omitempty"`
-	CreateAt      time.Time     `json:"create_at,omitempty"`
+	RoomId        int            `json:"room_id,omitempty"`
+	RoomCode      string         `json:"room_code,omitempty"`
+	Game          *Game          `json:"game,omitempty"`
+	Owner         *User          `json:"owner,omitempty"`
+	Players       []*RoomPlayer  `json:"players"`
+	Record        *Record        `json:"record,omitempty"`
+	Extra         map[string]any `json:"extra,omitempty"`
+	GameStatus    int            `json:"game_status,omitempty"`
+	WinLoseStatus string         `json:"win_lose_status,omitempty"`
+	CreateAt      time.Time      `json:"create_at,omitempty"`
 }
 
 func GameRoomEntityToDto(gr shared.BaseRoom) *GameRoom {
@@ -44,6 +46,7 @@ func GameRoomEntityToDto(gr shared.BaseRoom) *GameRoom {
 		RoomId:        gr.GetRoomId(),
 		RoomCode:      gr.GetRoomCode(),
 		GameStatus:    gr.GetGameStatus(),
+		Extra:         gr.GetExtra(),
 		WinLoseStatus: gr.GetWinLoseStatus(),
 		CreateAt:      gr.GetCreateAt(),
 	}
@@ -79,8 +82,12 @@ type CreateGameRoomRequest struct {
 	GameId int `json:"game_id"`
 }
 
-type GetRoomRequest struct {
+type UriRoomId struct {
 	RoomId int `uri:"roomId"`
+}
+
+type GetRoomRequest struct {
+	UriRoomId
 }
 
 type GetRoomByCodeRequest struct {
@@ -88,22 +95,27 @@ type GetRoomByCodeRequest struct {
 }
 
 type UpdateGameRoomRequest struct {
-	RoomId        int                `json:"room_id"`
+	UriRoomId
 	GameStatus    room.Status        `json:"game_status"`
 	WinLoseStatus room.WinLoseStatus `json:"win_lose_status"`
 }
 
+type UpdateGameRoomExtraRequest struct {
+	UriRoomId
+	Extra map[string]any `json:"extra"`
+}
+
 type DeleteGameRoomRequest struct {
-	RoomId int `json:"room_id"`
+	UriRoomId
 }
 
 type EnterGameRoomRequest struct {
-	RoomId      int    `json:"room_id"`
+	UriRoomId
 	VirtualUser string `json:"virtual_user"`
 }
 
 type LeaveGameRoomRequest struct {
-	RoomId      int    `json:"room_id"`
+	UriRoomId
 	VirtualUser string `json:"virtual_user"`
 }
 
@@ -111,10 +123,11 @@ type GetUserGameRoomsResp struct {
 	Rooms []*GameRoom `json:"rooms"`
 }
 
-type PrepareGameRequest struct {
-	RoomId int `json:"room_id"`
+type StartGameRequest struct {
+	UriRoomId
+	Extra datatypes.JSONMap `json:"extra"`
 }
 
-type StartGameRequest struct {
-	RoomId int `json:"room_id"`
+type EndGameRequest struct {
+	UriRoomId
 }

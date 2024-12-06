@@ -37,6 +37,7 @@ type BaseRoom interface {
 	GetRecord() BaseRecord
 	GetRoomPlayers() []RoomPlayer
 	GetGameStatus() int
+	GetExtra() map[string]any
 	GetWinLoseStatus() string
 	GetCreateAt() time.Time
 	GetGame() BaseGame

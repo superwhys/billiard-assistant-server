@@ -13,6 +13,7 @@ import (
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gorm.io/datatypes"
 )
 
 type IRoomService interface {
@@ -26,6 +27,6 @@ type IRoomService interface {
 	GetRoomByCode(ctx context.Context, roomCode string) (*Room, error)
 	EnterGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error
 	QuitGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error
-	StartGame(ctx context.Context, userId, roomId int) (shared.BaseGame, error)
+	StartGame(ctx context.Context, userId, roomId int, extra datatypes.JSONMap) (shared.BaseGame, error)
 	EndGame(ctx context.Context, userId, roomId int) error
 }

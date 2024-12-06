@@ -9,23 +9,24 @@
 package locker
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/go-puzzles/puzzles/predis"
+	"github.com/go-puzzles/puzzles/goredis"
 )
 
 const (
-	defaultPrefix = "billiard:locker"
-	defaultRetry  = 3
-	defaultTTL    = time.Second * 5
+	defaultPrefix  = "billiard:locker"
+	defaultTTL     = time.Second * 5
+	defaultTimeout = time.Second * 10
 )
 
 type Locker struct {
-	prefix string
-	retry  int
-	ttl    time.Duration
-	client *predis.RedisClient
+	prefix  string
+	ttl     time.Duration
+	timeout time.Duration
+	client  *goredis.PuzzleRedisClient
 }
 
 type LockerOption func(*Locker)
@@ -36,9 +37,9 @@ func WithPrefix(prefix string) LockerOption {
 	}
 }
 
-func WithRetry(retry int) LockerOption {
+func WithTimeout(to time.Duration) LockerOption {
 	return func(l *Locker) {
-		l.retry = retry
+		l.timeout = to
 	}
 }
 
@@ -48,12 +49,12 @@ func WithTTL(dura time.Duration) LockerOption {
 	}
 }
 
-func NewLocker(client *predis.RedisClient, opts ...LockerOption) *Locker {
+func NewLocker(client *goredis.PuzzleRedisClient, opts ...LockerOption) *Locker {
 	l := &Locker{
-		client: client,
-		prefix: defaultPrefix,
-		ttl:    defaultTTL,
-		retry:  defaultRetry,
+		client:  client,
+		prefix:  defaultPrefix,
+		ttl:     defaultTTL,
+		timeout: defaultTimeout,
 	}
 
 	for _, opt := range opts {
@@ -63,14 +64,12 @@ func NewLocker(client *predis.RedisClient, opts ...LockerOption) *Locker {
 	return l
 }
 
-func (l *Locker) Lock(key any) (err error) {
+func (l *Locker) Lock(ctx context.Context, key any) (err error) {
 	lockKey := fmt.Sprintf("%s:%v", l.prefix, key)
-
-	return l.client.LockWithBlock(lockKey, l.retry, l.ttl)
+	return l.client.TryLockWithTimeout(ctx, lockKey, l.ttl, l.timeout)
 }
 
-func (l *Locker) Unlock(key any) (err error) {
+func (l *Locker) Unlock(ctx context.Context, key any) (err error) {
 	lockKey := fmt.Sprintf("%s:%v", l.prefix, key)
-
-	return l.client.UnLock(lockKey)
+	return l.client.Unlock(ctx, lockKey)
 }

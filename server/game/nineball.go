@@ -13,7 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/go-puzzles/puzzles/predis"
+	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
@@ -25,11 +25,11 @@ import (
 var _ nineball.INineballService = (*NineballService)(nil)
 
 type NineballService struct {
-	redisClient *predis.RedisClient
+	redisClient *goredis.PuzzleRedisClient
 	locker      *locker.Locker
 }
 
-func NewNineballService(redisClient *predis.RedisClient) *NineballService {
+func NewNineballService(redisClient *goredis.PuzzleRedisClient) *NineballService {
 	return &NineballService{
 		redisClient: redisClient,
 		locker:      locker.NewLocker(redisClient, locker.WithPrefix("nineball:record")),
@@ -69,15 +69,15 @@ func (ns *NineballService) UnmarshalRecord(rawRecord json.RawMessage) ([]game.Re
 }
 
 func (ns *NineballService) HandleAction(ctx context.Context, action game.Action) error {
-	ns.locker.Lock(action.GetActionRoomId())
-	defer ns.locker.Unlock(action.GetActionRoomId())
+	ns.locker.Lock(ctx, action.GetActionRoomId())
+	defer ns.locker.Unlock(ctx, action.GetActionRoomId())
 
 	nineballAction, ok := action.(*nineball.NineballAction)
 	if !ok {
 		return errors.New("action must be a NineballAction object")
 	}
 
-	_, err := ns.redisClient.LPush(ns.getActionKey(nineballAction.RoomId), nineballAction)
+	err := ns.redisClient.LPushValue(ctx, ns.getActionKey(nineballAction.RoomId), nineballAction)
 	return err
 }
 
@@ -85,7 +85,7 @@ func (ns *NineballService) GetRoomActions(ctx context.Context, roomId int) ([]ga
 	actions := make([]*nineball.NineballAction, 0)
 	actionKey := ns.getActionKey(roomId)
 
-	err := ns.redisClient.LRange(actionKey, 0, -1, &actions)
+	err := ns.redisClient.RangeValue(ctx, actionKey, 0, -1, &actions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "range room(%d) action", roomId)
 	}

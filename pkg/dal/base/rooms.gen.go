@@ -30,6 +30,7 @@ func newRoomPo(db *gorm.DB, opts ...gen.DOOption) roomPo {
 	_roomPo.RoomCode = field.NewString(tableName, "room_code")
 	_roomPo.GameID = field.NewInt(tableName, "game_id")
 	_roomPo.OwnerID = field.NewInt(tableName, "owner_id")
+	_roomPo.Extra = field.NewField(tableName, "extra")
 	_roomPo.GameStatus = field.NewInt(tableName, "game_status")
 	_roomPo.WinLoseStatus = field.NewInt(tableName, "win_lose_status")
 	_roomPo.CreatedAt = field.NewTime(tableName, "created_at")
@@ -122,6 +123,7 @@ type roomPo struct {
 	RoomCode      field.String
 	GameID        field.Int
 	OwnerID       field.Int
+	Extra         field.Field
 	GameStatus    field.Int
 	WinLoseStatus field.Int
 	CreatedAt     field.Time
@@ -152,6 +154,7 @@ func (r *roomPo) updateTableName(table string) *roomPo {
 	r.RoomCode = field.NewString(table, "room_code")
 	r.GameID = field.NewInt(table, "game_id")
 	r.OwnerID = field.NewInt(table, "owner_id")
+	r.Extra = field.NewField(table, "extra")
 	r.GameStatus = field.NewInt(table, "game_status")
 	r.WinLoseStatus = field.NewInt(table, "win_lose_status")
 	r.CreatedAt = field.NewTime(table, "created_at")
@@ -181,11 +184,12 @@ func (r *roomPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *roomPo) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 12)
+	r.fieldMap = make(map[string]field.Expr, 13)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["room_code"] = r.RoomCode
 	r.fieldMap["game_id"] = r.GameID
 	r.fieldMap["owner_id"] = r.OwnerID
+	r.fieldMap["extra"] = r.Extra
 	r.fieldMap["game_status"] = r.GameStatus
 	r.fieldMap["win_lose_status"] = r.WinLoseStatus
 	r.fieldMap["created_at"] = r.CreatedAt

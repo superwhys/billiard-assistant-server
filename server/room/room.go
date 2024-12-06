@@ -3,7 +3,7 @@ package roomSrv
 import (
 	"context"
 
-	"github.com/go-puzzles/puzzles/predis"
+	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
@@ -11,6 +11,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/locker"
+	"gorm.io/datatypes"
 )
 
 var _ room.IRoomService = (*RoomService)(nil)
@@ -21,7 +22,7 @@ type RoomService struct {
 	roomConfig *models.RoomConfig
 }
 
-func NewRoomService(remoRepo room.IRoomRepo, redisClient *predis.RedisClient, roomConfig *models.RoomConfig) *RoomService {
+func NewRoomService(remoRepo room.IRoomRepo, redisClient *goredis.PuzzleRedisClient, roomConfig *models.RoomConfig) *RoomService {
 	return &RoomService{
 		roomRepo:   remoRepo,
 		roomConfig: roomConfig,
@@ -81,10 +82,10 @@ func (r *RoomService) UpdateRoomUserHeartbeart(ctx context.Context, roomId, user
 }
 
 func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error {
-	if err := r.locker.Lock(roomId); err != nil {
+	if err := r.locker.Lock(ctx, roomId); err != nil {
 		return errors.Wrap(err, "lock room")
 	}
-	defer r.locker.Unlock(roomId)
+	defer r.locker.Unlock(ctx, roomId)
 
 	room, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {
@@ -117,10 +118,10 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, currentUser
 }
 
 func (r *RoomService) QuitGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error {
-	if err := r.locker.Lock(roomId); err != nil {
+	if err := r.locker.Lock(ctx, roomId); err != nil {
 		return errors.Wrap(err, "lock room")
 	}
-	defer r.locker.Unlock(roomId)
+	defer r.locker.Unlock(ctx, roomId)
 
 	isVirtual := virtualUser != ""
 
@@ -181,11 +182,11 @@ func (r *RoomService) GetRoomByCode(ctx context.Context, roomCode string) (*room
 	return room, nil
 }
 
-func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (shared.BaseGame, error) {
-	if err := r.locker.Lock(roomId); err != nil {
+func (r *RoomService) StartGame(ctx context.Context, userId, roomId int, extra datatypes.JSONMap) (shared.BaseGame, error) {
+	if err := r.locker.Lock(ctx, roomId); err != nil {
 		return nil, errors.Wrap(err, "lock room")
 	}
-	defer r.locker.Unlock(roomId)
+	defer r.locker.Unlock(ctx, roomId)
 
 	ro, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {
@@ -201,6 +202,7 @@ func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (shared
 	}
 
 	ro.StartGame()
+	ro.SetExtra(extra)
 	if err := r.roomRepo.UpdateRoom(ctx, ro); err != nil {
 		return nil, errors.Wrap(err, "update room status")
 	}
@@ -209,10 +211,10 @@ func (r *RoomService) StartGame(ctx context.Context, userId, roomId int) (shared
 }
 
 func (r *RoomService) EndGame(ctx context.Context, userId, roomId int) error {
-	if err := r.locker.Lock(roomId); err != nil {
+	if err := r.locker.Lock(ctx, roomId); err != nil {
 		return errors.Wrap(err, "lock room")
 	}
-	defer r.locker.Unlock(roomId)
+	defer r.locker.Unlock(ctx, roomId)
 
 	ro, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {

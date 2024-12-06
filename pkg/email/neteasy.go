@@ -15,9 +15,9 @@ import (
 	"net/smtp"
 	"time"
 
+	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/go-puzzles/puzzles/pqueue"
-	"github.com/go-puzzles/puzzles/predis"
 	"github.com/pkg/errors"
 )
 
@@ -36,14 +36,14 @@ type NetEasyEmailSender struct {
 	queue   *pqueue.RedisQueue[*AsyncEmailTask]
 }
 
-func NewNetEasySender(conf *EmailConf, redisClient *predis.RedisClient) *NetEasyEmailSender {
+func NewNetEasySender(conf *EmailConf, redisClient *goredis.PuzzleRedisClient) *NetEasyEmailSender {
 	auth := smtp.PlainAuth("", conf.Sender, conf.Password, smtpServer)
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 		ServerName:         smtpServer,
 	}
 
-	queue := pqueue.NewRedisQueue[*AsyncEmailTask](redisClient.GetPool(), asyncQueue)
+	queue := pqueue.NewRedisQueueWithClient[*AsyncEmailTask](redisClient, asyncQueue)
 	return &NetEasyEmailSender{
 		conf:    conf,
 		auth:    auth,

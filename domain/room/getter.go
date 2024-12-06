@@ -47,6 +47,10 @@ func (r *Room) GetGameStatus() int {
 	return int(r.GameStatus)
 }
 
+func (r *Room) GetExtra() map[string]any {
+	return r.Extra
+}
+
 func (r *Room) GetWinLoseStatus() string {
 	return r.WinLoseStatus.String()
 }

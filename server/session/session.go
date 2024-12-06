@@ -12,6 +12,7 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"sync"
 
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gorilla/websocket"
@@ -22,21 +23,39 @@ import (
 var _ session.ISessionService = (*sessionService)(nil)
 
 type sessionService struct {
-	sessMap           map[string]*session.Session
-	roomSession       map[int][]string
+	sessMap           *sync.Map
+	roomSession       *sync.Map
 	websocketUpgrader *websocket.Upgrader
 }
 
 func NewSessionService() *sessionService {
 	return &sessionService{
-		sessMap:     make(map[string]*session.Session),
-		roomSession: make(map[int][]string),
+		sessMap:     &sync.Map{},
+		roomSession: &sync.Map{},
 		websocketUpgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true
 			},
 		},
 	}
+}
+
+func (s *sessionService) getSession(sessId string) (*session.Session, error) {
+	v, ok := s.sessMap.Load(sessId)
+	if !ok {
+		return nil, errors.New("session not found")
+	}
+
+	return v.(*session.Session), nil
+}
+
+func (s *sessionService) getRoomSessions(roomId int) ([]string, error) {
+	v, ok := s.roomSession.Load(roomId)
+	if !ok {
+		return nil, errors.New("room session not found")
+	}
+
+	return v.([]string), nil
 }
 
 func (s *sessionService) CreateSession(ctx context.Context, playerID int, roomID int, w http.ResponseWriter, r *http.Request) (*session.Session, error) {
@@ -47,13 +66,21 @@ func (s *sessionService) CreateSession(ctx context.Context, playerID int, roomID
 	}
 
 	sess := session.NewSession(ctx, roomID, playerID, ws)
-	s.sessMap[sess.ID] = sess
 
-	if rs := s.roomSession[roomID]; rs == nil {
-		s.roomSession[roomID] = make([]string, 0)
-	}
+	s.sessMap.Store(sess.ID, sess)
 
-	s.roomSession[roomID] = append(s.roomSession[roomID], sess.ID)
+	s.roomSession.Range(func(key, value any) bool {
+		if key != roomID {
+			return true
+		}
+
+		roomSessions := value.([]string)
+		if !slices.Contains(roomSessions, sess.ID) {
+			roomSessions = append(roomSessions, sess.ID)
+			s.roomSession.Store(key, roomSessions)
+		}
+		return true
+	})
 
 	return sess, nil
 }
@@ -81,11 +108,11 @@ func (s *sessionService) StartSession(sess *session.Session, sessionHandler sess
 		select {
 		case <-sess.Ctx.Done():
 			plog.Debugc(sess.Ctx, "session done")
-			break
+			return
 		case msg, ok := <-messageLoop:
 			if !ok {
 				plog.Debugc(sess.Ctx, "connection closed")
-				break
+				return
 			}
 
 			err := sessionHandler(sess.Ctx, msg)
@@ -98,54 +125,64 @@ func (s *sessionService) StartSession(sess *session.Session, sessionHandler sess
 }
 
 func (s *sessionService) RemoveSession(sessionID string) error {
-	sess, exists := s.sessMap[sessionID]
-	if !exists {
-		return errors.New("session not found")
+	sess, err := s.getSession(sessionID)
+	if err != nil {
+		return errors.Wrap(err, "getSession")
 	}
 
-	delete(s.sessMap, sessionID)
+	s.sessMap.Delete(sessionID)
+	s.roomSession.Range(func(key, value any) bool {
+		if key != sess.RoomId {
+			return true
+		}
 
-	roomSess := s.roomSession[sess.RoomId]
-	roomSess = slices.DeleteFunc(roomSess, func(id string) bool {
-		return id == sessionID
+		roomSessions := value.([]string)
+		roomSessions = slices.DeleteFunc(roomSessions, func(id string) bool {
+			return id == sessionID
+		})
+		s.roomSession.Store(key, roomSessions)
+		return true
 	})
 
 	return nil
 }
 
 func (s *sessionService) GetSessionByID(sessionID string) (*session.Session, error) {
-	sess, exists := s.sessMap[sessionID]
-	if !exists {
-		return nil, errors.New("session not found")
+	sess, err := s.getSession(sessionID)
+	if err != nil {
+		return nil, errors.Wrap(err, "getSession")
 	}
 
 	return sess, nil
 }
 
 func (s *sessionService) GetSessionByUserRoom(roomId int, userId int) (*session.Session, error) {
-	roomSess, exists := s.roomSession[roomId]
-	if !exists {
-		return nil, errors.New("room sessions not found")
+	rs, err := s.getRoomSessions(roomId)
+	if err != nil {
+		return nil, errors.Wrap(err, "getRoomSessions")
 	}
 
-	for _, sessId := range roomSess {
-		sess, err := s.GetSessionByID(sessId)
+	for _, sid := range rs {
+		sess, err := s.getSession(sid)
 		if err != nil {
-			plog.Errorf("room(%v) user(%v) session(%v) not found", roomId, userId, sessId)
+			plog.Errorf("get room(%v) session(%v) err: %v", roomId, sid, err)
 			continue
 		}
-		if sess.UserId == userId {
-			return sess, nil
+
+		if sess.UserId != userId {
+			continue
 		}
+
+		return sess, nil
 	}
 
-	return nil, errors.New("user not found in room")
+	return nil, errors.New("user session not found in room")
 }
 
 func (s *sessionService) BroadcastMessage(roomID, publishUserId int, message *session.Message) error {
-	roomSess, exists := s.roomSession[roomID]
-	if !exists {
-		return errors.New("room sessions not found")
+	roomSess, err := s.getRoomSessions(roomID)
+	if err != nil {
+		return errors.Wrap(err, "getRoomSessions")
 	}
 
 	plog.Debugf("broadcasting room(%v), players cnt: %v", roomID, len(roomSess))

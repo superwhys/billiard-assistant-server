@@ -11,8 +11,8 @@ package api
 import (
 	"net/http"
 
+	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/pgin"
-	"github.com/go-puzzles/puzzles/predis"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/handler"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
@@ -27,7 +27,7 @@ type BilliardApi struct {
 
 func SetupRouter(
 	srvConf *models.Config,
-	redisClient *predis.RedisClient,
+	redisClient *goredis.PuzzleRedisClient,
 	minioClient *minio.MinioOss,
 	server *server.BilliardServer,
 ) *BilliardApi {

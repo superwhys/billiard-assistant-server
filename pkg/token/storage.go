@@ -8,16 +8,21 @@
 
 package token
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+)
 
 const (
 	defaultTTL = 3600 * time.Second
 )
 
 type Storage interface {
-	SetWithTTL(key string, value any, ttl time.Duration) error
-	Get(key string, out any) error
-	Delete(key string) error
+	SetValue(ctx context.Context, key string, value any, ttl time.Duration) error
+	GetValue(ctx context.Context, key string, out any) error
+	Del(ctx context.Context, key ...string) *redis.IntCmd
 }
 
 type Token interface {

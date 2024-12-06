@@ -54,7 +54,7 @@ func (g *RoomCodeGenerator) GenerateCode(ctx context.Context, roomId int) (strin
 
 	maxRetries := 10
 	for i := 0; i < maxRetries; i++ {
-		code := putils.RandString(6)
+		code := putils.RandNumeral(6)
 		codeKey := g.getCodeKey(code)
 		roomKey := g.getRoomKey(roomId)
 

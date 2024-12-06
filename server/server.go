@@ -18,8 +18,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/plog"
-	"github.com/go-puzzles/puzzles/predis"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
@@ -38,6 +38,7 @@ import (
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/password"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	authDal "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/auth"
@@ -56,7 +57,7 @@ import (
 )
 
 type BilliardServer struct {
-	redisClient *predis.RedisClient
+	redisClient *goredis.PuzzleRedisClient
 	UserSrv     user.IUserService
 	AuthSrv     auth.IAuthService
 	GameSrv     game.IGameService
@@ -71,7 +72,7 @@ type BilliardServer struct {
 func NewBilliardServer(
 	conf *models.Config,
 	db *gorm.DB,
-	redis *predis.RedisClient,
+	redis *goredis.PuzzleRedisClient,
 	minioClient *minio.MinioOss,
 	emailSender email.EmailSender,
 ) *BilliardServer {
@@ -82,7 +83,7 @@ func NewBilliardServer(
 	noticeRepo := noticeDal.NewNoticeRepo(db)
 	recordRepo := recordDal.NewRecordRepo(db)
 
-	recordService := recordSrv.NewRecordService(recordRepo, roomRepo, redis,
+	recordService := recordSrv.NewRecordService(recordRepo, roomRepo,
 		recordSrv.WithGameStrategy(gameSrv.NewNineballService(redis)),
 		recordSrv.WithGameRecordTmp(shared.NineBall, &nineball.PlayerRecord{}),
 	)
@@ -475,6 +476,22 @@ func (s *BilliardServer) UpdateGameRoomStatus(ctx context.Context, userId int, r
 	return nil
 }
 
+func (s *BilliardServer) UpdateGameRoomExtra(ctx context.Context, userId int, gameRoom *dto.UpdateGameRoomExtraRequest) error {
+	gr := &room.Room{
+		RoomId:  gameRoom.RoomId,
+		OwnerId: userId,
+		Extra:   gameRoom.Extra,
+	}
+
+	err := s.RoomSrv.UpdateGameRoomStatus(ctx, gr)
+	if err != nil {
+		plog.Errorc(ctx, "update game room extra error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *BilliardServer) DeleteRoom(ctx context.Context, userId int, roomId int) error {
 	err := s.RoomSrv.DeleteGameRoom(ctx, roomId, userId)
 	if err != nil {
@@ -612,14 +629,14 @@ func (s *BilliardServer) handleSessionMessage(ctx context.Context, msg *session.
 	return nil
 }
 
-func (s *BilliardServer) StartGame(ctx context.Context, userId, roomId int) error {
-	currentGame, err := s.RoomSrv.StartGame(ctx, userId, roomId)
+func (s *BilliardServer) StartGame(ctx context.Context, userId, roomId int, extra datatypes.JSONMap) error {
+	currentGame, err := s.RoomSrv.StartGame(ctx, userId, roomId, extra)
 	if err != nil {
 		plog.Errorc(ctx, "start game error: %v", err)
 		return err
 	}
 
-	s.EventBus.Publish(room.NewGameStartEvent(roomId, userId, currentGame))
+	s.EventBus.Publish(room.NewGameStartEvent(roomId, userId, currentGame, extra))
 	return nil
 }
 
@@ -695,7 +712,7 @@ func (s *BilliardServer) SendPhoneCode(ctx context.Context, phone string) error 
 	expireAt := time.Now().Add(5 * time.Minute)
 
 	key := fmt.Sprintf("phone_code:%s", phone)
-	if err := s.redisClient.SetWithTTL(key, code, 5*time.Minute); err != nil {
+	if err := s.redisClient.Set(ctx, key, code, 5*time.Minute); err != nil {
 		plog.Errorc(ctx, "save phone code error: %v", err)
 		return exception.ErrSendPhoneCode
 	}
@@ -709,7 +726,7 @@ func (s *BilliardServer) SendEmailCode(ctx context.Context, email string) error 
 	expireAt := time.Now().Add(5 * time.Minute)
 
 	key := fmt.Sprintf("email_code:%s", email)
-	if err := s.redisClient.SetWithTTL(key, code, 5*time.Minute); err != nil {
+	if err := s.redisClient.Set(ctx, key, code, 5*time.Minute); err != nil {
 		plog.Errorc(ctx, "save email code error: %v", err)
 		return exception.ErrSendEmailCode
 	}
@@ -726,7 +743,7 @@ func (s *BilliardServer) verifyPhoneCode(ctx context.Context, phone, code string
 func (s *BilliardServer) verifyEmailCode(ctx context.Context, email, code string) error {
 	key := fmt.Sprintf("email_code:%s", email)
 	var cacheCode string
-	if err := s.redisClient.Get(key, &cacheCode); err != nil {
+	if err := s.redisClient.GetValue(ctx, key, &cacheCode); err != nil {
 		plog.Errorc(ctx, "get email code error: %v", err)
 		return exception.ErrVerifyCode
 	}

@@ -11,9 +11,9 @@ package models
 import (
 	"time"
 
+	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
-	"github.com/go-puzzles/puzzles/predis"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 )
@@ -54,7 +54,7 @@ type parser func(out any) error
 
 type Configs struct {
 	SrvConf   *Config
-	RedisConf *predis.RedisConf
+	RedisConf *goredis.RedisConf
 	MysqlConf *pgorm.MysqlConfig
 	MinioConf *minio.MinioConfig
 	EmailConf *email.EmailConf
@@ -64,7 +64,7 @@ func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParse
 	srvConfig := new(Config)
 	plog.PanicError(srvConfParser(srvConfig))
 
-	redisConf := new(predis.RedisConf)
+	redisConf := new(goredis.RedisConf)
 	plog.PanicError(redisConfParser(redisConf))
 
 	mysqlConf := new(pgorm.MysqlConfig)

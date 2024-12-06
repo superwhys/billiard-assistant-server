@@ -9,6 +9,7 @@
 package token
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -61,15 +62,15 @@ func (tm *Manager) getKeyWithKeyId(id string, t Token) string {
 	return fmt.Sprintf("%v:%v", key, id)
 }
 
-func (tm *Manager) Save(t Token) error {
-	return tm.storage.SetWithTTL(tm.getKey(t), t, tm.cacheTTL)
+func (tm *Manager) Save(ctx context.Context, t Token) error {
+	return tm.storage.SetValue(ctx, tm.getKey(t), t, tm.cacheTTL)
 }
 
-func (tm *Manager) Read(tokenId string, t Token) error {
+func (tm *Manager) Read(ctx context.Context, tokenId string, t Token) error {
 	key := tm.getKeyWithKeyId(tokenId, t)
-	return tm.storage.Get(key, t)
+	return tm.storage.GetValue(ctx, key, t)
 }
 
-func (tm *Manager) Remove(t Token) error {
-	return tm.storage.Delete(tm.getKey(t))
+func (tm *Manager) Remove(ctx context.Context, t Token) error {
+	return tm.storage.Del(ctx, tm.getKey(t)).Err()
 }

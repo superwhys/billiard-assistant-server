@@ -40,7 +40,7 @@ func (r *RoomRepoImpl) CreateRoom(ctx context.Context, gameId, userId int) (*roo
 
 	maxRetries := 10
 	for i := 0; i < maxRetries; i++ {
-		code := putils.RandString(7)
+		code := putils.RandNumeral(7)
 		if exists, _ := r.CheckRoomCodeExists(ctx, code); !exists {
 			ro.RoomCode = code
 			break
@@ -64,6 +64,7 @@ func (r *RoomRepoImpl) UpdateRoom(ctx context.Context, room *room.Room) error {
 
 	roomPo := &model.RoomPo{
 		ID:            room.RoomId,
+		Extra:         room.Extra,
 		RoomCode:      room.RoomCode,
 		GameStatus:    room.GameStatus,
 		WinLoseStatus: room.WinLoseStatus,

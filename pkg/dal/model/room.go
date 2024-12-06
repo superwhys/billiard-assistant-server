@@ -5,6 +5,7 @@ import (
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -40,6 +41,7 @@ type RoomPo struct {
 	Owner   *UserPo `gorm:"foreignKey:OwnerID"`
 
 	RoomUsers []*RoomUserPo `gorm:"foreignKey:RoomID"`
+	Extra     datatypes.JSONMap
 
 	GameStatus    room.Status
 	WinLoseStatus room.WinLoseStatus
@@ -91,6 +93,7 @@ func (r *RoomPo) ToEntity() *room.Room {
 		Game:          game,
 		Owner:         owner,
 		Players:       players,
+		Extra:         r.Extra,
 		GameStatus:    r.GameStatus,
 		WinLoseStatus: r.WinLoseStatus,
 		CreateAt:      r.CreatedAt,

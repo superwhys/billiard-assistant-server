@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gorm.io/datatypes"
 )
 
 type Room struct {
@@ -23,6 +24,7 @@ type Room struct {
 	Owner         shared.BaseUser
 	Game          shared.BaseGame
 	Record        shared.BaseRecord
+	Extra         map[string]any
 	GameStatus    Status
 	WinLoseStatus WinLoseStatus
 	CreateAt      time.Time
@@ -72,6 +74,10 @@ func (r *Room) IsInRoom(currentUserId int, virtualUser string) bool {
 
 func (r *Room) StartGame() {
 	r.GameStatus = Playing
+}
+
+func (r *Room) SetExtra(extra datatypes.JSONMap) {
+	r.Extra = extra
 }
 
 func (r *Room) EndGame() {

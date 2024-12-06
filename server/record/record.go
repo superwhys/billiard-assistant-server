@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-puzzles/puzzles/predis"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
@@ -56,7 +55,6 @@ func WithGameRecordTmp(gameType shared.BilliardGameType, ri record.RecordItem) R
 func NewRecordService(
 	recordRepo record.IRecordRepo,
 	roomRepo room.IRoomRepo,
-	redisClient *predis.RedisClient,
 	opts ...RecordServiceOption,
 ) *RecordService {
 	rs := &RecordService{

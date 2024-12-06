@@ -2,10 +2,10 @@ package main
 
 import (
 	"github.com/go-puzzles/puzzles/cores"
+	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/pflags"
 	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
-	"github.com/go-puzzles/puzzles/predis"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/api"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
 	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal"
@@ -20,7 +20,7 @@ import (
 var (
 	port          = pflags.Int("port", 29920, "Server run port")
 	srvConfigFlag = pflags.Struct("conf", (*models.Config)(nil), "server config")
-	redisConfFlag = pflags.Struct("redisAuth", (*predis.RedisConf)(nil), "redis auth config")
+	redisConfFlag = pflags.Struct("redisAuth", (*goredis.RedisConf)(nil), "redis auth config")
 	mysqlConfFlag = pflags.Struct("mysqlAuth", (*pgorm.MysqlConfig)(nil), "mysql auth config")
 	minioConfFlag = pflags.Struct("minioAuth", (*minio.MinioConfig)(nil), "minio auth config")
 	emailConfFlag = pflags.Struct("emailAuth", (*email.EmailConf)(nil), "email auth config")
@@ -35,7 +35,8 @@ func main() {
 		minioConfFlag,
 		emailConfFlag,
 	)
-	redisClient := predis.NewRedisClient(configs.RedisConf.DialRedisPool())
+
+	redisClient := configs.RedisConf.DialRedisClient()
 	minioClient := minio.NewMinioOss(configs.SrvConf.BaseApi, configs.MinioConf)
 	neteasyEmailSender := email.NewNetEasySender(configs.EmailConf, redisClient)
 	plog.PanicError(pgorm.RegisterSqlModelWithConf(configs.MysqlConf, dal.AllTables()...))

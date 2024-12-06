@@ -55,15 +55,17 @@ type GameStartEvent struct {
 	RoomId int
 	UserId int
 	Game   shared.BaseGame
+	Extra  any
 }
 
-func NewGameStartEvent(roomId, userId int, game shared.BaseGame) *events.EventMessage {
+func NewGameStartEvent(roomId, userId int, game shared.BaseGame, extra any) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.GameStart,
 		Payload: &GameStartEvent{
 			RoomId: roomId,
 			UserId: userId,
 			Game:   game,
+			Extra:  extra,
 		},
 	}
 }

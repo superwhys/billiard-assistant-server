@@ -81,7 +81,7 @@ func (m *BilliardMiddleware) SaveToken(t token.Token, c *gin.Context) {
 
 func (m *BilliardMiddleware) CancelToken(c *gin.Context, t token.Token) error {
 	c.Set(m.getTokenContextKey(t), nil)
-	return m.manager.Remove(t)
+	return m.manager.Remove(c, t)
 }
 
 func (m *BilliardMiddleware) UserLoginStatMiddleware() gin.HandlerFunc {
@@ -104,7 +104,7 @@ func (m *BilliardMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl t
 		if tokenStr != "" {
 			nt = reflect.New(t).Interface().(token.Token)
 
-			err := m.manager.Read(tokenStr, nt)
+			err := m.manager.Read(c, tokenStr, nt)
 			if errors.Is(err, redis.ErrNil) {
 				nt = nil
 			} else if err != nil {
@@ -126,7 +126,7 @@ func (m *BilliardMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl t
 			return
 		}
 
-		if err := m.manager.Save(afterProcessToken); err != nil {
+		if err := m.manager.Save(c, afterProcessToken); err != nil {
 			plog.Errorf("token manager save token: %v error: %v", afterProcessToken, err)
 			return
 		}
