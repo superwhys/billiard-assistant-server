@@ -36,11 +36,12 @@ type ActionItem struct {
 }
 
 type NineballAction struct {
-	UserId     int         `json:"user_id"`
-	RoomId     int         `json:"room_id"`
-	UserName   string      `json:"user_name"`
-	History    *ActionItem `json:"history"`
-	ActionTime time.Time   `json:"action_time"`
+	UserId       int         `json:"user_id"`
+	RoomId       int         `json:"room_id"`
+	UserName     string      `json:"user_name"`
+	History      *ActionItem `json:"history"`
+	IsRevocation bool        `json:"is_revocation"`
+	ActionTime   time.Time   `json:"action_time"`
 }
 
 func (nr *NineballAction) GetActionRoomId() (roomId int) {
