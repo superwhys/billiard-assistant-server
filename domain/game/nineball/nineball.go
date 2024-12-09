@@ -23,16 +23,16 @@ const (
 )
 
 type ScoreChange struct {
-	PlayerIndex int       `json:"player_index"`
-	PlayerName  string    `json:"player_name"`
-	ScoreDelta  int       `json:"score_delta"`
-	ScoreType   ScoreType `json:"score_type"`
-	StateDelta  int       `json:"state_delta"`
+	PlayerIndex int       `json:"playerIndex"`
+	PlayerName  string    `json:"playerName"`
+	ScoreDelta  int       `json:"scoreDelta"`
+	ScoreType   ScoreType `json:"scoreType"`
+	StateDelta  int       `json:"stateDelta"`
 }
 
 type ActionItem struct {
 	Changes               []*ScoreChange `json:"changes"`
-	PreviousCurrentPlayer int            `json:"previous_current_player"`
+	PreviousCurrentPlayer int            `json:"previousCurrentPlayer"`
 }
 
 type NineballAction struct {
