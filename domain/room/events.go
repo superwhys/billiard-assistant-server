@@ -14,10 +14,10 @@ import (
 )
 
 type EnterRoomEvent struct {
-	UserId    int
-	UserName  string
-	IsVirtual bool
-	RoomId    int
+	UserId    int    `json:"user_id,omitempty"`
+	UserName  string `json:"user_name,omitempty"`
+	IsVirtual bool   `json:"is_virtual,omitempty"`
+	RoomId    int    `json:"room_id,omitempty"`
 }
 
 func NewEnterRoomEvent(roomId, userId int, userName string, isVirtual bool) *events.EventMessage {
@@ -33,10 +33,10 @@ func NewEnterRoomEvent(roomId, userId int, userName string, isVirtual bool) *eve
 }
 
 type LeaveRoomEvent struct {
-	UserId    int
-	UserName  string
-	IsVirtual bool
-	RoomId    int
+	UserId    int    `json:"user_id,omitempty"`
+	UserName  string `json:"user_name,omitempty"`
+	IsVirtual bool   `json:"is_virtual,omitempty"`
+	RoomId    int    `json:"room_id,omitempty"`
 }
 
 func NewLeaveRoomEvent(roomId, userId int, userName string, isVirtual bool) *events.EventMessage {
@@ -52,10 +52,10 @@ func NewLeaveRoomEvent(roomId, userId int, userName string, isVirtual bool) *eve
 }
 
 type GameStartEvent struct {
-	RoomId int
-	UserId int
-	Game   shared.BaseGame
-	Extra  any
+	RoomId int             `json:"room_id,omitempty"`
+	UserId int             `json:"user_id,omitempty"`
+	Game   shared.BaseGame `json:"game,omitempty"`
+	Extra  any             `json:"extra,omitempty"`
 }
 
 func NewGameStartEvent(roomId, userId int, game shared.BaseGame, extra any) *events.EventMessage {
@@ -71,8 +71,8 @@ func NewGameStartEvent(roomId, userId int, game shared.BaseGame, extra any) *eve
 }
 
 type GameEndEvent struct {
-	RoomId int
-	UserId int
+	RoomId int `json:"room_id,omitempty"`
+	UserId int `json:"user_id,omitempty"`
 }
 
 func NewGameEndEvent(roomId, userId int) *events.EventMessage {
