@@ -33,7 +33,8 @@ func (s *BilliardServer) setupEventsSubscription() {
 }
 
 func (s *BilliardServer) HandleHeartbeatEvent(events *events.EventMessage) error {
-	roomId := int(events.Payload.(float64))
+	msg := events.Payload.(*session.Message)
+	roomId := int(msg.Data.(float64))
 	userId := events.MessageOwner
 
 	err := s.RoomSrv.UpdateRoomUserHeartbeart(context.TODO(), roomId, userId)
@@ -46,11 +47,7 @@ func (s *BilliardServer) HandleHeartbeatEvent(events *events.EventMessage) error
 		return errors.Wrap(err, "getRoomById")
 	}
 
-	sess, err := s.SessionSrv.GetSessionByUserRoom(roomId, userId)
-	if err != nil {
-		return errors.Wrap(err, "getSessionByUserRoom")
-	}
-
+	sess := msg.Sess
 	return sess.SendMessage(&session.Message{
 		EventType: events.EventType,
 		Data:      dto.GameRoomEntityToDto(room),

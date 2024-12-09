@@ -91,6 +91,7 @@ func (s *Session) Close() error {
 
 type Message struct {
 	ownerId   int
+	Sess      *Session         `json:"-"`
 	EventType events.EventType `json:"type"`
 	Data      any              `json:"data"`
 }

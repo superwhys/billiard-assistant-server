@@ -624,7 +624,7 @@ func (s *BilliardServer) handleSessionMessage(ctx context.Context, msg *session.
 	s.EventBus.Publish(&events.EventMessage{
 		EventType:    msg.EventType,
 		MessageOwner: msg.GetMessageOwner(),
-		Payload:      msg.Data,
+		Payload:      msg,
 	})
 	return nil
 }

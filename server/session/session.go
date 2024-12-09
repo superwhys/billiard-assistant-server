@@ -68,19 +68,11 @@ func (s *sessionService) CreateSession(ctx context.Context, playerID int, roomID
 	sess := session.NewSession(ctx, roomID, playerID, ws)
 
 	s.sessMap.Store(sess.ID, sess)
-
-	s.roomSession.Range(func(key, value any) bool {
-		if key != roomID {
-			return true
-		}
-
-		roomSessions := value.([]string)
-		if !slices.Contains(roomSessions, sess.ID) {
-			roomSessions = append(roomSessions, sess.ID)
-			s.roomSession.Store(key, roomSessions)
-		}
-		return true
-	})
+	roomSessions, exists := s.roomSession.LoadOrStore(roomID, []string{sess.ID})
+	if exists {
+		roomSessions := append(roomSessions.([]string), sess.ID)
+		s.roomSession.Store(roomID, roomSessions)
+	}
 
 	return sess, nil
 }
@@ -115,6 +107,7 @@ func (s *sessionService) StartSession(sess *session.Session, sessionHandler sess
 				return
 			}
 
+			msg.Sess = sess
 			err := sessionHandler(sess.Ctx, msg)
 			if err != nil {
 				plog.Errorc(sess.Ctx, "handle message failed: %v", sess, err)
