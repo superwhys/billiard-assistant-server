@@ -607,12 +607,16 @@ func (s *BilliardServer) CreateRoomSession(ctx context.Context, userId, roomId i
 		plog.Errorc(ctx, "register room session error: %v", err)
 		return err
 	}
+	s.EventBus.Publish(room.NewPlayerOnlineOfflineEvent(events.PlayerOnline, roomId, userId))
+
 	defer func() {
 		s.SessionSrv.RemoveSession(sess.ID)
 		sess.Close()
+		s.EventBus.Publish(room.NewPlayerOnlineOfflineEvent(events.PlayerOffline, roomId, userId))
 	}()
 
 	go s.SessionSrv.StartSession(sess, s.handleSessionMessage)
+
 	return sess.Wait()
 }
 

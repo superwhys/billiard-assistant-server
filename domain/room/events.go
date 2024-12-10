@@ -84,3 +84,18 @@ func NewGameEndEvent(roomId, userId int) *events.EventMessage {
 		},
 	}
 }
+
+type PlayerOnlineOfflineEvent struct {
+	RoomId int `json:"room_id,omitempty"`
+	UserId int `json:"user_id,omitempty"`
+}
+
+func NewPlayerOnlineOfflineEvent(event events.EventType, roomId, userId int) *events.EventMessage {
+	return &events.EventMessage{
+		EventType: event,
+		Payload: &PlayerOnlineOfflineEvent{
+			RoomId: roomId,
+			UserId: userId,
+		},
+	}
+}

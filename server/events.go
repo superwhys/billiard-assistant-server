@@ -30,6 +30,26 @@ func (s *BilliardServer) setupEventsSubscription() {
 	s.EventBus.Subscribe(events.SendPhoneCode, s.HandleSendPhoneSMS)
 	s.EventBus.Subscribe(events.SendEmailCode, s.HandleSendEmailCode)
 	s.EventBus.Subscribe(events.RecordAction, s.HandleRecordAction)
+	s.EventBus.Subscribe(events.PlayerOnline, s.HandlePlayerOnlineOfflineEvent)
+	s.EventBus.Subscribe(events.PlayerOffline, s.HandlePlayerOnlineOfflineEvent)
+}
+
+func (s *BilliardServer) HandlePlayerOnlineOfflineEvent(events *events.EventMessage) error {
+	msg := events.Payload.(*room.PlayerOnlineOfflineEvent)
+
+	r, err := s.RoomSrv.GetRoomById(context.TODO(), msg.RoomId)
+	if err != nil {
+		return errors.Wrap(err, "getRoomById")
+	}
+
+	if r.GameStatus != room.Playing {
+		return nil
+	}
+
+	return s.SessionSrv.BroadcastMessage(msg.RoomId, msg.UserId, &session.Message{
+		EventType: events.EventType,
+		Data:      msg.UserId,
+	})
 }
 
 func (s *BilliardServer) HandleHeartbeatEvent(events *events.EventMessage) error {

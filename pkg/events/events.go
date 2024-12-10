@@ -27,6 +27,8 @@ const (
 	SendPhoneCode
 	SendEmailCode
 	RecordAction
+	PlayerOnline
+	PlayerOffline
 )
 
 func (et EventType) String() string {
@@ -49,6 +51,10 @@ func (et EventType) String() string {
 		return "SendEmailCode"
 	case RecordAction:
 		return "RecordAction"
+	case PlayerOnline:
+		return "PlayerOnline"
+	case PlayerOffline:
+		return "PlayerOffline"
 	default:
 		return "Unknown"
 	}
