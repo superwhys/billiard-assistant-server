@@ -12,7 +12,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 type IRecordService interface {

@@ -8,7 +8,7 @@
 
 package record
 
-import "gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
+import "gitea.hoven.com/billiard/billiard-assistant-server/pkg/events"
 
 type ActionEvent struct {
 	RoomId int

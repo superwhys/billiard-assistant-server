@@ -11,9 +11,9 @@ package dto
 import (
 	"errors"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/notice"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
 )
 
 type User struct {

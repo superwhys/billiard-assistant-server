@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/go-puzzles/puzzles/plog"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/record"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )

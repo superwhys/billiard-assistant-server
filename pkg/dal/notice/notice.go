@@ -3,9 +3,9 @@ package noticeDal
 import (
 	"context"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/notice"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
 	"gorm.io/gorm"
 )
 

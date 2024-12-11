@@ -8,7 +8,7 @@
 
 package dto
 
-import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+import "gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 
 type Game struct {
 	GameId     int    `json:"game_id"`

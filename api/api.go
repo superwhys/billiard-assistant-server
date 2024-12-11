@@ -13,12 +13,12 @@ import (
 
 	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/pgin"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/api/handler"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/token"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
+	"gitea.hoven.com/billiard/billiard-assistant-server/api/handler"
+	"gitea.hoven.com/billiard/billiard-assistant-server/api/middlewares"
+	"gitea.hoven.com/billiard/billiard-assistant-server/models"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/token"
+	"gitea.hoven.com/billiard/billiard-assistant-server/server"
 )
 
 type BilliardApi struct {

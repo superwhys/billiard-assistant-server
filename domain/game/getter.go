@@ -9,7 +9,7 @@
 package game
 
 import (
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 var _ shared.BaseGame = (*Game)(nil)

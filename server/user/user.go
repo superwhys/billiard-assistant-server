@@ -15,10 +15,10 @@ import (
 	"mime/multipart"
 
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/auth"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss"
 )
 
 var _ user.IUserService = (*UserService)(nil)

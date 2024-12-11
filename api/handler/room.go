@@ -8,11 +8,11 @@ import (
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/api/middlewares"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
+	"gitea.hoven.com/billiard/billiard-assistant-server/api/middlewares"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gitea.hoven.com/billiard/billiard-assistant-server/server"
+	"gitea.hoven.com/billiard/billiard-assistant-server/server/dto"
 	"gorm.io/datatypes"
 )
 

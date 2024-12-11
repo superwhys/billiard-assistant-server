@@ -14,8 +14,8 @@ import (
 	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/email"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 )
 
 type RoomConfig struct {

@@ -11,8 +11,8 @@ package dto
 import (
 	"time"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gorm.io/datatypes"
 )
 

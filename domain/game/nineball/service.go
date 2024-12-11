@@ -8,7 +8,7 @@
 
 package nineball
 
-import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
+import "gitea.hoven.com/billiard/billiard-assistant-server/domain/game"
 
 type INineballService interface {
 	game.IGameStrategy

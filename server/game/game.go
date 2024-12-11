@@ -13,8 +13,8 @@ import (
 	"mime/multipart"
 
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss"
 )
 
 var _ game.IGameService = (*GameService)(nil)

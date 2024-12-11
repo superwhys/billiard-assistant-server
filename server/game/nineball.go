@@ -16,10 +16,10 @@ import (
 	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game/nineball"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/locker"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game/nineball"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/locker"
 )
 
 var _ nineball.INineballService = (*NineballService)(nil)

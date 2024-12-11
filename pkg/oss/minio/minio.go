@@ -27,7 +27,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/oss"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss"
 )
 
 var _ oss.IOSS = (*MinioOss)(nil)

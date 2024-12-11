@@ -9,7 +9,7 @@
 package main
 
 import (
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
 	"gorm.io/gen"
 )
 

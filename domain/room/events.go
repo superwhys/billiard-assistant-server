@@ -9,8 +9,8 @@
 package room
 
 import (
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/events"
 )
 
 type EnterRoomEvent struct {

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/events"
 )
 
 const (

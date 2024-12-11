@@ -12,13 +12,13 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/email"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/events"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/server/dto"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/record"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/session"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/email"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/events"
+	"gitea.hoven.com/billiard/billiard-assistant-server/server/dto"
 )
 
 func (s *BilliardServer) setupEventsSubscription() {

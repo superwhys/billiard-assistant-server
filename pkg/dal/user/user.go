@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gorm.io/gorm"
 )
 

@@ -8,7 +8,7 @@
 
 package genting
 
-import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
+import "gitea.hoven.com/billiard/billiard-assistant-server/domain/game"
 
 type IGentingService interface {
 	game.IGameStrategy

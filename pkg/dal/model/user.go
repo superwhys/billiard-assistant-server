@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gorm.io/gorm"
 )
 

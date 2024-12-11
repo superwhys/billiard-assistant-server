@@ -17,7 +17,7 @@ import (
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/session"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/session"
 )
 
 var _ session.ISessionService = (*sessionService)(nil)

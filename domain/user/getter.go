@@ -8,7 +8,7 @@
 
 package user
 
-import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+import "gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 
 var _ shared.BaseUser = (*User)(nil)
 

@@ -7,7 +7,7 @@ package base
 import (
 	"context"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"

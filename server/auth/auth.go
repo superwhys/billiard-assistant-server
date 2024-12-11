@@ -11,7 +11,7 @@ package authSrv
 import (
 	"context"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/auth"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/auth"
 )
 
 var _ auth.IAuthService = (*AuthService)(nil)

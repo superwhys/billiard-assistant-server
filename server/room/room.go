@@ -5,12 +5,12 @@ import (
 
 	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/models"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/exception"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/locker"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/models"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/locker"
 	"gorm.io/datatypes"
 )
 

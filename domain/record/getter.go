@@ -10,7 +10,7 @@ package record
 
 import (
 	"github.com/go-puzzles/puzzles/putils"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 var _ shared.BaseRecord = (*Record)(nil)

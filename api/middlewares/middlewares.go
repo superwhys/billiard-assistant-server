@@ -11,9 +11,9 @@ import (
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/pkg/token"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/server"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/token"
+	"gitea.hoven.com/billiard/billiard-assistant-server/server"
 )
 
 const (

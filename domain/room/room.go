@@ -11,7 +11,7 @@ package room
 import (
 	"time"
 
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gorm.io/datatypes"
 )
 

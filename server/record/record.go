@@ -16,10 +16,10 @@ import (
 
 	"github.com/go-puzzles/puzzles/putils"
 	"github.com/pkg/errors"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/game"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/record"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/room"
-	"gitlab.hoven.com/billiard/billiard-assistant-server/domain/shared"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/record"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 )
 
 var _ record.IRecordService = (*RecordService)(nil)

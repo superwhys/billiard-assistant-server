@@ -8,7 +8,7 @@
 
 package dto
 
-import "gitlab.hoven.com/billiard/billiard-assistant-server/domain/notice"
+import "gitea.hoven.com/billiard/billiard-assistant-server/domain/notice"
 
 type Notice struct {
 	NoticeType notice.NoticeType `json:"notice_type"`
