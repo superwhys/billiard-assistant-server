@@ -18,12 +18,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-puzzles/puzzles/goredis"
-	"github.com/go-puzzles/puzzles/plog"
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/auth"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game/nineball"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game/snooker"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/notice"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/record"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
@@ -38,6 +36,9 @@ import (
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/password"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/wechat"
 	"gitea.hoven.com/billiard/billiard-assistant-server/server/dto"
+	"github.com/go-puzzles/puzzles/goredis"
+	"github.com/go-puzzles/puzzles/plog"
+	"github.com/pkg/errors"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
@@ -85,7 +86,9 @@ func NewBilliardServer(
 
 	recordService := recordSrv.NewRecordService(recordRepo, roomRepo,
 		recordSrv.WithGameStrategy(gameSrv.NewNineballService(redis)),
+		recordSrv.WithGameStrategy(gameSrv.NewSnookerService(redis)),
 		recordSrv.WithGameRecordTmp(shared.NineBall, &nineball.PlayerRecord{}),
+		recordSrv.WithGameRecordTmp(shared.Snooker, &snooker.SnookerPlayerRecord{}),
 	)
 
 	s := &BilliardServer{

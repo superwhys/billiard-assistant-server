@@ -13,13 +13,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/go-puzzles/puzzles/goredis"
-	"github.com/go-puzzles/puzzles/putils"
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/game/nineball"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/locker"
+	"github.com/go-puzzles/puzzles/goredis"
+	"github.com/go-puzzles/puzzles/putils"
+	"github.com/pkg/errors"
 )
 
 var _ nineball.INineballService = (*NineballService)(nil)
@@ -48,7 +48,7 @@ func (ns *NineballService) UnmarshalAction(rawAction json.RawMessage) (game.Acti
 	na := new(nineball.NineballAction)
 	err := json.Unmarshal(rawAction, na)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unmarshal raw record to NineballAction")
+		return nil, errors.Wrapf(err, "unmarshal raw action to NineballAction")
 	}
 
 	return na, nil
