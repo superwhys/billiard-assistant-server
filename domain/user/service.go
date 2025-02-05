@@ -7,6 +7,7 @@ import (
 )
 
 type IUserService interface {
+	UpsertUser(ctx context.Context, userId int) error
 	GetUserProfile(ctx context.Context, token string) (*User, error)
 	UpdateUserName(ctx context.Context, token string, name string) error
 	UpdateUserGender(ctx context.Context, token string, gender int) error

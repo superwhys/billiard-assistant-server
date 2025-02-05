@@ -29,11 +29,15 @@ import (
 var _ user.IUserService = (*UserService)(nil)
 
 type UserService struct {
+	repo       user.IUserRepo
 	userClient userpb.AuthCoreUserHandlerClient
 }
 
-func NewUserService(userClient userpb.AuthCoreUserHandlerClient) *UserService {
-	return &UserService{userClient: userClient}
+func NewUserService(userRepo user.IUserRepo, userClient userpb.AuthCoreUserHandlerClient) *UserService {
+	return &UserService{
+		repo:       userRepo,
+		userClient: userClient,
+	}
 }
 
 func (us *UserService) parseUser(u *dto.User) *user.User {
@@ -54,6 +58,20 @@ func (us *UserService) parseUser(u *dto.User) *user.User {
 func (us *UserService) injectToken(ctx context.Context, token string) context.Context {
 	md := metadata.Pairs(interceptor.TokenMetadataKey, token)
 	return metadata.NewOutgoingContext(ctx, md)
+}
+
+func (us *UserService) UpsertUser(ctx context.Context, userId int) error {
+	u, err := us.repo.GetUser(ctx, userId)
+	if err != nil && !errors.Is(err, exception.ErrUserNotFound) {
+		return err
+	}
+
+	if u != nil {
+		return nil
+	}
+
+	_, err = us.repo.CreateUser(ctx, &user.User{UserId: userId})
+	return err
 }
 
 func (us *UserService) GetUserProfile(ctx context.Context, token string) (*user.User, error) {

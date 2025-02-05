@@ -18,6 +18,7 @@ import (
 	"gitea.hoven.com/billiard/billiard-assistant-server/server/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
+	"github.com/go-puzzles/puzzles/plog"
 	"github.com/pkg/errors"
 )
 
@@ -100,12 +101,18 @@ func (a *AuthHandler) wechatLoginHandler(ctx *gin.Context, req *dto.WechatLoginR
 }
 
 func (a *AuthHandler) logoutHandler(ctx *gin.Context) error {
-	token := a.middleware.GetLoginToken(ctx).GetKey()
+	token := a.middleware.GetLoginToken(ctx)
 
-	err := a.authApp.Logout(ctx, token)
+	err := a.authApp.Logout(ctx, token.GetKey())
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
+		return exception.ErrLogoutFailed
+	}
+
+	err = a.middleware.CancelToken(ctx, token)
+	if err != nil {
+		plog.Errorc(ctx, "cancel token failed")
 		return exception.ErrLogoutFailed
 	}
 

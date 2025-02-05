@@ -33,6 +33,12 @@ func (s *BilliardServer) WechatLogin(ctx context.Context, device, code string) (
 		return nil, err
 	}
 
+	err = s.UserSrv.UpsertUser(ctx, resp.UserId)
+	if err != nil {
+		plog.Errorc(ctx, "upsert user error: %v", err)
+		return nil, err
+	}
+
 	return resp, nil
 }
 
@@ -69,6 +75,12 @@ func (s *BilliardServer) AccountLogin(ctx context.Context, device, username, pas
 	resp, err := s.AuthSrv.AccountLogin(ctx, device, username, password)
 	if err != nil {
 		plog.Errorc(ctx, "account login error: %v", err)
+		return nil, err
+	}
+
+	err = s.UserSrv.UpsertUser(ctx, resp.UserId)
+	if err != nil {
+		plog.Errorc(ctx, "upsert user error: %v", err)
 		return nil, err
 	}
 

@@ -32,6 +32,7 @@ import (
 	noticeDal "gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/notice"
 	recordDal "gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/record"
 	roomDal "gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/room"
+	userDal "gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/user"
 	authSrv "gitea.hoven.com/billiard/billiard-assistant-server/server/auth"
 	gameSrv "gitea.hoven.com/billiard/billiard-assistant-server/server/game"
 	noticeSrv "gitea.hoven.com/billiard/billiard-assistant-server/server/notice"
@@ -62,6 +63,7 @@ func NewBilliardServer(
 	userClient userpb.AuthCoreUserHandlerClient,
 	verifycodeClient verifycodepb.AuthCoreVerifyCodeHandlerClient,
 ) *BilliardServer {
+	userRepo := userDal.NewUserRepo(db)
 	gameRepo := gameDal.NewGameRepo(db)
 	roomRepo := roomDal.NewRoomRepo(db)
 	noticeRepo := noticeDal.NewNoticeRepo(db)
@@ -77,7 +79,7 @@ func NewBilliardServer(
 	s := &BilliardServer{
 		redisClient: redis,
 		EventBus:    events.NewEventBus(),
-		UserSrv:     userSrv.NewUserService(userClient),
+		UserSrv:     userSrv.NewUserService(userRepo, userClient),
 		AuthSrv:     authSrv.NewAuthService(authenticationClient, verifycodeClient),
 		GameSrv:     gameSrv.NewGameService(gameRepo, minioClient),
 		RoomSrv:     roomSrv.NewRoomService(roomRepo, redis, conf.RoomConfig),

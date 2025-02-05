@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
-	"github.com/gomodule/redigo/redis"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -90,7 +90,7 @@ func (m *BilliardMiddleware) headerTokenMiddleware(headerKey string, tokenTmpl t
 			nt = reflect.New(t).Interface().(token.Token)
 
 			err := m.manager.Read(c, tokenStr, nt)
-			if errors.Is(err, redis.ErrNil) {
+			if errors.Is(err, redis.Nil) {
 				nt = nil
 			} else if err != nil {
 				plog.Errorf("token manager read token: %v error: %v", tokenStr, err)
@@ -124,7 +124,7 @@ func (m *BilliardMiddleware) UserLoginRequired() gin.HandlerFunc {
 		if t == nil {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
-				pgin.ErrorRet(http.StatusUnauthorized, "token required"),
+				pgin.ErrorRet(http.StatusUnauthorized, "登录过期或未登录"),
 			)
 			return
 		}

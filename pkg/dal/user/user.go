@@ -6,6 +6,7 @@ import (
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -18,6 +19,18 @@ type UserRepoImpl struct {
 
 func NewUserRepo(db *gorm.DB) *UserRepoImpl {
 	return &UserRepoImpl{base.Use(db)}
+}
+
+func (u *UserRepoImpl) GetUser(ctx context.Context, userId int) (*user.User, error) {
+	userDb := u.db.UserPo
+	user, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).First()
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, exception.ErrUserNotFound
+	} else if err != nil {
+		return nil, errors.Wrap(err, "GetUser")
+	}
+
+	return user.ToEntity(), nil
 }
 
 // Basic user operations
