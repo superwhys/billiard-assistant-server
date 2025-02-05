@@ -42,12 +42,42 @@ func (as *AuthService) injectToken(ctx context.Context, token string) context.Co
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
+func (as *AuthService) AccountLogin(ctx context.Context, device, username, password string) (*auth.Token, error) {
+	resp, err := as.authClient.AccountLogin(ctx, &dto.AccountLoginRequest{
+		DeviceId: device,
+		Username: username,
+		Password: password,
+	})
+	if err != nil {
+		return nil, exception.ParseGrpcError(err)
+	}
+
+	return &auth.Token{
+		UserId:       int(resp.GetUserId()),
+		AccessToken:  resp.GetToken().AccessToken,
+		RefreshToken: resp.GetToken().RefreshToken,
+	}, nil
+}
+
+func (as *AuthService) AccountRegister(ctx context.Context, username, password string) error {
+	_, err := as.authClient.AccountRegister(ctx, &dto.AccountRegisterRequest{
+		IdentifierPair: &dto.IdentifierPair{
+			Identifier: username,
+			Credential: password,
+		},
+	})
+	if err != nil {
+		return exception.ParseGrpcError(err)
+	}
+
+	return nil
+}
+
 func (as *AuthService) WechatLogin(ctx context.Context, device string, code string) (*auth.Token, error) {
 	resp, err := as.authClient.WechatLogin(ctx, &dto.WechatLoginRequest{
 		DeviceId: device,
 		Code:     code,
 	})
-
 	if err != nil {
 		return nil, exception.ParseGrpcError(err)
 	}

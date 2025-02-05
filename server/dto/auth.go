@@ -13,9 +13,6 @@ import "errors"
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
-	WechatId string `json:"wechat_id"`
-	Phone    string `json:"phone"`
-	Email    string `json:"email"`
 }
 
 func (req *RegisterRequest) Validate() error {
@@ -30,17 +27,13 @@ func (req *RegisterRequest) Validate() error {
 	return nil
 }
 
-type RegisterResponse struct {
-	UserId   int    `json:"userId"`
-	Username string `json:"username"`
-}
-
 type WechatLoginRequest struct {
 	DeviceId string `headers:"deviceId" binding:"required"`
 	Code     string `json:"code"`
 }
 
 type LoginRequest struct {
+	DeviceId string `headers:"deviceId" binding:"required"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }

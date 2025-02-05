@@ -64,3 +64,23 @@ func (s *BilliardServer) SendEmailCode(ctx context.Context, email string) error 
 
 	return nil
 }
+
+func (s *BilliardServer) AccountLogin(ctx context.Context, device, username, password string) (*auth.Token, error) {
+	resp, err := s.AuthSrv.AccountLogin(ctx, device, username, password)
+	if err != nil {
+		plog.Errorc(ctx, "account login error: %v", err)
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *BilliardServer) AccountRegister(ctx context.Context, username, password string) error {
+	err := s.AuthSrv.AccountRegister(ctx, username, password)
+	if err != nil {
+		plog.Errorc(ctx, "account register error: %v", err)
+		return err
+	}
+
+	return nil
+}

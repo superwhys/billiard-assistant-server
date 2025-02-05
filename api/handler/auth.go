@@ -22,6 +22,8 @@ import (
 )
 
 type AuthHandlerApp interface {
+	AccountRegister(ctx context.Context, username, password string) error
+	AccountLogin(ctx context.Context, device, username, password string) (*auth.Token, error)
 	WechatLogin(ctx context.Context, device, code string) (*auth.Token, error)
 	Logout(ctx context.Context, token string) error
 	BindEmail(ctx context.Context, token string, email, code string) error
@@ -43,11 +45,41 @@ func NewAuthHandler(server *server.BilliardServer, middleware *middlewares.Billi
 func (a *AuthHandler) Init(router gin.IRouter) {
 	auth := router.Group("auth")
 	auth.POST("login/wx", pgin.RequestResponseHandler(a.wechatLoginHandler))
+	auth.POST("login/account", pgin.RequestResponseHandler(a.loginAccountHandler))
+	auth.POST("register/account", pgin.RequestWithErrorHandler(a.registerAccountHandler))
 
 	authNeedLogin := router.Group("auth", a.middleware.UserLoginRequired())
 	authNeedLogin.GET("logout", pgin.ErrorReturnHandler(a.logoutHandler))
 	authNeedLogin.POST("bind/email", pgin.RequestWithErrorHandler(a.bindEmailHandler))
 	authNeedLogin.POST("send/email_code", pgin.RequestWithErrorHandler(a.sendEmailCodeHandler))
+}
+
+func (a *AuthHandler) loginAccountHandler(ctx *gin.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
+	resp, err := a.authApp.AccountLogin(ctx, req.DeviceId, req.Username, req.Password)
+	if exception.CheckException(err) {
+		return nil, errors.Cause(err)
+	} else if err != nil {
+		return nil, exception.ErrLoginFailed
+	}
+
+	token := middlewares.NewUserLoginToken(resp.UserId, resp.AccessToken, resp.RefreshToken)
+	a.middleware.SaveToken(token, ctx)
+
+	return &dto.LoginResponse{
+		UserId: resp.UserId,
+		Token:  token.GetKey(),
+	}, nil
+}
+
+func (a *AuthHandler) registerAccountHandler(ctx *gin.Context, req *dto.RegisterRequest) error {
+	err := a.authApp.AccountRegister(ctx, req.Username, req.Password)
+	if exception.CheckException(err) {
+		return errors.Cause(err)
+	} else if err != nil {
+		return exception.ErrRegisterUser
+	}
+
+	return nil
 }
 
 func (a *AuthHandler) wechatLoginHandler(ctx *gin.Context, req *dto.WechatLoginRequest) (*dto.LoginResponse, error) {
