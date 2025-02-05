@@ -11,14 +11,14 @@ package api
 import (
 	"net/http"
 
-	"github.com/go-puzzles/puzzles/goredis"
-	"github.com/go-puzzles/puzzles/pgin"
 	"gitea.hoven.com/billiard/billiard-assistant-server/api/handler"
 	"gitea.hoven.com/billiard/billiard-assistant-server/api/middlewares"
 	"gitea.hoven.com/billiard/billiard-assistant-server/models"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/token"
 	"gitea.hoven.com/billiard/billiard-assistant-server/server"
+	"github.com/go-puzzles/puzzles/goredis"
+	"github.com/go-puzzles/puzzles/pgin"
 )
 
 type BilliardApi struct {

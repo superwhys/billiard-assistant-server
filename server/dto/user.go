@@ -9,8 +9,6 @@
 package dto
 
 import (
-	"errors"
-
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/notice"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
@@ -65,50 +63,6 @@ func UserDtoToEntity(u *User) *user.User {
 	return userEntity
 }
 
-type WechatLoginRequest struct {
-	Code string `json:"code"`
-}
-
-type WechatLoginResponse struct {
-	Token string `json:"token"`
-	User  *User  `json:"user"`
-}
-
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type LoginResponse struct {
-	Token string `json:"token"`
-	User  *User  `json:"user"`
-}
-
-type RegisterRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	WechatId string `json:"wechat_id"`
-	Phone    string `json:"phone"`
-	Email    string `json:"email"`
-}
-
-func (req *RegisterRequest) Validate() error {
-	if req.Username == "" {
-		return errors.New("missing account")
-	}
-
-	if req.Password == "" {
-		return errors.New("missing password")
-	}
-
-	return nil
-}
-
-type RegisterResponse struct {
-	UserId   int    `json:"userId"`
-	Username string `json:"username"`
-}
-
 type GetUserInfoRequest struct {
 	UserId int `json:"userId" uri:"userId"`
 }
@@ -129,7 +83,7 @@ type UploadAvatarResponse struct {
 }
 
 type GetUserAvatarRequest struct {
-	AvatarName string `uri:"avatar_name"`
+	AvatarId string `uri:"avatar_id"`
 }
 
 type BindPhoneRequest struct {

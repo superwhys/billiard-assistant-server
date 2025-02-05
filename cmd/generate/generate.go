@@ -25,7 +25,6 @@ func main() {
 	// 直接使用模型
 	g.ApplyBasic(
 		&model.UserPo{},
-		&model.UserAuthPo{},
 		&model.RoomPo{},
 		&model.GamePo{},
 		&model.NoticePo{},

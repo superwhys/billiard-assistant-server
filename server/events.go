@@ -11,14 +11,12 @@ package server
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/record"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/session"
-	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/email"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/events"
 	"gitea.hoven.com/billiard/billiard-assistant-server/server/dto"
+	"github.com/pkg/errors"
 )
 
 func (s *BilliardServer) setupEventsSubscription() {
@@ -27,8 +25,6 @@ func (s *BilliardServer) setupEventsSubscription() {
 	s.EventBus.Subscribe(events.PlayerLeft, s.HandlePlayerLeaveEvent)
 	s.EventBus.Subscribe(events.GameStart, s.HandleGameStartEvent)
 	s.EventBus.Subscribe(events.GameEnd, s.HandleGameEndEvent)
-	s.EventBus.Subscribe(events.SendPhoneCode, s.HandleSendPhoneSMS)
-	s.EventBus.Subscribe(events.SendEmailCode, s.HandleSendEmailCode)
 	s.EventBus.Subscribe(events.RecordAction, s.HandleRecordAction)
 	s.EventBus.Subscribe(events.PlayerOnline, s.HandlePlayerOnlineOfflineEvent)
 	s.EventBus.Subscribe(events.PlayerOffline, s.HandlePlayerOnlineOfflineEvent)
@@ -131,25 +127,5 @@ func (s *BilliardServer) HandleGameEndEvent(event *events.EventMessage) error {
 	return s.SessionSrv.BroadcastMessage(e.RoomId, e.UserId, &session.Message{
 		EventType: event.EventType,
 		Data:      e,
-	})
-}
-
-func (s *BilliardServer) HandleSendPhoneSMS(event *events.EventMessage) error {
-	// TODO: 实现具体的短信发送逻辑
-	// plog.Infoc(ctx, "sending SMS code %s to phone %s", code, phone)
-	return nil
-}
-
-func (s *BilliardServer) HandleSendEmailCode(event *events.EventMessage) error {
-	e := event.Payload.(*user.SendCodeEvent)
-
-	msg, err := user.GenerateSendCodeEventMessage(e.Code)
-	if err != nil {
-		return err
-	}
-
-	return s.emailSender.AsyncSendMsg(context.Background(), &email.AsyncEmailTask{
-		TargetEmail: e.Target,
-		Msg:         string(msg),
 	})
 }

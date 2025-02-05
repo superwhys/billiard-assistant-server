@@ -7,16 +7,9 @@ import (
 )
 
 type IUserService interface {
-	UserExists(ctx context.Context, userId int) (bool, error)
-	CreateUser(ctx context.Context, u *User) (*User, error)
-	DeleteUser(ctx context.Context, userId int) error
-	GetUserById(ctx context.Context, userId int) (*User, error)
-	GetUserByName(ctx context.Context, userName string) (*User, error)
-	UpdateUser(ctx context.Context, user *User) (*User, error)
-	UpdateUserStatus(ctx context.Context, userId int, status Status) error
-	UpdateUserRole(ctx context.Context, userId int, role Role) error
-
-	// Avatar management
-	UploadAvatar(ctx context.Context, userId int, fh *multipart.FileHeader) (string, error)
-	GetUserAvatar(ctx context.Context, avatarName string, dst io.Writer) error
+	GetUserProfile(ctx context.Context, token string) (*User, error)
+	UpdateUserName(ctx context.Context, token string, name string) error
+	UpdateUserGender(ctx context.Context, token string, gender int) error
+	UploadAvatar(ctx context.Context, token string, fh *multipart.FileHeader) (string, error)
+	GetAvatar(ctx context.Context, avatarId string, writer io.Writer) error
 }

@@ -54,9 +54,6 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 					field.RelationField
 				}
 			}
-			UserAuthPos struct {
-				field.RelationField
-			}
 		}{
 			RelationField: field.NewRelation("Room.Owner", "model.UserPo"),
 			RoomUsers: struct {
@@ -79,11 +76,6 @@ func newRoomUserPo(db *gorm.DB, opts ...gen.DOOption) roomUserPo {
 				}{
 					RelationField: field.NewRelation("Room.Owner.RoomUsers.User", "model.UserPo"),
 				},
-			},
-			UserAuthPos: struct {
-				field.RelationField
-			}{
-				RelationField: field.NewRelation("Room.Owner.UserAuthPos", "model.UserAuthPo"),
 			},
 		},
 		RoomUsers: struct {
@@ -209,9 +201,6 @@ type roomUserPoBelongsToRoom struct {
 			User struct {
 				field.RelationField
 			}
-		}
-		UserAuthPos struct {
-			field.RelationField
 		}
 	}
 	RoomUsers struct {

@@ -11,11 +11,10 @@ package models
 import (
 	"time"
 
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 	"github.com/go-puzzles/puzzles/goredis"
 	"github.com/go-puzzles/puzzles/pgorm"
 	"github.com/go-puzzles/puzzles/plog"
-	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/email"
-	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/oss/minio"
 )
 
 type RoomConfig struct {
@@ -57,10 +56,9 @@ type Configs struct {
 	RedisConf *goredis.RedisConf
 	MysqlConf *pgorm.MysqlConfig
 	MinioConf *minio.MinioConfig
-	EmailConf *email.EmailConf
 }
 
-func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParser, emailConfParser parser) *Configs {
+func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParser parser) *Configs {
 	srvConfig := new(Config)
 	plog.PanicError(srvConfParser(srvConfig))
 
@@ -73,14 +71,10 @@ func ParseConfig(srvConfParser, redisConfParser, mysqlConfParser, minioConfParse
 	minioConf := new(minio.MinioConfig)
 	plog.PanicError(minioConfParser(minioConf))
 
-	emailConf := new(email.EmailConf)
-	plog.PanicError(emailConfParser(emailConf))
-
 	return &Configs{
 		SrvConf:   srvConfig,
 		RedisConf: redisConf,
 		MysqlConf: mysqlConf,
 		MinioConf: minioConf,
-		EmailConf: emailConf,
 	}
 }

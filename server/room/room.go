@@ -3,14 +3,13 @@ package roomSrv
 import (
 	"context"
 
-	"github.com/go-puzzles/puzzles/goredis"
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
-	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitea.hoven.com/billiard/billiard-assistant-server/models"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/locker"
+	"github.com/go-puzzles/puzzles/goredis"
+	"github.com/pkg/errors"
 	"gorm.io/datatypes"
 )
 
@@ -30,17 +29,17 @@ func NewRoomService(remoRepo room.IRoomRepo, redisClient *goredis.PuzzleRedisCli
 	}
 }
 
-func (r *RoomService) CreateGameRoom(ctx context.Context, u *user.User, gameId int) (*room.Room, error) {
-	roomCnt, err := r.roomRepo.GetOwnerRoomCount(ctx, u.UserId)
+func (r *RoomService) CreateGameRoom(ctx context.Context, userId, gameId int) (*room.Room, error) {
+	roomCnt, err := r.roomRepo.GetOwnerRoomCount(ctx, userId)
 	if err != nil {
 		return nil, errors.Wrap(err, "getOwnerRoomCount")
 	}
 
-	if !u.Role.IsPro() && roomCnt >= r.roomConfig.UserMaxRoomCreateNumber {
+	if roomCnt >= r.roomConfig.UserMaxRoomCreateNumber {
 		return nil, exception.ErrRoomUserMaxCreateNumber
 	}
 
-	room, err := r.roomRepo.CreateRoom(ctx, gameId, u.UserId)
+	room, err := r.roomRepo.CreateRoom(ctx, gameId, userId)
 	if err != nil {
 		return nil, errors.Wrap(err, "createRoom")
 	}
@@ -52,7 +51,7 @@ func (r *RoomService) CheckRoomCodeExists(ctx context.Context, roomCode string) 
 	return r.roomRepo.CheckRoomCodeExists(ctx, roomCode)
 }
 
-func (r *RoomService) DeleteGameRoom(ctx context.Context, roomId, userId int) error {
+func (r *RoomService) DeleteGameRoom(ctx context.Context, userId, roomId int) error {
 	ro, err := r.roomRepo.GetRoomById(ctx, roomId)
 	if err != nil {
 		return errors.Wrapf(err, "getGameRoom: %d", roomId)
@@ -81,7 +80,7 @@ func (r *RoomService) UpdateRoomUserHeartbeart(ctx context.Context, roomId, user
 	return nil
 }
 
-func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error {
+func (r *RoomService) EnterGameRoom(ctx context.Context, userId, roomId int, virtualUser string) error {
 	if err := r.locker.Lock(ctx, roomId); err != nil {
 		return errors.Wrap(err, "lock room")
 	}
@@ -97,11 +96,11 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, currentUser
 	}
 
 	// not allow to add a virtual player while not roomOwner
-	if virtualUser != "" && !room.IsOwner(currentUser.GetUserId()) {
+	if virtualUser != "" && !room.IsOwner(userId) {
 		return exception.ErrNotRoomOwner
 	}
 
-	if room.IsInRoom(currentUser.GetUserId(), virtualUser) {
+	if room.IsInRoom(userId, virtualUser) {
 		return exception.ErrAlreadyInRoom
 	}
 
@@ -109,15 +108,10 @@ func (r *RoomService) EnterGameRoom(ctx context.Context, roomId int, currentUser
 		return exception.ErrGameRoomFull
 	}
 
-	addUser := currentUser.GetName()
-	if virtualUser != "" {
-		addUser = virtualUser
-	}
-
-	return r.roomRepo.AddUserToRoom(ctx, roomId, currentUser.GetUserId(), addUser, virtualUser != "")
+	return r.roomRepo.AddUserToRoom(ctx, roomId, userId, virtualUser, virtualUser != "")
 }
 
-func (r *RoomService) QuitGameRoom(ctx context.Context, roomId int, currentUser shared.BaseUser, virtualUser string) error {
+func (r *RoomService) QuitGameRoom(ctx context.Context, userId, roomId int, virtualUser string) error {
 	if err := r.locker.Lock(ctx, roomId); err != nil {
 		return errors.Wrap(err, "lock room")
 	}
@@ -135,20 +129,15 @@ func (r *RoomService) QuitGameRoom(ctx context.Context, roomId int, currentUser 
 	}
 
 	// not allow to quit virtual player while not roomOwner
-	if isVirtual && !room.IsOwner(currentUser.GetUserId()) {
+	if isVirtual && !room.IsOwner(userId) {
 		return exception.ErrNotRoomOwner
 	}
 
-	if !room.IsInRoom(currentUser.GetUserId(), virtualUser) {
+	if !room.IsInRoom(userId, virtualUser) {
 		return exception.ErrNotInRoom
 	}
 
-	leaveUser := currentUser.GetName()
-	if isVirtual {
-		leaveUser = virtualUser
-	}
-
-	return r.roomRepo.RemoveUserFromRoom(ctx, roomId, currentUser.GetUserId(), leaveUser, isVirtual)
+	return r.roomRepo.RemoveUserFromRoom(ctx, roomId, userId, virtualUser, isVirtual)
 }
 
 func (r *RoomService) GetUserGameRooms(ctx context.Context, userId int) ([]*room.Room, error) {

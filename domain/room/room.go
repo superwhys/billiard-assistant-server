@@ -56,14 +56,16 @@ func (r *Room) IsEnd() bool {
 
 func (r *Room) IsInRoom(currentUserId int, virtualUser string) bool {
 	if currentUserId == 0 && virtualUser == "" {
-		return true
+		return false
 	}
 
 	for _, p := range r.Players {
+		// is virtual user
 		if virtualUser != "" && p.GetUserName() == virtualUser {
 			return true
 		}
 
+		// not virtual user
 		if virtualUser == "" && p.GetUserId() == currentUserId {
 			return true
 		}

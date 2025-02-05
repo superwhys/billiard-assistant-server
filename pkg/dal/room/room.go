@@ -5,13 +5,13 @@ import (
 	"slices"
 	"time"
 
-	"github.com/go-puzzles/puzzles/putils"
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/room"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/shared"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"github.com/go-puzzles/puzzles/putils"
+	"github.com/pkg/errors"
 	"gorm.io/gen"
 	"gorm.io/gorm"
 )
@@ -131,7 +131,7 @@ func (r *RoomRepoImpl) enterRoom(ctx context.Context, roomId, userId int, userNa
 func (r *RoomRepoImpl) leaveRoom(ctx context.Context, roomId, userId int, removeUser string, isVirtual bool) error {
 	roomUserPo := r.db.RoomUserPo
 
-	condition := []gen.Condition{}
+	condition := []gen.Condition{roomUserPo.RoomID.Eq(roomId)}
 	if !isVirtual {
 		condition = append(condition, roomUserPo.UserID.Eq(userId))
 	} else {

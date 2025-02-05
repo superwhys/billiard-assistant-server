@@ -4,15 +4,15 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-puzzles/puzzles/pgin"
-	"github.com/go-puzzles/puzzles/plog"
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/api/middlewares"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitea.hoven.com/billiard/billiard-assistant-server/server"
 	"gitea.hoven.com/billiard/billiard-assistant-server/server/dto"
+	"github.com/gin-gonic/gin"
+	"github.com/go-puzzles/puzzles/pgin"
+	"github.com/go-puzzles/puzzles/plog"
+	"github.com/pkg/errors"
 	"gorm.io/datatypes"
 )
 

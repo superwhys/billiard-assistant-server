@@ -8,17 +8,9 @@ import (
 )
 
 type UserPo struct {
-	ID     int    `gorm:"primaryKey"`
-	Name   string `gorm:"type:varchar(50);not null"`
-	Email  string `gorm:"type:varchar(100);not null"`
-	Phone  string `gorm:"type:varchar(11)"`
-	Avatar string `gorm:"type:varchar(255)"`
-	Gender user.Gender
-	Status user.Status
-	Role   user.Role
+	ID int `gorm:"primaryKey"`
 
-	RoomUsers   []*RoomUserPo `gorm:"foreignKey:UserID"`
-	UserAuthPos []*UserAuthPo `gorm:"constraint:OnDelete:CASCADE;"`
+	RoomUsers []*RoomUserPo `gorm:"foreignKey:UserID"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -31,15 +23,6 @@ func (u *UserPo) TableName() string {
 
 func (u *UserPo) FromEntity(ue *user.User) *UserPo {
 	u.ID = ue.UserId
-	u.Name = ue.Name
-	u.Status = ue.Status
-	u.Gender = ue.Gender
-	u.Role = ue.Role
-	if ue.UserInfo != nil {
-		u.Email = ue.UserInfo.Email
-		u.Phone = ue.UserInfo.Phone
-		u.Avatar = ue.UserInfo.Avatar
-	}
 
 	return u
 }
@@ -56,15 +39,6 @@ func (u *UserPo) ToEntity() *user.User {
 
 	return &user.User{
 		UserId: u.ID,
-		Name:   u.Name,
-		Status: u.Status,
-		Role:   u.Role,
 		Rooms:  rooms,
-		Gender: u.Gender,
-		UserInfo: &user.BaseInfo{
-			Email:  u.Email,
-			Phone:  u.Phone,
-			Avatar: u.Avatar,
-		},
 	}
 }

@@ -27,13 +27,6 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 	tableName := _userPo.userPoDo.TableName()
 	_userPo.ALL = field.NewAsterisk(tableName)
 	_userPo.ID = field.NewInt(tableName, "id")
-	_userPo.Name = field.NewString(tableName, "name")
-	_userPo.Email = field.NewString(tableName, "email")
-	_userPo.Phone = field.NewString(tableName, "phone")
-	_userPo.Avatar = field.NewString(tableName, "avatar")
-	_userPo.Gender = field.NewInt(tableName, "gender")
-	_userPo.Status = field.NewInt(tableName, "status")
-	_userPo.Role = field.NewInt(tableName, "role")
 	_userPo.CreatedAt = field.NewTime(tableName, "created_at")
 	_userPo.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_userPo.DeletedAt = field.NewField(tableName, "deleted_at")
@@ -49,9 +42,6 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 			Owner struct {
 				field.RelationField
 				RoomUsers struct {
-					field.RelationField
-				}
-				UserAuthPos struct {
 					field.RelationField
 				}
 			}
@@ -70,20 +60,12 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 				RoomUsers struct {
 					field.RelationField
 				}
-				UserAuthPos struct {
-					field.RelationField
-				}
 			}{
 				RelationField: field.NewRelation("RoomUsers.Room.Owner", "model.UserPo"),
 				RoomUsers: struct {
 					field.RelationField
 				}{
 					RelationField: field.NewRelation("RoomUsers.Room.Owner.RoomUsers", "model.RoomUserPo"),
-				},
-				UserAuthPos: struct {
-					field.RelationField
-				}{
-					RelationField: field.NewRelation("RoomUsers.Room.Owner.UserAuthPos", "model.UserAuthPo"),
 				},
 			},
 			RoomUsers: struct {
@@ -99,12 +81,6 @@ func newUserPo(db *gorm.DB, opts ...gen.DOOption) userPo {
 		},
 	}
 
-	_userPo.UserAuthPos = userPoHasManyUserAuthPos{
-		db: db.Session(&gorm.Session{}),
-
-		RelationField: field.NewRelation("UserAuthPos", "model.UserAuthPo"),
-	}
-
 	_userPo.fillFieldMap()
 
 	return _userPo
@@ -115,19 +91,10 @@ type userPo struct {
 
 	ALL       field.Asterisk
 	ID        field.Int
-	Name      field.String
-	Email     field.String
-	Phone     field.String
-	Avatar    field.String
-	Gender    field.Int
-	Status    field.Int
-	Role      field.Int
 	CreatedAt field.Time
 	UpdatedAt field.Time
 	DeletedAt field.Field
 	RoomUsers userPoHasManyRoomUsers
-
-	UserAuthPos userPoHasManyUserAuthPos
 
 	fieldMap map[string]field.Expr
 }
@@ -145,13 +112,6 @@ func (u userPo) As(alias string) *userPo {
 func (u *userPo) updateTableName(table string) *userPo {
 	u.ALL = field.NewAsterisk(table)
 	u.ID = field.NewInt(table, "id")
-	u.Name = field.NewString(table, "name")
-	u.Email = field.NewString(table, "email")
-	u.Phone = field.NewString(table, "phone")
-	u.Avatar = field.NewString(table, "avatar")
-	u.Gender = field.NewInt(table, "gender")
-	u.Status = field.NewInt(table, "status")
-	u.Role = field.NewInt(table, "role")
 	u.CreatedAt = field.NewTime(table, "created_at")
 	u.UpdatedAt = field.NewTime(table, "updated_at")
 	u.DeletedAt = field.NewField(table, "deleted_at")
@@ -179,15 +139,8 @@ func (u *userPo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *userPo) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 13)
+	u.fieldMap = make(map[string]field.Expr, 5)
 	u.fieldMap["id"] = u.ID
-	u.fieldMap["name"] = u.Name
-	u.fieldMap["email"] = u.Email
-	u.fieldMap["phone"] = u.Phone
-	u.fieldMap["avatar"] = u.Avatar
-	u.fieldMap["gender"] = u.Gender
-	u.fieldMap["status"] = u.Status
-	u.fieldMap["role"] = u.Role
 	u.fieldMap["created_at"] = u.CreatedAt
 	u.fieldMap["updated_at"] = u.UpdatedAt
 	u.fieldMap["deleted_at"] = u.DeletedAt
@@ -217,9 +170,6 @@ type userPoHasManyRoomUsers struct {
 		Owner struct {
 			field.RelationField
 			RoomUsers struct {
-				field.RelationField
-			}
-			UserAuthPos struct {
 				field.RelationField
 			}
 		}
@@ -294,77 +244,6 @@ func (a userPoHasManyRoomUsersTx) Clear() error {
 }
 
 func (a userPoHasManyRoomUsersTx) Count() int64 {
-	return a.tx.Count()
-}
-
-type userPoHasManyUserAuthPos struct {
-	db *gorm.DB
-
-	field.RelationField
-}
-
-func (a userPoHasManyUserAuthPos) Where(conds ...field.Expr) *userPoHasManyUserAuthPos {
-	if len(conds) == 0 {
-		return &a
-	}
-
-	exprs := make([]clause.Expression, 0, len(conds))
-	for _, cond := range conds {
-		exprs = append(exprs, cond.BeCond().(clause.Expression))
-	}
-	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
-	return &a
-}
-
-func (a userPoHasManyUserAuthPos) WithContext(ctx context.Context) *userPoHasManyUserAuthPos {
-	a.db = a.db.WithContext(ctx)
-	return &a
-}
-
-func (a userPoHasManyUserAuthPos) Session(session *gorm.Session) *userPoHasManyUserAuthPos {
-	a.db = a.db.Session(session)
-	return &a
-}
-
-func (a userPoHasManyUserAuthPos) Model(m *model.UserPo) *userPoHasManyUserAuthPosTx {
-	return &userPoHasManyUserAuthPosTx{a.db.Model(m).Association(a.Name())}
-}
-
-type userPoHasManyUserAuthPosTx struct{ tx *gorm.Association }
-
-func (a userPoHasManyUserAuthPosTx) Find() (result []*model.UserAuthPo, err error) {
-	return result, a.tx.Find(&result)
-}
-
-func (a userPoHasManyUserAuthPosTx) Append(values ...*model.UserAuthPo) (err error) {
-	targetValues := make([]interface{}, len(values))
-	for i, v := range values {
-		targetValues[i] = v
-	}
-	return a.tx.Append(targetValues...)
-}
-
-func (a userPoHasManyUserAuthPosTx) Replace(values ...*model.UserAuthPo) (err error) {
-	targetValues := make([]interface{}, len(values))
-	for i, v := range values {
-		targetValues[i] = v
-	}
-	return a.tx.Replace(targetValues...)
-}
-
-func (a userPoHasManyUserAuthPosTx) Delete(values ...*model.UserAuthPo) (err error) {
-	targetValues := make([]interface{}, len(values))
-	for i, v := range values {
-		targetValues[i] = v
-	}
-	return a.tx.Delete(targetValues...)
-}
-
-func (a userPoHasManyUserAuthPosTx) Clear() error {
-	return a.tx.Clear()
-}
-
-func (a userPoHasManyUserAuthPosTx) Count() int64 {
 	return a.tx.Count()
 }
 

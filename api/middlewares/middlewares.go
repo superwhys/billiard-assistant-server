@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"reflect"
 
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/auth"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
+	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/token"
+	"gitea.hoven.com/billiard/billiard-assistant-server/server"
 	"github.com/gin-gonic/gin"
 	"github.com/go-puzzles/puzzles/pgin"
 	"github.com/go-puzzles/puzzles/plog"
 	"github.com/gomodule/redigo/redis"
-	"github.com/google/uuid"
-	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
-	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/token"
-	"gitea.hoven.com/billiard/billiard-assistant-server/server"
 )
 
 const (
@@ -22,37 +22,22 @@ const (
 )
 
 type UserToken struct {
-	TokenId  string
-	Uid      int
-	Username string
-	// WechatId is openid
-	WechatId         string
-	WechatUnionId    string
-	WechatSessionKey string
+	UserId int
+	Token  *auth.Token
 }
 
-func NewUserLoginToken(uid int, username string) *UserToken {
+func NewUserLoginToken(uid int, accessToken, refreshToken string) *UserToken {
 	return &UserToken{
-		TokenId:  uuid.New().String(),
-		Uid:      uid,
-		Username: username,
-	}
-}
-
-func NewWechatLoginToken(userId int, openId, unionId, sessionKey string) *UserToken {
-	return &UserToken{
-		Uid:              userId,
-		WechatId:         openId,
-		WechatUnionId:    unionId,
-		WechatSessionKey: sessionKey,
+		UserId: uid,
+		Token: &auth.Token{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		},
 	}
 }
 
 func (t *UserToken) GetKey() string {
-	if t.TokenId == "" {
-		t.TokenId = uuid.New().String()
-	}
-	return t.TokenId
+	return t.Token.AccessToken
 }
 
 type BilliardMiddleware struct {
@@ -167,7 +152,7 @@ func (m *BilliardMiddleware) CurrentUserId(c *gin.Context) (int, error) {
 		return -1, errors.New("invalid token")
 	}
 
-	return userToken.Uid, nil
+	return userToken.UserId, nil
 }
 
 func (m *BilliardMiddleware) CurrentUser(c *gin.Context) (*user.User, error) {
@@ -182,7 +167,7 @@ func (m *BilliardMiddleware) CurrentUser(c *gin.Context) (*user.User, error) {
 		return nil, errors.New("invalid token")
 	}
 
-	return m.server.UserSrv.GetUserById(c, userToken.Uid)
+	return m.server.UserSrv.GetUserProfile(c, userToken.Token.AccessToken)
 }
 
 func (m *BilliardMiddleware) AdminRequired() gin.HandlerFunc {

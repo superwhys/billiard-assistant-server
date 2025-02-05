@@ -29,6 +29,7 @@ var (
 	ErrLoginFailed           = NewBilliardException(400, "登录失败")
 	ErrLogoutFailed          = NewBilliardException(400, "退出登录失败")
 	ErrUserAuthNotFound      = NewBilliardException(404, "用户认证信息不存在")
+	ErrUnauthorized          = NewBilliardException(401, " 登录过期或未登录")
 
 	ErrCreateGame     = NewBilliardException(400, "创建游戏失败")
 	ErrDeleteGame     = NewBilliardException(400, "删除游戏失败")

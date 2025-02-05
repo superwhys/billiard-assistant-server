@@ -20,6 +20,7 @@ type EnterRoomEvent struct {
 	RoomId    int    `json:"room_id,omitempty"`
 }
 
+// TODO: look whether need to change the logic of userName process
 func NewEnterRoomEvent(roomId, userId int, userName string, isVirtual bool) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.PlayerJoined,
@@ -39,6 +40,7 @@ type LeaveRoomEvent struct {
 	RoomId    int    `json:"room_id,omitempty"`
 }
 
+// TODO: look whether need to change the logic of userName process
 func NewLeaveRoomEvent(roomId, userId int, userName string, isVirtual bool) *events.EventMessage {
 	return &events.EventMessage{
 		EventType: events.PlayerLeft,

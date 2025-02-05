@@ -3,11 +3,10 @@ package userDal
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/domain/user"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/base"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/dal/model"
-	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -46,59 +45,5 @@ func (u *UserRepoImpl) UpdateUser(ctx context.Context, user *user.User) error {
 
 	userDb := u.db.UserPo
 	_, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(up.ID)).Updates(up)
-	return err
-}
-
-func (u *UserRepoImpl) UserExists(ctx context.Context, userId int) (bool, error) {
-	userDb := u.db.UserPo
-	count, err := userDb.WithContext(ctx).Where(userDb.ID.Eq(userId)).Count()
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}
-
-func (u *UserRepoImpl) GetUserById(ctx context.Context, userId int) (*user.User, error) {
-	userDb := u.db.UserPo
-	usr, err := userDb.WithContext(ctx).
-		Where(userDb.ID.Eq(userId)).
-		First()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrUserNotFound
-	} else if err != nil {
-		return nil, err
-	}
-
-	return usr.ToEntity(), nil
-}
-
-func (u *UserRepoImpl) GetUserByName(ctx context.Context, username string) (*user.User, error) {
-	userDb := u.db.UserPo
-	usr, err := userDb.WithContext(ctx).
-		Where(userDb.Name.Eq(username)).
-		First()
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, exception.ErrUserNotFound
-	} else if err != nil {
-		return nil, err
-	}
-
-	return usr.ToEntity(), nil
-}
-
-// User status management
-func (u *UserRepoImpl) UpdateUserStatus(ctx context.Context, userId int, status user.Status) error {
-	userDb := u.db.UserPo
-	_, err := userDb.WithContext(ctx).
-		Where(userDb.ID.Eq(userId)).
-		UpdateSimple(userDb.Status.Value(int(status)))
-	return err
-}
-
-func (u *UserRepoImpl) UpdateUserRole(ctx context.Context, userId int, role user.Role) error {
-	userDb := u.db.UserPo
-	_, err := userDb.WithContext(ctx).
-		Where(userDb.ID.Eq(userId)).
-		UpdateSimple(userDb.Role.Value(int(role)))
 	return err
 }

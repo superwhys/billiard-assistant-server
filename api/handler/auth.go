@@ -11,22 +11,21 @@ package handler
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-puzzles/puzzles/pgin"
-	"github.com/pkg/errors"
 	"gitea.hoven.com/billiard/billiard-assistant-server/api/middlewares"
+	"gitea.hoven.com/billiard/billiard-assistant-server/domain/auth"
 	"gitea.hoven.com/billiard/billiard-assistant-server/pkg/exception"
 	"gitea.hoven.com/billiard/billiard-assistant-server/server"
 	"gitea.hoven.com/billiard/billiard-assistant-server/server/dto"
+	"github.com/gin-gonic/gin"
+	"github.com/go-puzzles/puzzles/pgin"
+	"github.com/pkg/errors"
 )
 
 type AuthHandlerApp interface {
-	BindPhone(ctx context.Context, userId int, phone, code string) error
-	BindEmail(ctx context.Context, userId int, email, code string) error
-	SendPhoneCode(ctx context.Context, phone string) error
+	WechatLogin(ctx context.Context, device, code string) (*auth.Token, error)
+	Logout(ctx context.Context, token string) error
+	BindEmail(ctx context.Context, token string, email, code string) error
 	SendEmailCode(ctx context.Context, email string) error
-	CheckPhoneBind(ctx context.Context, phone string) (bool, error)
-	CheckEmailBind(ctx context.Context, email string) (bool, error)
 }
 
 type AuthHandler struct {
@@ -42,54 +41,55 @@ func NewAuthHandler(server *server.BilliardServer, middleware *middlewares.Billi
 }
 
 func (a *AuthHandler) Init(router gin.IRouter) {
-	auth := router.Group("auth", a.middleware.UserLoginRequired())
-	auth.POST("bind/phone", pgin.RequestWithErrorHandler(a.bindPhoneHandler))
-	auth.POST("bind/email", pgin.RequestWithErrorHandler(a.bindEmailHandler))
-	auth.POST("check/phone", pgin.RequestResponseHandler(a.checkPhoneBindHandler))
-	auth.POST("check/email", pgin.RequestResponseHandler(a.checkEmailBindHandler))
-	auth.POST("send/phone_code", pgin.RequestWithErrorHandler(a.sendPhoneCodeHandler))
-	auth.POST("send/email_code", pgin.RequestWithErrorHandler(a.sendEmailCodeHandler))
+	auth := router.Group("auth")
+	auth.POST("login/wx", pgin.RequestResponseHandler(a.wechatLoginHandler))
+
+	authNeedLogin := router.Group("auth", a.middleware.UserLoginRequired())
+	authNeedLogin.GET("logout", pgin.ErrorReturnHandler(a.logoutHandler))
+	authNeedLogin.POST("bind/email", pgin.RequestWithErrorHandler(a.bindEmailHandler))
+	authNeedLogin.POST("send/email_code", pgin.RequestWithErrorHandler(a.sendEmailCodeHandler))
 }
 
-func (a *AuthHandler) bindPhoneHandler(ctx *gin.Context, req *dto.BindPhoneRequest) error {
-	userId, err := a.middleware.CurrentUserId(ctx)
-	if err != nil {
-		return err
+func (a *AuthHandler) wechatLoginHandler(ctx *gin.Context, req *dto.WechatLoginRequest) (*dto.LoginResponse, error) {
+	resp, err := a.authApp.WechatLogin(ctx, req.DeviceId, req.Code)
+	if exception.CheckException(err) {
+		return nil, errors.Cause(err)
+	} else if err != nil {
+		return nil, exception.ErrLoginFailed
 	}
 
-	err = a.authApp.BindPhone(ctx, userId, req.Phone, req.Code)
+	token := middlewares.NewUserLoginToken(resp.UserId, resp.AccessToken, resp.RefreshToken)
+	a.middleware.SaveToken(token, ctx)
+
+	return &dto.LoginResponse{
+		UserId: resp.UserId,
+		Token:  token.GetKey(),
+	}, nil
+}
+
+func (a *AuthHandler) logoutHandler(ctx *gin.Context) error {
+	token := a.middleware.GetLoginToken(ctx).GetKey()
+
+	err := a.authApp.Logout(ctx, token)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
-		return exception.ErrBindPhone
+		return exception.ErrLogoutFailed
 	}
 
 	return nil
 }
 
 func (a *AuthHandler) bindEmailHandler(ctx *gin.Context, req *dto.BindEmailRequest) error {
-	userId, err := a.middleware.CurrentUserId(ctx)
-	if err != nil {
-		return err
-	}
+	token := a.middleware.GetLoginToken(ctx).GetKey()
 
-	err = a.authApp.BindEmail(ctx, userId, req.Email, req.Code)
+	err := a.authApp.BindEmail(ctx, token, req.Email, req.Code)
 	if exception.CheckException(err) {
 		return errors.Cause(err)
 	} else if err != nil {
 		return exception.ErrBindEmail
 	}
 
-	return nil
-}
-
-func (a *AuthHandler) sendPhoneCodeHandler(ctx *gin.Context, req *dto.SendPhoneCodeRequest) error {
-	err := a.authApp.SendPhoneCode(ctx, req.Phone)
-	if exception.CheckException(err) {
-		return errors.Cause(err)
-	} else if err != nil {
-		return exception.ErrSendPhoneCode
-	}
 	return nil
 }
 
@@ -101,26 +101,4 @@ func (a *AuthHandler) sendEmailCodeHandler(ctx *gin.Context, req *dto.SendEmailC
 		return exception.ErrSendEmailCode
 	}
 	return nil
-}
-
-func (a *AuthHandler) checkPhoneBindHandler(ctx *gin.Context, req *dto.CheckPhoneBindRequest) (*dto.CheckPhoneBindResponse, error) {
-	isBound, err := a.authApp.CheckPhoneBind(ctx, req.Phone)
-	if exception.CheckException(err) {
-		return nil, errors.Cause(err)
-	} else if err != nil {
-		return nil, exception.ErrGetUserInfo
-	}
-
-	return &dto.CheckPhoneBindResponse{IsBound: isBound}, nil
-}
-
-func (a *AuthHandler) checkEmailBindHandler(ctx *gin.Context, req *dto.CheckPhoneBindRequest) (*dto.CheckPhoneBindResponse, error) {
-	isBound, err := a.authApp.CheckEmailBind(ctx, req.Phone)
-	if exception.CheckException(err) {
-		return nil, errors.Cause(err)
-	} else if err != nil {
-		return nil, exception.ErrGetUserInfo
-	}
-
-	return &dto.CheckPhoneBindResponse{IsBound: isBound}, nil
 }

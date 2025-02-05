@@ -24,8 +24,6 @@ const (
 	PlayerPrepare
 	GameStart
 	GameEnd
-	SendPhoneCode
-	SendEmailCode
 	RecordAction
 	PlayerOnline
 	PlayerOffline
@@ -45,10 +43,6 @@ func (et EventType) String() string {
 		return "GameStart"
 	case GameEnd:
 		return "GameEnd"
-	case SendPhoneCode:
-		return "SendPhoneCode"
-	case SendEmailCode:
-		return "SendEmailCode"
 	case RecordAction:
 		return "RecordAction"
 	case PlayerOnline:

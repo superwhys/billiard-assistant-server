@@ -18,7 +18,6 @@ import (
 type OssSourceType string
 
 const (
-	SourceAvatar   OssSourceType = "avatar"
 	SourceGameIcon OssSourceType = "game_icon"
 )
 
